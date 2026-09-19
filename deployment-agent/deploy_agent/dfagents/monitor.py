@@ -5,6 +5,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Callable
 
+from deployment_agent import owner_credentials
 from deployment_agent.models import ACTIVE_STATES as _ACTIVE_STATES
 from deployment_agent.models import DeploymentTarget, RunState
 from deployment_agent.providers import target_of
@@ -43,12 +44,21 @@ class MonitorAgent:
         run = self.store.get_run(run_id)
         if not run:
             raise ValueError("Run not found")
+        # Looked at with its owner's accounts, whichever thread asks - the
+        # supervisor's included (owner_credentials.py).
+        owner = str((run.get("repo") or {}).get("owner") or owner_credentials.owner())
+        with owner_credentials.acting_for(owner):
+            return self._snapshot(run_id, run)
+
+    def _snapshot(self, run_id: str, run: dict[str, Any]) -> dict[str, Any]:
         repo_state = run.get("repo") or {}
         snapshot: dict[str, Any] = {
             "captured_at": datetime.now(timezone.utc).isoformat(),
             "github": {},
             "aws": {},
             "vercel": {},
+            "netlify": {},
+            "azure": {},
             "logs": [],
             "api": [],
             "errors": [],
@@ -61,6 +71,11 @@ class MonitorAgent:
                     self._vercel(run, snapshot)
                 except Exception as exc:
                     snapshot["errors"].append(redact_text(str(exc)))
+        elif target_of(run) in {DeploymentTarget.NETLIFY, DeploymentTarget.AZURE}:
+            try:
+                self._hosted(run, snapshot)
+            except Exception as exc:
+                snapshot["errors"].append(redact_text(str(exc)))
         elif target_of(run) is DeploymentTarget.AWS_ECS:
 
             try:
@@ -72,7 +87,12 @@ class MonitorAgent:
                 self._aws(run, snapshot)
             except Exception as exc:
                 snapshot["errors"].append(redact_text(str(exc)))
-        snapshot["api"] = self._validate_api(repo_state.get("application_url", ""))
+        # The plan's own health route: /api/health for Next.js, and whatever a
+        # workspace's gateway already serves, such as /ready.
+        snapshot["api"] = self._validate_api(
+            repo_state.get("application_url", ""),
+            (run.get("plan") or {}).get("health_path") or "/api/health",
+        )
         deploy_runs = [
             item
             for item in snapshot.get("github", {}).get("runs", [])
@@ -94,7 +114,7 @@ class MonitorAgent:
                     self.store.transition_run(run_id, RunState.VALIDATING)
 
             if not in_flight and conclusion in _TERMINAL_FAILURE_CONCLUSIONS \
-                    and run["state"] in _ACTIVE_STATES:
+                    and run["state"] in _ACTIVE_STATES and not repo_state.get("repair_worker_active"):
                 self.store.transition_run(
                     run_id,
                     RunState.FAILED,
@@ -118,15 +138,29 @@ class MonitorAgent:
         if (
             latest
             and latest["state"] in {RunState.VALIDATING.value, RunState.LIVE.value}
-            and readiness["score"] >= 90
-            and snapshot["api"]
-            and all(item.get("passed") for item in snapshot["api"])
+            and self._serving(readiness, snapshot)
         ):
             if latest["state"] != RunState.LIVE.value:
                 self.emit(run_id, "step", "validation", "complete", 98, "Homepage and health API validation passed")
                 self._capture_evidence(run_id)
             self.store.transition_run(run_id, RunState.LIVE)
         return sanitized
+
+    @staticmethod
+    def _serving(readiness: dict, snapshot: dict) -> bool:
+        """Is the deployment up: its workflow passed, its provider reports it
+        running, and every page and health route it was asked for answers.
+
+        Not the readiness score. That also counts what the review found -
+        whether a production build ran on this machine first, and what an
+        audit said about dependencies, development ones included - and none of
+        it changes once the site is deployed. A healthy site that scored 88
+        was never promoted, and was polled every fifteen seconds for good.
+        """
+        categories = readiness.get("categories") or {}
+        api = snapshot.get("api") or []
+        return (bool(categories.get("cicd")) and bool(categories.get("provider"))
+                and bool(api) and all(item.get("passed") for item in api))
 
     def _capture_evidence(self, run_id: str) -> None:
         """Capture the dashboard now that the run is live."""
@@ -240,6 +274,23 @@ class MonitorAgent:
                 snapshot["logs"] = vercel_api.deployment_events(token, newest["id"], team_id)
             except Exception as exc:
                 snapshot["errors"].append(redact_text(str(exc)))
+
+    def _hosted(self, run, snapshot):
+        from deployment_agent.hosted import azure_command, netlify_api
+        repo = run.get("repo") or {}
+        if target_of(run) is DeploymentTarget.NETLIFY and repo.get("netlify_site_id"):
+            site = netlify_api("GET", f"sites/{repo['netlify_site_id']}")
+            release = site.get("published_deploy") or {}
+            snapshot["netlify"] = {"site_id": site["id"], "name": site.get("name", ""),
+                "application_url": repo.get("application_url", ""), "ready": release.get("state") == "ready",
+                "commit_sha": release.get("title") or release.get("commit_ref") or "", "deployment_id": release.get("id", "")}
+        elif repo.get("azure_app_name"):
+            app, group = repo["azure_app_name"], repo["azure_resource_group"]
+            info = json.loads(azure_command(["webapp", "show", "--name", app, "--resource-group", group], authenticate=True).stdout)
+            commit = azure_command(["webapp", "config", "appsettings", "list", "--name", app, "--resource-group", group,
+                                    "--query", "[?name=='AGENTFORGE_COMMIT_SHA'].value | [0]", "--output", "tsv"]).stdout.strip()
+            snapshot["azure"] = {"name": app, "resource_group": group, "location": info.get("location", ""),
+                                  "application_url": repo.get("application_url", ""), "ready": info.get("state") == "Running", "commit_sha": commit}
 
     def _stacks(self, session, slug: str) -> list:
         """The bootstrap stack, its outputs and its recent events."""
@@ -452,7 +503,7 @@ class MonitorAgent:
         self._cloudwatch(session, run, snapshot)
 
     @staticmethod
-    def _validate_api(base_url: str) -> list[dict[str, Any]]:
+    def _validate_api(base_url: str, health_path: str = "/api/health") -> list[dict[str, Any]]:
         if not base_url:
             return []
         try:
@@ -460,7 +511,7 @@ class MonitorAgent:
         except ImportError:
             return [{"name": "HTTP client", "method": "GET", "path": "/", "status": 0, "passed": False, "error": "requests is not installed"}]
         results: list[dict[str, Any]] = []
-        for path in ("/", "/api/health"):
+        for path in ("/", health_path):
             url = base_url.rstrip("/") + path
             try:
                 response = requests.get(url, timeout=12, allow_redirects=True)
@@ -490,6 +541,10 @@ class MonitorAgent:
             provider_ok = bool(newest) and newest.get("ready_state") == "READY" and (
                 not head_sha or str(newest.get("commit_sha", "")) == head_sha
             )
+        elif target_of(run) in {DeploymentTarget.NETLIFY, DeploymentTarget.AZURE}:
+            provider = snapshot.get(target_of(run).value, {})
+            head_sha = str(((run.get("repo") or {}).get("push") or {}).get("head_sha", ""))
+            provider_ok = bool(provider.get("ready")) and bool(head_sha) and provider.get("commit_sha") == head_sha
         elif target_of(run) is DeploymentTarget.AWS_ECS:
             aws = snapshot.get("aws", {})
             services = aws.get("services", [])

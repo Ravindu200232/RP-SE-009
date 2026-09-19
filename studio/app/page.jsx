@@ -1,39 +1,41 @@
-﻿'use client'
+'use client'
 
-import { useEffect, useState } from 'react'
-import { Eye, Code2, FileText, FlaskConical, Plus, Rocket } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Eye, Code2, FileText, FlaskConical, Plus, Rocket, Layers, Menu } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { answerQuestion, connect, send } from '@/lib/ws'
-import { consoleReport, forgetConsole } from '@/lib/console-log'
+import { forgetConsole } from '@/lib/console-log'
 import { api } from '@/lib/api'
-import { catalogue } from '@/lib/models'
+import { catalogue, TIERS } from '@/lib/models'
 import { readFolder } from '@/lib/importer'
 import Sidebar from '@/components/Sidebar'
 import Home from '@/components/Home'
+import ProjectsView from '@/components/ProjectsView'
 import PreviewPane from '@/components/PreviewPane'
+import DesignCustomize from '@/components/DesignCustomize'
+import PrototypePane from '@/components/PrototypePane'
 import CodePane from '@/components/CodePane'
 import SettingsModal from '@/components/SettingsModal'
-import TunePrompt from '@/components/TunePrompt'
 import TestingResult from '@/components/testing/TestingResult'
 import SrsResult from '@/components/srs/SrsResult'
 import DeployPanel from '@/components/deploy/DeployPanel'
-import EditAttach from '@/components/EditAttach'
-import { useEditAttachments } from '@/lib/use-edit-attachments'
-import { Badge, Button, Modal } from '@/components/ui'
+import AgentChat from '@/components/AgentChat'
+import AgentDecision from '@/components/AgentDecision'
+import { useAuthStore } from '@/lib/auth'
+import AuthModal from '@/components/AuthModal'
+import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
-
 const TABS = [
-
+  { id: 'design', label: 'Design', Icon: Layers },
   { id: 'srs', label: 'SRS', Icon: FileText },
+  { id: 'prototype', label: 'Prototype', Icon: Layers },
   { id: 'preview', label: 'Preview', Icon: Eye },
   { id: 'code', label: 'Code', Icon: Code2 },
   { id: 'testing', label: 'Testing', Icon: FlaskConical },
-
   { id: 'deploy', label: 'Deploy', Icon: Rocket },
 ]
-
 
 async function retry(fn, times, waitMs) {
   let last
@@ -47,7 +49,7 @@ async function retry(fn, times, waitMs) {
 }
 
 /** Show a paused picker question and its answers. */
-function ScopeQuestion({ onType }) {
+function ScopeQuestion() {
   const question = useStore(s => s.question)
   if (!question) return null
 
@@ -68,7 +70,7 @@ function ScopeQuestion({ onType }) {
       <div className="mt-2 flex flex-wrap gap-1.5">
         {(question.options || []).map((option, i) => (
           <button key={option} title={option}
-                  onClick={() => { if (!answerQuestion(option)) onType(option) }}
+                  onClick={() => answerQuestion(option)}
                   className="border border-line2 bg-panel px-2.5 py-1
                              text-left text-[11px] font-semibold text-ink
                              transition-colors hover:border-accent hover:text-accent">
@@ -85,14 +87,15 @@ function ScopeQuestion({ onType }) {
   )
 }
 
-
 export default function Studio() {
   const view = useStore(s => s.view)
   const setView = useStore(s => s.setView)
   const project = useStore(s => s.project)
+  const agentRole = useStore(s => s.agentRole)
+  const buildAllowed = useStore(s => Boolean(s.buildAvailability[s.project]))
+  const syncState = useStore(s => s.projectSync[s.project])
   const busy = useStore(s => s.busy)
-  const askOpen = useStore(s => s.askOpen)
-  const setAskOpen = useStore(s => s.setAskOpen)
+  const busyProject = useStore(s => s.busyProject)
   const testsRunning = useStore(s => s.tests.running)
   const qa = useStore(s => s.qaReport)
   const setQa = useStore(s => s.setQaReport)
@@ -101,26 +104,78 @@ export default function Studio() {
   const [projects, setProjects] = useState([])
   const [cat, setCat] = useState(() => catalogue(null))
   const [screen, setScreen] = useState('home')
-  const [ask, setAsk] = useState('')
-  const [reading, setReading] = useState(false)
-  const attach = useEditAttachments()
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [pendingAsk, setPendingAsk] = useState(null)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [mobileView, setMobileView] = useState('view') // 'chat' | 'view'
+  const opening = useRef(0)
 
-  const refreshProjects = () => api.projects()
-    .then(r => setProjects(Array.isArray(r) ? r : (r.projects || [])))
-    .catch(() => { })
+  useEffect(() => {
+    if (busy) setMobileView('chat')
+  }, [busy])
 
-  // The socket cannot call refreshProjects.
+  const { user, init: initAuth, logout } = useAuthStore()
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authInitialScreen, setAuthInitialScreen] = useState('methods')
+  // A fresh modal every time it opens: its screen is only read when it mounts,
+  // and the last person's email and password must not be waiting in it.
+  const [authKey, setAuthKey] = useState(0)
+
+  function openAuth(which) {
+    setAuthInitialScreen(which)
+    setAuthKey(k => k + 1)
+    setAuthModalOpen(true)
+  }
+
+  // Signing out goes straight to signing in, with nothing of the last
+  // person's work left on screen for whoever signs in next.
+  async function signOut() {
+    await logout()
+    setProjects([])
+    setScreen('home')
+  }
+
+  const refreshProjects = () => {
+    const requestedAt = Date.now()
+    const epoch = useStore.getState().accountEpoch
+    return api.projects().then(r => {
+      if (useStore.getState().accountEpoch !== epoch) return []
+      const list = Array.isArray(r) ? r : (r.projects || [])
+      setProjects(list)
+      useStore.getState().setProjectMetadata(list, requestedAt)
+      return list
+    })
+    .catch(() => [])
+  }
+
   const projectsStamp = useStore(s => s.projectsStamp)
   useEffect(() => {
     if (projectsStamp) refreshProjects()
   }, [projectsStamp])
 
   useEffect(() => {
+    initAuth()
+  }, [])
 
+  // A session that ends - signed out here, expired, or ended from somewhere
+  // else - lands on the sign-in page rather than an empty studio.
+  const wasSignedIn = useRef(false)
+  useEffect(() => {
+    if (user) {
+      wasSignedIn.current = true
+      return
+    }
+    if (!wasSignedIn.current) return
+    wasSignedIn.current = false
+    openAuth('email')
+  }, [user])
+
+  useEffect(() => {
+    refreshProjects()
+  }, [user])
+
+  useEffect(() => {
     useStore.getState().hydrate()
-    connect()
+    const disconnect = connect()
     refreshProjects()
     api.models().then(r => {
       const c = catalogue(r)
@@ -128,11 +183,9 @@ export default function Studio() {
 
       const cur = useStore.getState().models
       if (cur.planner && cur.design && cur.builder) return
-      // Fill only roles this browser has not chosen. Server-side role settings
-      // fall back to the former single Agent setting during migration.
       const known = new Set([...c.cloud, ...(c.local || [])].map(m => m.id))
       api.settings().then(s => {
-        const fallback = c.cloud[0]?.id || ''
+        const fallback = TIERS.medium.model
         const legacy = String(s?.agent_model || '').trim()
         const pick = value => {
           const saved = String(value || legacy).trim()
@@ -147,79 +200,129 @@ export default function Studio() {
         } })
       }).catch(() => {
         const now = useStore.getState().models
-        if (!c.cloud[0]) return
         useStore.setState({ models: {
           ...now,
-          planner: now.planner || c.cloud[0].id,
-          design: now.design || c.cloud[0].id,
-          builder: now.builder || c.cloud[0].id,
+          planner: now.planner || TIERS.medium.model,
+          design: now.design || TIERS.medium.model,
+          builder: now.builder || TIERS.medium.model,
         } })
       })
     }).catch(() => { })
+    return disconnect
   }, [])
 
-  // Preview and the persistent tab bar need the same final suite report as
-  // Testing/Deploy. Streamed test_result events include repair retries and E2E
-  // stages, so their accumulated failure count is not a unit-test count.
   useEffect(() => {
-    if (!project || testsRunning || qa?.project === project) return
+    if (!project || agentRole !== 'developer' || testsRunning || qa?.project === project) return
     let active = true
     retry(() => api.qa(project), 4, 700).then(report => {
       const current = useStore.getState()
-      if (active && current.project === project && !current.tests.running) {
+      if (active && current.project === project && current.agentRole === 'developer' && !current.tests.running) {
         setQa(report)
       }
     }).catch(() => { })
     return () => { active = false }
-  }, [project, testsRunning, qa?.project, setQa])
+  }, [project, agentRole, testsRunning, qa?.project, setQa])
+
+  useEffect(() => {
+    if (!project) return
+    let live = true
+    api.files(project, agentRole).then(raw => {
+      if (!live) return
+      const files = Object.fromEntries(Object.entries(raw || {}).map(([name, value]) => [name, typeof value === 'string' ? value : value.content || '']))
+      useStore.getState().setFiles(files)
+    }).catch(() => {})
+    return () => { live = false }
+  }, [project, agentRole])
 
   const unitStatus = projectUnitTestStatus(qa, project)
 
-  // A run brings the workspace up.
+  const currentProjectObj = projects.find(p => p.name === project)
+  const specOnly = Boolean(currentProjectObj?.spec_only) && busyProject !== project
+  const prototypeOnly = Boolean(currentProjectObj?.prototype_only) && busyProject !== project
+
+  let tabs = TABS
+
   useEffect(() => {
     if (liveFile) setScreen('workspace')
   }, [liveFile])
 
-  async function openProject(name) {
+  const drawing = useStore(s => s.drawing)
+
+  useEffect(() => {
+    if (drawing && view !== 'prototype') setView('prototype')
+  }, [drawing, view, setView])
+
+
+  async function openProject(name, row = null) {
     const st = useStore.getState()
+    if (!name || (st.opening && st.project === name)) return
+    st.noteOpened(name)
+    const request = ++opening.current
+    const rowObj = row || projects.find(p => p.name === name)
+    const requestedView = st.projectViews[name] || (rowObj?.spec_only && !rowObj?.prototype_only ? 'srs' : rowObj?.prototype_only ? 'prototype' : 'preview')
+    const projectView = ['preview', 'testing', 'deploy'].includes(requestedView) && !st.buildAvailability[name] ? 'prototype' : requestedView
+
+    if (st.project === name && st.runtimes[name]?.status === 'running') {
+      try {
+        st.setRuntime(await api.open(name))
+        if (opening.current === request) {
+          setScreen('workspace')
+          setView(projectView)
+        }
+      } catch (error) {
+        if (opening.current === request) st.addLog('WARN', `Could not open app: ${error.message}`)
+      }
+      return
+    }
+
     st.reset(name)
-    useStore.setState({ project: name })
     setScreen('workspace')
 
-    // Busy from the click, not from the first file.
-    st.setBusy(true)
+    setView(projectView)
+
     st.setOpening(true)
     st.setProgress(`Opening ${name}…`, 0)
-    st.addLog('INFO', `Opening ${name}`)
-
-    // The previous project's console errors are not this one's evidence.
     forgetConsole()
 
+    api.workflow(name)
+      .then(snapshot => {
+        if (opening.current !== request) return
+        useStore.getState().restoreProject(snapshot)
+      })
+      .catch(() => { })
+
+
+    let opened = false
     try {
-      await api.open(name)
-
-      const raw = await retry(() => api.files(name), 4, 700)
-
-      const out = {}
-      for (const [path, v] of Object.entries(raw || {})) {
-        out[path] = typeof v === 'string' ? v : (v?.content ?? '')
+      const runtime = await api.open(name)
+      if (opening.current === request && useStore.getState().project === name) {
+        useStore.getState().setRuntime(runtime)
+        opened = true
       }
-      useStore.getState().setFiles(out)
     } catch (e) {
+      if (opening.current !== request) return
       useStore.getState().addLog('WARN', `could not open ${name}: ${e.message}`)
-      useStore.getState().setBusy(false)
+      if (!opened) useStore.getState().setRuntime({ ...useStore.getState().runtimes[name],
+        project: name, status: 'failed', error: e.message })
+    } finally {
+      if (opening.current === request && useStore.getState().project === name) {
+        useStore.getState().setOpening(false)
+      }
     }
   }
 
   function resumeBuild() {
     const st = useStore.getState()
     const name = st.project
-    if (!name || st.busy) return
+    if (!name || st.busy || !st.buildAvailability[name]) return
+    st.switchAgent('developer')
+    st.setView('preview')
     st.setBusy(true)
     st.setProgress('Resuming…', 0)
     st.addLog('INFO', `Resuming ${name} — picking up where it stopped`)
     setScreen('workspace')
     send({ type: 'agent_resume', project: name,
+           agent: 'developer',
            model: st.models.builder || st.models.agent,
            builder_model: st.models.builder || st.models.agent,
            planner_model: st.models.planner || st.models.agent,
@@ -276,179 +379,259 @@ export default function Studio() {
     }
   }
 
-  function fireAsk(payload, text, shown, hadConsole) {
-    const st = useStore.getState()
-    send({ ...payload, prompt: text })
-    if (hadConsole) st.addLog('INFO', 'Sent with what the browser had already logged')
-    forgetConsole()
-    st.addLog('INFO', 'Update: ' + shown)
-    st.setBusy(true)
-    attach.reset()
-    setAsk('')
-    setPendingAsk(null)
-  }
-
-  async function sendAsk() {
-    const v = ask.trim()
-    if (!v || !project) return
-    const st = useStore.getState()
-
-    let full = v
-    if (attach.items.length) {
-      setReading(true)
-      try {
-        full = v + await attach.collect(project)
-      } catch (e) {
-        st.addLog('WARN', `${e.message}`)
-      }
-      setReading(false)
-    }
-
-    const payload = {
-      type: 'agent_update', project, route: st.previewRoute || '',
-      model: st.models.builder || st.models.agent,
-      think: st.think,
-      qa_model: st.models.qa || '', console: consoleReport(),
-    }
-
-    let tuned = full
-    try {
-      const r = await api.tune({ prompt: full, project,
-                                 route: payload.route, model: payload.model })
-      tuned = (r?.prompt || '').trim() || full
-    } catch (e) {
-      st.addLog('WARN', `Could not reword the request (${e.message}) — sending it as typed`)
-    }
-
-    setPendingAsk({ payload, shown: v, typed: full, tuned })
-  }
   return (
-    <div className="flex h-full bg-[radial-gradient(circle_at_20%_0%,#f8faff_0%,#edf1f7_42%,#e7ebf3_100%)] p-2.5 dark:bg-[radial-gradient(circle_at_20%_0%,#1a2030_0%,#111722_42%,#0c1119_100%)]">
-      <Sidebar models={cat} projects={projects} onOpen={openProject}
-               onImport={importFolder} onSettings={() => setSettingsOpen(true)}
-               onZip={downloadZip} onResume={resumeBuild}
-               onDeleted={(name) => {
-                 refreshProjects()
-                 if (project === name) setScreen('home')
-               }} />
+    <div className="flex h-full w-full overflow-hidden bg-bg text-ink">
+      {user && (
+        <Sidebar
+          projects={projects}
+          onOpen={(name, p) => {
+            setMobileNavOpen(false)
+            openProject(name, p)
+          }}
+          onImport={importFolder}
+          onSettings={() => {
+            setMobileNavOpen(false)
+            setSettingsOpen(true)
+          }}
+          onZip={downloadZip}
+          onResume={() => {
+            setMobileNavOpen(false)
+            resumeBuild()
+          }}
+          screen={screen}
+          onScreenChange={(s) => {
+            setMobileNavOpen(false)
+            setScreen(s)
+          }}
+          user={user}
+          onLogout={signOut}
+          onDeleted={(name) => {
+            refreshProjects()
+            if (project === name) setScreen('home')
+          }}
+          mobileOpen={mobileNavOpen}
+          onMobileClose={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      <AgentDecision />
 
       {settingsOpen && (
         <SettingsModal onClose={() => setSettingsOpen(false)}
                        onSaved={() => api.models().then(r => setCat(catalogue(r)))
-                                        .catch(() => { })} />
+                                         .catch(() => { })} />
       )}
 
-      {askOpen && (
-        <Modal onClose={() => setAskOpen(false)} className="max-w-[640px]">
-          <h2 className="text-[15px] font-semibold text-ink">Ask about this app</h2>
-          <p className="mt-1 text-[11.5px] text-muted">
-            Describe a change, report a bug, or ask a question. What the
-            browser has already logged is sent with it.
-          </p>
+      <AuthModal
+        key={authKey}
+        isOpen={authModalOpen}
+        initialScreen={authInitialScreen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={() => {
+          setAuthModalOpen(false)
+          refreshProjects()
+        }}
+      />
 
-          <textarea value={ask} autoFocus rows={5}
-                    placeholder={project
-                      ? 'e.g. the booking button on /rooms does nothing'
-                      : 'Open a project first'}
-                    disabled={!project || busy || reading}
-                    onChange={e => setAsk(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                        setAskOpen(false)
-                        sendAsk()
-                      }
-                    }}
-                    className="mt-4 w-full resize-y rounded-xl border border-line bg-white/65 px-3 py-2.5 text-[12.5px] leading-relaxed shadow-sm outline-none focus:border-accent disabled:opacity-45 dark:bg-white/5" />
-
-          {project && <EditAttach attach={attach} disabled={busy || reading} className="mt-2" />}
-
-          <footer className="mt-5 flex items-center gap-2 border-t border-line/70 pt-4">
-            <span className="flex-1 text-[10.5px] text-muted2">⌘↵ / Ctrl↵ to send</span>
-            <Button variant="outline" onClick={() => setAskOpen(false)}>Cancel</Button>
-            <Button variant="solid" disabled={!project || busy || reading || !ask.trim()}
-                    onClick={() => { setAskOpen(false); sendAsk() }}>
-              Send
-            </Button>
-          </footer>
-        </Modal>
-      )}
-
-      {pendingAsk && (
-        <TunePrompt
-          typed={pendingAsk.shown}
-          tuned={pendingAsk.tuned}
-          onSend={(text) => fireAsk(pendingAsk.payload, text, pendingAsk.shown, Boolean(pendingAsk.payload.console))}
-          onSendTyped={() => fireAsk(pendingAsk.payload, pendingAsk.typed, pendingAsk.shown, Boolean(pendingAsk.payload.console))}
-          onCancel={() => setPendingAsk(null)}
-          onRetune={async (text) => {
-            const r = await api.tune({ prompt: text, project,
-                                       route: pendingAsk.payload.route,
-                                       model: pendingAsk.payload.model })
-            return (r?.prompt || '').trim()
-          }} />
-      )}
-
-      <div className="ml-2.5 flex min-w-0 flex-1 flex-col overflow-hidden rounded-[30px] bg-panel/92 shadow-[0_28px_75px_rgba(30,41,59,.13)] ring-1 ring-white/75 backdrop-blur-2xl dark:shadow-[0_28px_75px_rgba(0,0,0,.42)] dark:ring-white/[.055]">
-        {/* macOS-style workspace tabs. */}
-        <div className="flex h-[60px] shrink-0 items-center gap-1.5 border-b border-line/55 bg-white/48 px-4 backdrop-blur-2xl dark:bg-white/[.02]">
-          {screen === 'home' && (
-            <span className="flex items-center rounded-full bg-panel2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-label">
-              New project
-            </span>
-          )}
-          {screen === 'workspace' && TABS.map(({ id, label, Icon }) => (
-            <button key={id} onClick={() => setView(id)}
-                    className={cn('inline-flex h-9 items-center gap-[7px] rounded-full px-3.5',
-                      'font-display text-[11px] font-semibold transition-all',
-                      view === id ? 'bg-white/90 text-ink shadow-[0_5px_16px_rgba(30,41,59,.08)] ring-1 ring-black/[.04] dark:bg-white/10 dark:ring-white/[.06]'
-                                  : 'text-muted hover:bg-white/55 hover:text-ink dark:hover:bg-white/5')}>
-              <Icon className="size-[13px] shrink-0" />
-              {label}
-              {id === 'testing' && unitStatus?.failed > 0 && (
-                <Badge tone="bad">{unitStatus.failed}</Badge>
-              )}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-panel">
+        {/* Mobile Header for Home / Projects when signed in */}
+        {user && screen !== 'workspace' && (
+          <div className="md:hidden flex h-12 shrink-0 items-center justify-between border-b border-line bg-panel/95 px-4 backdrop-blur-md">
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink"
+              title="Open Navigation"
+            >
+              <Menu className="size-4" />
             </button>
-          ))}
-          <span className="flex-1" />
-          {screen === 'home' && !busy && (
-            <span className="flex items-center px-5 font-mono text-[10.5px] text-muted2">
-              ⌘↵ to build
-            </span>
-          )}
-          {busy && (
-            <span className="flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent">
-              <span className="size-1.5 animate-pulse bg-accent" />
-              working
-            </span>
-          )}
-          {screen === 'workspace' && (
-            <button onClick={() => {
+            <div className="flex items-center gap-2">
+              <div className="flex size-6 items-center justify-center rounded-lg bg-accent/20 ring-1 ring-accent/30">
+                <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" className="size-4 object-contain" />
+              </div>
+              <span className="font-display text-[14px] font-bold text-ink">agentforge</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setScreen('home')}
+                className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink"
+                title="New project"
+              >
+                <Plus className="size-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
+        {/* Workspace Top Navbar */}
+        {screen === 'workspace' && (
+          <div className="flex h-[48px] shrink-0 items-center gap-2 border-b border-line bg-panel/95 px-2 sm:px-4 backdrop-blur-md">
+            {/* Mobile Sidebar Hamburger Button */}
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className="md:hidden flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink shrink-0"
+              title="Open Menu"
+            >
+              <Menu className="size-4" />
+            </button>
+
+            <div className="flex items-center gap-1 rounded-full bg-panel2/80 p-0.5 border border-line overflow-x-auto no-scrollbar max-w-[calc(100vw-190px)] sm:max-w-none">
+              {tabs.map(({ id, label, Icon }) => (
+                <button key={id} onClick={() => setView(id)}
+                        disabled={!buildAllowed && ['preview', 'testing', 'deploy'].includes(id)}
+                        title={!buildAllowed && ['preview', 'testing', 'deploy'].includes(id) ? 'Complete the prototype first' : label}
+                        className={cn('inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3',
+                          'font-display text-[11px] font-semibold transition-all disabled:opacity-35 disabled:cursor-not-allowed',
+                          view === id ? 'bg-[#1877F2]/15 text-[#1877F2] shadow-sm ring-1 ring-[#1877F2]/30'
+                                      : 'text-muted hover:bg-black/[.03] hover:text-ink dark:hover:bg-white/5')}>
+                  <Icon className="size-3.5 shrink-0" />
+                  {label}
+                  {id === 'testing' && unitStatus?.failed > 0
+                    && !(busy && (!busyProject || busyProject === project)) && (
+                    <Badge tone="bad">{unitStatus.failed}</Badge>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <span className="flex-1" />
+
+            {/* Mobile View Switcher Pill: Chat vs Workspace View */}
+            <div className="lg:hidden flex items-center rounded-full bg-panel2/80 p-0.5 border border-line shrink-0 mr-1">
+              <button
+                type="button"
+                onClick={() => setMobileView('chat')}
+                className={cn(
+                  'h-7 px-2.5 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5',
+                  mobileView === 'chat'
+                    ? 'bg-[#1877F2] text-white shadow-sm'
+                    : 'text-muted hover:text-ink'
+                )}
+              >
+                <span>Chat</span>
+                {busy && <span className="size-1.5 rounded-full bg-white animate-pulse" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileView('view')}
+                className={cn(
+                  'h-7 px-2.5 rounded-full text-[11px] font-semibold transition-all',
+                  mobileView === 'view'
+                    ? 'bg-[#1877F2] text-white shadow-sm'
+                    : 'text-muted hover:text-ink'
+                )}
+              >
+                <span>Workspace</span>
+              </button>
+            </div>
+
+            {/* Action to Build full app from SRS-only project */}
+            {specOnly && !prototypeOnly && !busy && buildAllowed && (
+              <button
+                onClick={resumeBuild}
+                title="Build this application from the approved SRS"
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#0C44AE] px-4 text-[11.5px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition-all mr-2"
+              >
+                <Rocket className="size-[13px]" /> Build Now
+              </button>
+            )}
+
+            {/* Action to Build full app from Prototype-only project */}
+            {prototypeOnly && !busy && buildAllowed && (
+              <button
+                onClick={resumeBuild}
+                title="Build full application from this prototype"
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#0C44AE] px-4 text-[11.5px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition-all mr-2"
+              >
+                <Rocket className="size-[13px]" /> Build App Now
+              </button>
+            )}
+
+            {busy && (
+              <span className="flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent">
+                <span className="size-1.5 animate-pulse bg-accent" />
+                working
+              </span>
+            )}
+
+            <button onClick={() => {
                       useStore.getState().resetSrs()
                       setScreen('home')
                     }}
-                    className="inline-flex h-9 items-center gap-2 rounded-full bg-white/72 px-3.5 text-[11px] font-semibold text-ink shadow-sm ring-1 ring-line/70 transition-all hover:bg-white dark:bg-white/5 dark:hover:bg-white/10">
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-panel px-3.5 text-[11px] font-semibold text-ink shadow-sm ring-1 ring-line/70 transition-all hover:bg-raised">
               <Plus className="size-[13px]" /> New
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {screen === 'home' ? (
-          <Home onStarted={() => setScreen('workspace')} />
+          <Home
+            modelOptions={cat.all}
+            user={user}
+            onRequireAuth={() => openAuth('methods')}
+            onSignIn={() => openAuth('email')}
+            onSignUp={() => openAuth('email')}
+            onStarted={() => setScreen('workspace')}
+            onKept={async (name) => {
+              const list = await refreshProjects()
+              openProject(name, list.find(p => p.name === name))
+            }}
+          />
+        ) : screen === 'projects' ? (
+          <ProjectsView
+            projects={projects}
+            activeProject={project}
+            busyProject={busyProject}
+            onOpen={(name, p) => openProject(name, p)}
+            onCreateNew={() => setScreen('home')}
+            onDelete={(name) => {
+              refreshProjects()
+              if (project === name) setScreen('home')
+            }}
+            onBuildProject={async (name, p) => {
+              await openProject(name, p)
+              if (useStore.getState().project === name) resumeBuild()
+            }}
+          />
         ) : (
-          <div className="flex min-h-0 flex-1 bg-bg/40">
-            <div className="relative flex min-w-0 flex-1 flex-col">
-              <ScopeQuestion onType={setAsk} />
+          <div className="flex min-h-0 flex-1 bg-bg/40 overflow-hidden">
+            <div className={cn(
+              "shrink-0 h-full",
+              mobileView === 'chat' ? 'flex w-full lg:w-auto' : 'hidden lg:flex'
+            )}>
+              <AgentChat key={`${project}-${agentRole}`} />
+            </div>
 
-              <PreviewPane key={`preview-${project}`} hidden={view !== 'preview'} />
+            <div className={cn(
+              "relative min-w-0 flex-1 flex-col h-full",
+              mobileView === 'view' ? 'flex' : 'hidden lg:flex'
+            )}>
+              <ScopeQuestion />
+              {syncState?.status === 'failed' && <div role="alert" className="flex items-center gap-3 border-b border-line bg-panel p-3 text-xs text-muted">
+                <span>Document update paused: {syncState.error}</span>
+                <button className="shrink-0 text-accent" onClick={() => api.retrySync(project)}>Retry update</button>
+              </div>}
+
+              <PreviewPane key={`preview-${project}`} hidden={view !== 'preview'} onBuild={resumeBuild} />
+              <PrototypePane key={`proto-${project}`} project={project} hidden={view !== 'prototype'} onBuild={resumeBuild} />
+              {view === 'design' && <DesignCustomize key={`design-${project}`} projectId={project}
+                onBack={() => setView('srs')}
+                onContinue={async direction => {
+                  const current = useStore.getState()
+                  send({ type: 'agent_update', project, agent: 'designer', route: '/prototype',
+                    prompt: direction, model: current.models.design || current.models.agent, think: current.think })
+                  setView('prototype')
+                }} />}
               <CodePane hidden={view !== 'code'} />
               {view === 'testing' && <TestingResult key={`testing-${project}`} />}
-              {view === 'srs' && <SrsResult key={`srs-${project}`} />}
+              {view === 'srs' && (
+                <SrsResult key={`srs-${project}`} specOnly={specOnly}
+                           onBuild={resumeBuild} />
+              )}
               {view === 'deploy' && (
                 <DeployPanel key={`deploy-${project}`}
                              onSettings={() => setSettingsOpen(true)} />
               )}
-</div>
+            </div>
           </div>
         )}
       </div>

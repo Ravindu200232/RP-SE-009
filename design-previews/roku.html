@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roku — Build Faster</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 20px rgba(147, 51, 234, 0.06), 0 1px 4px rgba(9, 9, 11, 0.04)',
+                        'soft-lg': '0 8px 40px rgba(147, 51, 234, 0.10), 0 2px 8px rgba(9, 9, 11, 0.04)',
+                        'glow': '0 0 0 1px rgba(147, 51, 234, 0.08), 0 8px 40px rgba(147, 51, 234, 0.15)',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        html { scroll-behavior: smooth; }
+        body { -webkit-font-smoothing: antialiased; }
+        .glass { background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .glass-dark { background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .hero-grid-bg {
+            background-image: radial-gradient(circle at 1px 1px, rgba(147, 51, 234, 0.08) 1px, transparent 0);
+            background-size: 32px 32px;
+        }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .faq-answer.open {
+            max-height: 300px;
+            padding-top: 12px;
+            padding-bottom: 4px;
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        .faq-item.open .faq-icon {
+            transform: rotate(180deg);
+        }
+        .chart-line {
+            stroke-dasharray: 400;
+            stroke-dashoffset: 400;
+            animation: drawLine 2s ease forwards;
+        }
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
+        }
+        .chart-area {
+            opacity: 0;
+            animation: fadeIn 1.5s ease 0.5s forwards;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        .pulse-dot {
+            animation: pulse 2s ease infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .mobile-menu.open {
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body class="font-sans bg-white text-zinc-900 antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-zinc-200/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-8">
+                    <a href="#" class="flex items-center gap-2 group">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center shadow-soft group-hover:shadow-glow transition-shadow">
+                            <i data-lucide="zap" class="w-4 h-4 text-white fill-white"></i>
+                        </div>
+                        <span class="text-lg font-bold tracking-tight text-zinc-900">Roku</span>
+                    </a>
+                    <div class="hidden md:flex items-center gap-6">
+                        <a href="#features" class="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">Features</a>
+                        <a href="#process" class="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">Process</a>
+                        <a href="#pricing" class="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">Pricing</a>
+                        <a href="#faq" class="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">FAQ</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="#" class="hidden sm:inline-flex text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">Sign in</a>
+                    <a href="#" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors shadow-soft hover:shadow-glow">
+                        Get Started
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                    <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors" aria-label="Toggle menu">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="mobile-menu md:hidden border-t border-zinc-200/60 bg-white/95">
+            <div class="px-4 py-4 space-y-2">
+                <a href="#features" class="block px-4 py-2 rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors">Features</a>
+                <a href="#process" class="block px-4 py-2 rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors">Process</a>
+                <a href="#pricing" class="block px-4 py-2 rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors">Pricing</a>
+                <a href="#faq" class="block px-4 py-2 rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors">FAQ</a>
+                <a href="#" class="block px-4 py-2 rounded-lg text-sm font-medium text-purple-600 hover:bg-purple-50 transition-colors">Sign in</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="relative pt-32 pb-24 overflow-hidden">
+        <div class="absolute inset-0 hero-grid-bg"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-purple-100/60 to-transparent rounded-full blur-3xl"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 border border-purple-200/60 mb-8">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-purple-600"></span>
+                    </span>
+                    <span class="text-xs font-semibold text-purple-700 tracking-wide">New: Roku 2.0 is live</span>
+                </div>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 leading-[1.1]">
+                    Build faster.<br>
+                    <span class="bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">Ship sooner.</span>
+                </h1>
+                <p class="mt-6 text-lg text-zinc-600 leading-relaxed max-w-2xl mx-auto">
+                    Roku is the all-in-one platform for modern teams to build, deploy, and monitor applications with confidence.
+                </p>
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="#" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors shadow-soft hover:shadow-glow w-full sm:w-auto justify-center">
+                        Get Started Free
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-700 text-sm font-semibold hover:border-purple-300 hover:text-purple-700 transition-colors shadow-soft w-full sm:w-auto justify-center">
+                        <i data-lucide="play" class="w-4 h-4"></i>
+                        View Demo
+                    </a>
+                </div>
+            </div>
+
+            <!-- Dashboard Mockup -->
+            <div class="mt-20 max-w-5xl mx-auto">
+                <div class="rounded-2xl bg-white border border-zinc-200/80 shadow-soft-lg overflow-hidden">
+                    <!-- Window top bar -->
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-zinc-50/50">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-emerald-400"></div>
+                        </div>
+                        <div class="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-white border border-zinc-200/60 w-64">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-zinc-400"></i>
+                            <span class="text-xs text-zinc-400 font-mono">app.roku.dev</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot"></span>
+                                <span class="text-xs font-medium text-emerald-700">Live</span>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Dashboard body -->
+                    <div class="p-6 sm:p-8">
+                        <!-- Stat cards -->
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-medium text-zinc-500">Uptime</span>
+                                    <i data-lucide="activity" class="w-4 h-4 text-emerald-500"></i>
+                                </div>
+                                <p class="mt-2 text-2xl font-bold text-zinc-900">99.99%</p>
+                                <p class="text-xs text-emerald-600 font-medium mt-1">↑ 0.01%</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-medium text-zinc-500">Latency</span>
+                                    <i data-lucide="timer" class="w-4 h-4 text-purple-500"></i>
+                                </div>
+                                <p class="mt-2 text-2xl font-bold text-zinc-900">42ms</p>
+                                <p class="text-xs text-purple-600 font-medium mt-1">↓ 8ms</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-medium text-zinc-500">Deploys</span>
+                                    <i data-lucide="rocket" class="w-4 h-4 text-purple-500"></i>
+                                </div>
+                                <p class="mt-2 text-2xl font-bold text-zinc-900">1,284</p>
+                                <p class="text-xs text-zinc-500 font-medium mt-1">Today</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-medium text-zinc-500">Errors</span>
+                                    <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+                                </div>
+                                <p class="mt-2 text-2xl font-bold text-zinc-900">0</p>
+                                <p class="text-xs text-emerald-600 font-medium mt-1">All clear</p>
+                            </div>
+                        </div>
+                        <!-- Chart area -->
+                        <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <div class="lg:col-span-2 p-6 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-sm font-semibold text-zinc-900">Request Volume</span>
+                                    <span class="text-xs font-mono text-zinc-400">Last 24 hours</span>
+                                </div>
+                                <svg viewBox="0 0 400 120" class="w-full h-32" fill="none">
+                                    <defs>
+                                        <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#9333ea" stop-opacity="0.2"/>
+                                            <stop offset="100%" stop-color="#9333ea" stop-opacity="0"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M0 100 C40 90 60 70 100 75 C140 80 160 50 200 55 C240 60 260 30 300 35 C340 40 360 20 400 15 L400 120 L0 120 Z" fill="url(#chartFill)" class="chart-area"/>
+                                    <path d="M0 100 C40 90 60 70 100 75 C140 80 160 50 200 55 C240 60 260 30 300 35 C340 40 360 20 400 15" stroke="#9333ea" stroke-width="2.5" stroke-linecap="round" class="chart-line"/>
+                                    <circle cx="400" cy="15" r="4" fill="#9333ea" class="pulse-dot"/>
+                                </svg>
+                            </div>
+                            <div class="p-6 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-sm font-semibold text-zinc-900">Deployments</span>
+                                    <i data-lucide="git-branch" class="w-4 h-4 text-purple-500"></i>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                        <div class="flex-1">
+                                            <p class="text-xs font-medium text-zinc-800">main</p>
+                                            <p class="text-xs text-zinc-400 font-mono">2m ago</p>
+                                        </div>
+                                        <span class="text-xs font-medium text-emerald-600">Success</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                        <div class="flex-1">
+                                            <p class="text-xs font-medium text-zinc-800">staging</p>
+                                            <p class="text-xs text-zinc-400 font-mono">18m ago</p>
+                                        </div>
+                                        <span class="text-xs font-medium text-emerald-600">Success</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                                        <div class="flex-1">
+                                            <p class="text-xs font-medium text-zinc-800">feature/auth</p>
+                                            <p class="text-xs text-zinc-400 font-mono">1h ago</p>
+                                        </div>
+                                        <span class="text-xs font-medium text-amber-600">Building</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="py-20 bg-zinc-50 border-y border-zinc-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="text-4xl font-bold text-zinc-900">99.99%</p>
+                    <p class="mt-2 text-sm text-zinc-500 font-medium">Uptime SLA</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl font-bold text-zinc-900">10k+</p>
+                    <p class="mt-2 text-sm text-zinc-500 font-medium">Active Teams</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl font-bold text-zinc-900">500+</p>
+                    <p class="mt-2 text-sm text-zinc-500 font-medium">Integrations</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl font-bold text-zinc-900">4.9/5</p>
+                    <p class="mt-2 text-sm text-zinc-500 font-medium">Average Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200/60 text-xs font-semibold text-purple-700 tracking-wide uppercase mb-4">Features</span>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900">Everything you need to ship</h2>
+                <p class="mt-4 text-lg text-zinc-600">Powerful tools that work together seamlessly, so your team can focus on building.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow group">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-6 group-hover:bg-purple-100 transition-colors">
+                        <i data-lucide="zap" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-zinc-900">Instant Deploys</h3>
+                    <p class="mt-2 text-sm text-zinc-600 leading-relaxed">Deploy to production in seconds with zero-config CI/CD. Push to main and watch it go live.</p>
+                </div>
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow group">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-6 group-hover:bg-purple-100 transition-colors">
+                        <i data-lucide="shield" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-zinc-900">Enterprise Security</h3>
+                    <p class="mt-2 text-sm text-zinc-600 leading-relaxed">SOC 2 compliant with SSO, RBAC, and audit logs. Your data is encrypted at rest and in transit.</p>
+                </div>
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow group">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-6 group-hover:bg-purple-100 transition-colors">
+                        <i data-lucide="bar-chart-3" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-zinc-900">Real-time Analytics</h3>
+                    <p class="mt-2 text-sm text-zinc-600 leading-relaxed">Monitor metrics, logs, and user behavior in real time. Get insights the moment they happen.</p>
+                </div>
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow group">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-6 group-hover:bg-purple-100 transition-colors">
+                        <i data-lucide="globe" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-zinc-900">Global Edge Network</h3>
+                    <p class="mt-2 text-sm text-zinc-600 leading-relaxed">Serve users from 200+ edge locations worldwide. Sub-50ms response times, guaranteed.</p>
+                </div>
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow group">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-6 group-hover:bg-purple-100 transition-colors">
+                        <i data-lucide="plug" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-zinc-900">500+ Integrations</h3>
+                    <p class="mt-2 text-sm text-zinc-600 leading-relaxed">Connect with your favorite tools — Slack, GitHub, Linear, and more. Works out of the box.</p>
+                </div>
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow group">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-6 group-hover:bg-purple-100 transition-colors">
+                        <i data-lucide="workflow" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-zinc-900">Custom Workflows</h3>
+                    <p class="mt-2 text-sm text-zinc-600 leading-relaxed">Build automations with a visual editor. No code required — just drag, drop, and deploy.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="py-24 bg-zinc-50 border-y border-zinc-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200/60 text-xs font-semibold text-purple-700 tracking-wide uppercase mb-4">Process</span>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900">From idea to production in minutes</h2>
+                <p class="mt-4 text-lg text-zinc-600">A simple, streamlined workflow that gets you from zero to deployed.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="relative">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-soft-lg mb-6">
+                            <i data-lucide="git-commit" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-zinc-900">Connect your repo</h3>
+                        <p class="mt-2 text-sm text-zinc-600">Link your GitHub, GitLab, or Bitbucket repository in one click.</p>
+                    </div>
+                    <div class="hidden md:block absolute top-8 left-[calc(50%+40px)] w-[calc(100%-80px)] h-px bg-gradient-to-r from-purple-300 to-purple-200"></div>
+                </div>
+                <div class="relative">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-soft-lg mb-6">
+                            <i data-lucide="settings" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-zinc-900">Configure your build</h3>
+                        <p class="mt-2 text-sm text-zinc-600">Set your build command, environment variables, and deploy branch.</p>
+                    </div>
+                    <div class="hidden md:block absolute top-8 left-[calc(50%+40px)] w-[calc(100%-80px)] h-px bg-gradient-to-r from-purple-300 to-purple-200"></div>
+                </div>
+                <div class="relative">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-soft-lg mb-6">
+                            <i data-lucide="rocket" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-zinc-900">Deploy to edge</h3>
+                        <p class="mt-2 text-sm text-zinc-600">Push to your branch and Roku builds, tests, and deploys automatically.</p>
+                    </div>
+                    <div class="hidden md:block absolute top-8 left-[calc(50%+40px)] w-[calc(100%-80px)] h-px bg-gradient-to-r from-purple-300 to-purple-200"></div>
+                </div>
+                <div class="relative">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-soft-lg mb-6">
+                            <i data-lucide="activity" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-zinc-900">Monitor & iterate</h3>
+                        <p class="mt-2 text-sm text-zinc-600">Track performance, errors, and user feedback. Ship improvements fast.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section id="benefits" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <span class="inline-block px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200/60 text-xs font-semibold text-purple-700 tracking-wide uppercase mb-4">Benefits</span>
+                    <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900">Why teams choose Roku</h2>
+                    <p class="mt-4 text-lg text-zinc-600">Join thousands of teams that have transformed their development workflow.</p>
+                    <div class="mt-8 space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-semibold text-zinc-900">Reduce deployment time by 80%</h3>
+                                <p class="mt-1 text-sm text-zinc-600">Automated pipelines mean no more manual deploys or waiting for builds.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-semibold text-zinc-900">Scale automatically with demand</h3>
+                                <p class="mt-1 text-sm text-zinc-600">Roku handles traffic spikes automatically. No more worrying about capacity.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-semibold text-zinc-900">Built-in observability</h3>
+                                <p class="mt-1 text-sm text-zinc-600">Logs, metrics, and traces out of the box. Debug issues in minutes, not hours.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-semibold text-zinc-900">Team collaboration tools</h3>
+                                <p class="mt-1 text-sm text-zinc-600">Shared environments, preview deployments, and role-based access control.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-100/40 to-transparent rounded-3xl"></div>
+                    <div class="relative p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft-lg">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center">
+                                <i data-lucide="zap" class="w-5 h-5 text-white fill-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-zinc-900">Roku Dashboard</p>
+                                <p class="text-xs text-zinc-400 font-mono">app.roku.dev</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-medium text-zinc-500">Production</span>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/60 text-xs font-medium text-emerald-700">Healthy</span>
+                                </div>
+                                <div class="mt-2 flex items-end gap-1 h-16">
+                                    <div class="flex-1 bg-purple-200 rounded-t" style="height: 30%"></div>
+                                    <div class="flex-1 bg-purple-300 rounded-t" style="height: 45%"></div>
+                                    <div class="flex-1 bg-purple-400 rounded-t" style="height: 35%"></div>
+                                    <div class="flex-1 bg-purple-300 rounded-t" style="height: 60%"></div>
+                                    <div class="flex-1 bg-purple-500 rounded-t" style="height: 50%"></div>
+                                    <div class="flex-1 bg-purple-400 rounded-t" style="height: 75%"></div>
+                                    <div class="flex-1 bg-purple-600 rounded-t" style="height: 65%"></div>
+                                    <div class="flex-1 bg-purple-500 rounded-t" style="height: 85%"></div>
+                                    <div class="flex-1 bg-purple-600 rounded-t" style="height: 70%"></div>
+                                    <div class="flex-1 bg-purple-400 rounded-t" style="height: 90%"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                    <p class="text-xs font-medium text-zinc-500">CPU Usage</p>
+                                    <p class="mt-1 text-xl font-bold text-zinc-900">32%</p>
+                                    <div class="mt-2 h-1.5 rounded-full bg-zinc-200">
+                                        <div class="h-full rounded-full bg-purple-500" style="width: 32%"></div>
+                                    </div>
+                                </div>
+                                <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                    <p class="text-xs font-medium text-zinc-500">Memory</p>
+                                    <p class="mt-1 text-xl font-bold text-zinc-900">1.2 GB</p>
+                                    <div class="mt-2 h-1.5 rounded-full bg-zinc-200">
+                                        <div class="h-full rounded-full bg-purple-500" style="width: 48%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section id="testimonials" class="py-24 bg-zinc-50 border-y border-zinc-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200/60 text-xs font-semibold text-purple-700 tracking-wide uppercase mb-4">Testimonials</span>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900">Loved by developers worldwide</h2>
+                <p class="mt-4 text-lg text-zinc-600">Don't take our word for it — hear from the teams who ship with Roku.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                    </div>
+                    <p class="text-sm text-zinc-700 leading-relaxed">"Roku cut our deployment time from hours to seconds. The DX is unmatched — everything just works."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-300 flex items-center justify-center">
+                            <span class="text-sm font-bold text-white">SC</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-zinc-900">Sarah Chen</p>
+                            <p class="text-xs text-zinc-500">CTO, Acme Corp</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                    </div>
+                    <p class="text-sm text-zinc-700 leading-relaxed">"The best developer experience we've ever had. Our team ships 3x faster since switching to Roku."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center">
+                            <span class="text-sm font-bold text-white">MJ</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-zinc-900">Mark Johnson</p>
+                            <p class="text-xs text-zinc-500">Lead Engineer, TechFlow</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                    </div>
+                    <p class="text-sm text-zinc-700 leading-relaxed">"We scaled to 10M users without changing a thing. Roku just handles it. Incredible infrastructure."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-200 flex items-center justify-center">
+                            <span class="text-sm font-bold text-white">PP</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-zinc-900">Priya Patel</p>
+                            <p class="text-xs text-zinc-500">VP Engineering, DataSphere</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200/60 text-xs font-semibold text-purple-700 tracking-wide uppercase mb-4">Pricing</span>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900">Simple, transparent pricing</h2>
+                <p class="mt-4 text-lg text-zinc-600">Start free. Upgrade when you're ready. No hidden fees, ever.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow">
+                    <h3 class="text-lg font-semibold text-zinc-900">Starter</h3>
+                    <p class="mt-1 text-sm text-zinc-500">For personal projects</p>
+                    <p class="mt-6 text-4xl font-bold text-zinc-900">$0<span class="text-base font-medium text-zinc-400">/mo</span></p>
+                    <ul class="mt-8 space-y-4">
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+                            <span class="text-sm text-zinc-600">1 project</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+                            <span class="text-sm text-zinc-600">100 GB bandwidth</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+                            <span class="text-sm text-zinc-600">Community support</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+                            <span class="text-sm text-zinc-600">Global edge network</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex w-full items-center justify-center px-6 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-700 text-sm font-semibold hover:border-purple-300 hover:text-purple-700 transition-colors">
+                        Start Free
+                    </a>
+                </div>
+                <div class="p-8 rounded-2xl bg-gradient-to-b from-purple-600 to-purple-500 text-white shadow-glow relative">
+                    <div class="absolute top-4 right-4">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-xs font-semibold text-white">Most Popular</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white">Pro</h3>
+                    <p class="mt-1 text-sm text-purple-100">For growing teams</p>
+                    <p class="mt-6 text-4xl font-bold text-white">$20<span class="text-base font-medium text-purple-200">/mo</span></p>
+                    <ul class="mt-8 space-y-4">
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                            <span class="text-sm text-purple-50">Unlimited projects</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                            <span class="text-sm text-purple-50">1 TB bandwidth</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                            <span class="text-sm text-purple-50">Priority support</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                            <span class="text-sm text-purple-50">Custom domains</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                            <span class="text-sm text-purple-50">Analytics & logs</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex w-full items-center justify-center px-6 py-3 rounded-xl bg-white text-purple-700 text-sm font-semibold hover:bg-purple-50 transition-colors">
+                        Get Started
+                    </a>
+                </div>
+                <div class="p-8 rounded-2xl bg-white border border-zinc-200/60 shadow-soft hover:shadow-soft-lg transition-shadow">
+                    <h3 class="text-lg font-semibold text-zinc-900">Enterprise</h3>
+                    <p class="mt-1 text-sm text-zinc-500">For large organizations</p>
+                    <p class="mt-6 text-4xl font-bold text-zinc-900">Custom</p>
+                    <ul class="mt-8 space-y-4">
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+                            <span class="text-sm text-zinc-600">Dedicated infrastructure</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+                            <span class="text-sm text-zinc-600">24/7 support</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+                            <span class="text-sm text-zinc-600">SSO & SAML</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>
+                            <span class="text-sm text-zinc-600">Custom SLAs</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex w-full items-center justify-center px-6 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-700 text-sm font-semibold hover:border-purple-300 hover:text-purple-700 transition-colors">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="py-24 bg-zinc-50 border-y border-zinc-100">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200/60 text-xs font-semibold text-purple-700 tracking-wide uppercase mb-4">FAQ</span>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900">Frequently asked questions</h2>
+                <p class="mt-4 text-lg text-zinc-600">Everything you need to know about Roku.</p>
+            </div>
+            <div class="space-y-4">
+                <div class="faq-item rounded-2xl bg-white border border-zinc-200/60 shadow-soft">
+                    <button class="faq-toggle w-full flex items-center justify-between px-6 py-5 text-left" aria-expanded="false">
+                        <span class="text-sm font-semibold text-zinc-900">What is Roku?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-zinc-400 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="text-sm text-zinc-600 leading-relaxed">Roku is an all-in-one platform for building, deploying, and monitoring web applications. It combines CI/CD, hosting, and observability into a single unified experience.</p>
+                    </div>
+                </div>
+                <div class="faq-item rounded-2xl bg-white border border-zinc-200/60 shadow-soft">
+                    <button class="faq-toggle w-full flex items-center justify-between px-6 py-5 text-left" aria-expanded="false">
+                        <span class="text-sm font-semibold text-zinc-900">How does pricing work?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-zinc-400 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="text-sm text-zinc-600 leading-relaxed">Our pricing is simple and transparent. Start with the free Starter plan, upgrade to Pro for $20/month, or contact us for Enterprise. No hidden fees, cancel anytime.</p>
+                    </div>
+                </div>
+                <div class="faq-item rounded-2xl bg-white border border-zinc-200/60 shadow-soft">
+                    <button class="faq-toggle w-full flex items-center justify-between px-6 py-5 text-left" aria-expanded="false">
+                        <span class="text-sm font-semibold text-zinc-900">Can I migrate from another platform?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-zinc-400 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="text-sm text-zinc-600 leading-relaxed">Yes! We provide migration guides and tools for popular platforms like Vercel, Netlify, and AWS. Most teams migrate in under an hour.</p>
+                    </div>
+                </div>
+                <div class="faq-item rounded-2xl bg-white border border-zinc-200/60 shadow-soft">
+                    <button class="faq-toggle w-full flex items-center justify-between px-6 py-5 text-left" aria-expanded="false">
+                        <span class="text-sm font-semibold text-zinc-900">What kind of support do you offer?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-zinc-400 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="text-sm text-zinc-600 leading-relaxed">Starter includes community support. Pro includes priority email support. Enterprise includes 24/7 dedicated support with a named engineer.</p>
+                    </div>
+                </div>
+                <div class="faq-item rounded-2xl bg-white border border-zinc-200/60 shadow-soft">
+                    <button class="faq-toggle w-full flex items-center justify-between px-6 py-5 text-left" aria-expanded="false">
+                        <span class="text-sm font-semibold text-zinc-900">Is my data secure?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-zinc-400 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="text-sm text-zinc-600 leading-relaxed">Absolutely. Roku is SOC 2 Type II compliant. All data is encrypted at rest (AES-256) and in transit (TLS 1.3). We also offer SSO, RBAC, and audit logs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA BANNER ===== -->
+    <section class="py-20 bg-gradient-to-br from-purple-700 via-purple-600 to-purple-500">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-white">Ready to build faster?</h2>
+            <p class="mt-4 text-lg text-purple-100">Join 10,000+ teams shipping with Roku. Get started in minutes.</p>
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-purple-700 text-sm font-semibold hover:bg-purple-50 transition-colors shadow-soft-lg w-full sm:w-auto justify-center">
+                    Start Free
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+                <a href="#" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-purple-800/50 text-white text-sm font-semibold hover:bg-purple-800/70 transition-colors border border-purple-400/30 w-full sm:w-auto justify-center">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                    Talk to Sales
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="py-16 bg-zinc-950 text-zinc-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                <div class="col-span-2 lg:col-span-2">
+                    <a href="#" class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-purple-400 flex items-center justify-center">
+                            <i data-lucide="zap" class="w-4 h-4 text-white fill-white"></i>
+                        </div>
+                        <span class="text-lg font-bold text-white">Roku</span>
+                    </a>
+                    <p class="text-sm leading-relaxed max-w-xs">The all-in-one platform for modern teams to build, deploy, and monitor applications with confidence.</p>
+                    <div class="flex items-center gap-3 mt-6">
+                        <a href="#" class="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:border-purple-500 hover:text-purple-400 transition-colors" aria-label="GitHub">
+                            <i data-lucide="github" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:border-purple-500 hover:text-purple-400 transition-colors" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:border-purple-500 hover:text-purple-400 transition-colors" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-white mb-4">Product</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Integrations</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-white mb-4">Company</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-white mb-4">Resources</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">API Reference</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Community</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Status</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-16 pt-8 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-zinc-500">© 2025 Roku, Inc. All rights reserved.</p>
+                <div class="flex items-center gap-6">
+                    <a href="#" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Privacy</a>
+                    <a href="#" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Terms</a>
+                    <a href="#" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Security</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('open');
+            const icon = menuBtn.querySelector('i');
+            if (mobileMenu.classList.contains('open')) {
+                icon.setAttribute('data-lucide', 'x');
+            } else {
+                icon.setAttribute('data-lucide', 'menu');
+            }
+            lucide.createIcons();
+        });
+
+        // FAQ accordion
+        const faqToggles = document.querySelectorAll('.faq-toggle');
+        faqToggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const item = toggle.closest('.faq-item');
+                const answer = item.querySelector('.faq-answer');
+                const isOpen = item.classList.contains('open');
+
+                // Close all
+                document.querySelectorAll('.faq-item').forEach(other => {
+                    other.classList.remove('open');
+                    other.querySelector('.faq-answer').classList.remove('open');
+                    other.querySelector('.faq-toggle').setAttribute('aria-expanded', 'false');
+                });
+
+                // Toggle current
+                if (!isOpen) {
+                    item.classList.add('open');
+                    answer.classList.add('open');
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

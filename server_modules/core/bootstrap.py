@@ -8,7 +8,9 @@ AgentForge Server  —  HTTP :7824  |  WebSocket :7825
 """
 import atexit
 import base64
+import html
 import signal
+import zipfile
 import sys, json, asyncio, logging, threading, time, re, socket, subprocess, os, textwrap, urllib3, uuid, io
 urllib3.disable_warnings()
 
@@ -35,52 +37,23 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-sys.path.insert(0, str(Path(__file__).parent / "srs-agent"))
-from agents.build.tester_browser import TesterAgent
-from agents.build.tester_common import set_emit as set_tester_emit
-from agents.analysis.analyzer import (AnalyzerAgent, AnalyzerReport, Finding,
-                             REPAIRABLE_MAJOR)
-from agents.core import nextdocs
-from agents.planner.architecture import ArchitectAgent, FileStreamParser
-from agents.core.exports_checks import check_named_imports
-from agents.core.exports_syntax import check_syntax, syntax_messages
-from agents.features.features_apply import FeaturesAgent
-from agents.features.features_common import FeatureSpec
-from agents.features.capture import PENCIL_SYSTEM, capture_region
-from agents.features.images import ImageAgent
-from agents.features.source_guidance import feature_image_requested
-from agents.features.picker import (ELEMENT_EDIT_SYSTEM, ElementResolver, describe,
-                           guard_scope, looks_like_addition, looks_like_global,
-                           looks_like_page_only, looks_like_removal,
-                           looks_like_retext, routes_rendering)
-from agents.data.mongo_lifecycle import MONGO
-from agents.data.mongo_common import db_name_for
-from agents.core import cancel
-from agents.analysis.bugfixer_apply import BugFixerAgent
-from agents.core.commands import CommandRunner
-from agents.core.workspace import WorkspaceTools, TOOL_HELP
-from qa_agent.e2e.e2e import E2EAgent
-from qa_agent.e2e.debugger_investigate import AgenticE2EDebugger
-from qa_agent.e2e.debugger_common import DebugNotebook
-from qa_agent.unit.snapshot import FileSnapshot
-from qa_agent.core.session_files import QASession
-from qa_agent.unit.harness_install import TestHarness
-from qa_agent.unit.spec import TestFailure, select_targets
-from qa_agent.unit.author_write import UnitTestAuthor
-from qa_agent.unit.runner import VitestRunner
-from qa_agent.e2e.e2e import KIND_SELECTOR
-from qa_agent.e2e.e2e_progress import (
-    failure_signature as _e2e_failure_signature,
-    failure_severity as _e2e_failure_severity,
-    measure_progress as _e2e_progress,
-    normalize_message as _e2e_norm_message,
-    extend_round_budget as _e2e_extend_budget,
-    stop_after_no_progress as _e2e_stop_no_progress,
-    MIN_REPAIR_ROUNDS as E2E_MIN_FIX,
-)
-from agents.core.ollama_client import (OllamaClient, is_cloud_model, max_context,
-                                  get_local_host, load_settings, save_settings,
-                                  set_default_client)
+
+# Add agent package roots to sys.path for direct module imports.
+_REPO_ROOT = Path(__file__).resolve().parent
+for _agent_root in ("srs-agent", "builder-agent", "qa-agent", "deployment-agent"):
+    _path = str(_REPO_ROOT / _agent_root)
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+from builder_agent.llm import (OllamaClient, is_cloud_model, max_context,
+                               get_local_host, load_settings, save_settings,
+                               set_default_client)
+from server_modules.services import cancel
+from server_modules.services.images import ImageAgent
+from server_modules.services.mongo import MONGO
+from server_modules.services.mongo_common import db_name_for
+from server_modules.services.sources import feature_image_requested
+
 import shutil
 import copy
 
@@ -179,7 +152,8 @@ RUNTIME_DEADLINE = 900
 
 # Pictures draw on the GPU beside the build, so the run never waits on them
 # except once, right before the browser journeys that photograph the app.
-IMAGE_FINAL_WAIT = 0
+IMAGE_FINAL_WAIT = 120
+# Legacy preferred port; live app addresses come from RUNTIMES.
 DEV_PORT   = 5173
 UI_PORT    = 7824
 WS_PORT    = 7825
@@ -200,7 +174,6 @@ log = logging.getLogger("server")
 
 clients    = set()
 MAIN_LOOP  = None
-active_vite = {"proc": None, "stderr_lines": []}
 
 
 ollama = OllamaClient(OLLAMA_URL)
@@ -225,12 +198,58 @@ def default_agent_model() -> str:
     return DEFAULT_BUILD
 
 
+# Thread-local storage holding current project context for log emission.
+RUN = threading.local()
+
+
+def working_on(project: str = ""):
+    """Say which project this thread's messages belong to."""
+    RUN.project = str(project or "")
+
+
+def stamp_owner(msg: dict) -> dict:
+    """Name the project a message came from, unless it already names one."""
+    if getattr(RUN, "agent", "") and "agent" not in msg:
+        msg = {**msg, "agent": RUN.agent}
+    if getattr(RUN, "run_id", "") and "run_id" not in msg:
+        msg = {**msg, "run_id": RUN.run_id}
+    if "project" in msg:
+        return msg
+    owner = getattr(RUN, "project", "")
+    return {**msg, "project": owner} if owner else msg
+
+
 def emit(msg: dict):
+    """Publish one message, stamped with the project it came from.
+
+    Without the stamp every client showed every line: a run left going in one
+    project wrote its output into whichever project was on screen, so a food
+    delivery app's feed filled up with another project's npm commands. A
+    message that already names its project keeps that name; one that names
+    none is about the server itself and is shown wherever anyone is looking.
+    """
+    stamped = stamp_owner(msg)
+    project = stamped.get("project")
+    if project and stamped.get("agent") and (PROD_DIR / project).is_dir():
+        from server_modules.services.project_state import ProjectState
+        try:
+            state = ProjectState(PROD_DIR / project)
+            stamped = state.record(stamped)
+            if stamped.get("type") in ("done", "cancelled", "error"):
+                status = {"done": "completed", "cancelled": "paused", "error": "failed"}[stamped["type"]]
+                state.agent(stamped["agent"], status=status, error=stamped.get("text", ""))
+                if stamped["type"] == "done":
+                    state.agent(stamped["agent"], completed_at=time.time())
+        except (OSError, ValueError) as error:
+            log.error("Could not persist project event: %s", error)
     if MAIN_LOOP is None: return
-    data = json.dumps(msg, ensure_ascii=False)
+    data = json.dumps(stamped, ensure_ascii=False)
+    # Worked out here, on the sending thread: who a message is for is read off
+    # that thread's run or request. Only its owner hears it (tenancy.py).
+    targets = recipients(stamped)
     async def _s():
         dead = set()
-        for ws in list(clients):
+        for ws in targets:
             try: await ws.send(data)
             except: dead.add(ws)
         clients.difference_update(dead)
@@ -239,13 +258,15 @@ def emit(msg: dict):
 def elog(lvl, txt):
 
     log.info(f"[{lvl}] {txt}")
+    if getattr(RUN, "document_sync", False):
+        return
     emit({"type": "log", "level": lvl, "text": txt})
 def estep(s, st):
     if st == "error":
         log.error(f"step {s} failed")
     emit({"type": "step", "step": s, "status": st})
     cancel.check()
-def efile(n, sz, c=""):   emit({"type":"file",         "name":n,     "size":sz,   "content":c})
+def efile(n, sz, c="", note="written", old_content=""):   emit({"type":"file", "name":n, "size":sz, "content":c, "note":note, "old_content":old_content})
 def edetect(t, s):        emit({"type":"detected",     "site_type":t,"strategy":s})
 def eprog(lbl, pct):
     emit({"type": "progress", "step": lbl, "pct": pct})

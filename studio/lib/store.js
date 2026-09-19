@@ -1,6 +1,7 @@
 
 import { create } from 'zustand'
 import { advance, emptyProgress } from './progress-model'
+import { captureSession, emptySession, reduceSession, ROLES } from './agent-session'
 
 const LS = typeof window === 'undefined' ? null : window.localStorage
 const read = (k, fallback) => {
@@ -12,12 +13,15 @@ const readJSON = (k, fallback) => {
 
 
 const DEFAULTS = {
-// Use the light theme until the browser saves another choice.
-  theme: 'light',
+  theme: 'dark',
 
   models: { planner: '', design: '', builder: '', agent: '', qa: '',
             srs: '', deploy: '', image: 'fooocus' },
-  think: false,
+  // Both tiers, High and Ultra, think; there is no switch for it any more.
+  think: true,
+  // Whether the run in flight is actually reasoning, as reported by the
+  // engine - not the same thing as the `think` switch, which is only a request.
+  reasoning: false,
   images: false,
   hist: [],
 }
@@ -32,23 +36,123 @@ export const KEYS = {
 
   srsId: 'agentforge-srs-id', srsPhase: 'agentforge-srs-phase',
   think: 'agentforge-think', images: 'agentforge-img',
+  starred: 'agentforge-starred', recent: 'agentforge-recent',
+}
+
+const RECENT_KEPT = 20
+
+function readList(key) {
+  try {
+    const raw = JSON.parse(LS?.getItem(key) || '[]')
+    return Array.isArray(raw) ? raw.filter(x => typeof x === 'string') : []
+  } catch { return [] }
 }
 
 
-const RESUMABLE_SRS_PHASES = new Set(['interview', 'plan', 'review'])
+const RESUMABLE_SRS_PHASES = new Set(['planning', 'interview', 'plan', 'review', 'design'])
 
 
 
 
 export const useStore = create((set, get) => ({
+  accountEpoch: 0,
+  projectSessions: {},
+  projectViews: {},
+  buildAvailability: {},
+  projectSync: {},
+  srsStamp: {},
+  setProjectMetadata: (rows, requestedAt = Date.now()) => set(state => ({ buildAvailability: { ...state.buildAvailability,
+    ...Object.fromEntries(rows.filter(row => {
+      const designer = state.project === row.name && state.agentRole === 'designer'
+        ? state : state.projectSessions[row.name]?.designer
+      return !designer || designer.lastEventAt <= requestedAt
+    }).map(row => [row.name, Boolean(row.build_available)])) } })),
+  agentRole: 'developer',
+  draft: '',
+  setDraft: (draft) => set({ draft }),
+  patchAgentSession: (project, role, patch) => set(state => {
+    if (!project || !ROLES.includes(role)) return {}
+    const own = state.projectSessions[project] || {}
+    const visible = state.project === project && state.agentRole === role
+    const previous = visible ? captureSession(state) : (own[role] || emptySession())
+    const session = { ...previous, ...(typeof patch === 'function' ? patch(previous) : patch) }
+    return { projectSessions: { ...state.projectSessions, [project]: { ...own, [role]: session } },
+      ...(visible ? session : {}) }
+  }),
+  clearAccount: () => {
+    get().reset(null)
+    get().resetSrs()
+    try { LS?.removeItem('agentforge-project-views') } catch { }
+    set({ accountEpoch: get().accountEpoch + 1, streams: {}, projectSessions: {}, projectViews: {}, buildAvailability: {}, projectSync: {},
+      srsStamp: {}, runtimes: {}, queue: [] })
+  },
+  switchAgent: (agentRole) => set(state => {
+    if (agentRole === 'developer' && state.project && !state.buildAvailability[state.project]) return {}
+    if (!ROLES.includes(agentRole) || agentRole === state.agentRole) return {}
+    const own = state.projectSessions[state.project] || {}
+    return { projectSessions: { ...state.projectSessions, [state.project]: {
+      ...own, [state.agentRole]: captureSession(state) } },
+      ...emptySession(), ...own[agentRole], agentRole }
+  }),
+  applyProjectEvent: (event) => set(state => {
+    const project = event.project
+    if (!project) return {}
+    if (event.type === 'sync_state') return { projectSync: { ...state.projectSync, [project]: event },
+      srsStamp: { ...state.srsStamp, [project]: Date.now() } }
+    const role = ROLES.includes(event.agent) ? event.agent : 'developer'
+    const own = state.projectSessions[project] || {}
+    const visible = project === state.project && role === state.agentRole
+    const session = reduceSession(visible ? captureSession(state) : own[role], event)
+    const availability = role === 'designer' && event.type === 'done'
+      ? { buildAvailability: { ...state.buildAvailability, [project]: event.type === 'done' } } : {}
+    return { ...availability, projectSessions: { ...state.projectSessions, [project]: { ...own, [role]: session } },
+      ...(visible ? session : {}) }
+  }),
+  restoreProject: (snapshot) => set(state => {
+    if (!snapshot?.project) return {}
+    const own = state.projectSessions[snapshot.project] || {}
+    const restored = {}
+    for (const role of ROLES) {
+      const current = snapshot.project === state.project && role === state.agentRole
+        ? captureSession(state) : own[role]
+      let session = (snapshot.events?.[role] || []).reduce(reduceSession, emptySession())
+      // Preserve live events and composer state which arrived while the snapshot was fetched.
+      if (current) {
+        const saved = session
+        if (current.lastEventAt > (snapshot.updated_at || 0) * 1000) session = { ...session, ...current }
+        const ids = new Set(session.eventIds)
+        session.logs = [...saved.logs, ...current.logs.filter(row => row.at > (saved.logs.at(-1)?.at || 0))].slice(-800)
+        session.chat = [...saved.chat, ...current.chat.filter(row => row.at > (saved.chat.at(-1)?.at || 0))].slice(-300)
+        session = { ...session, draft: current.draft, selection: current.selection, previewRoute: current.previewRoute,
+          files: current.files, eventIds: [...new Set([...ids, ...current.eventIds])].slice(-1200) }
+      }
+      const run = snapshot.agents?.[role]
+      if (run && (!current || current.lastEventAt <= (snapshot.updated_at || 0) * 1000)) { session.busy = ['running', 'queued'].includes(run.status); session.workflowStatus = run.status; session.runId = run.run_id || '' }
+      restored[role] = session
+    }
+    const designerCurrent = snapshot.project === state.project && state.agentRole === 'designer' ? captureSession(state) : own.designer
+    const allowed = designerCurrent?.lastEventAt > snapshot.updated_at * 1000 ? state.buildAvailability[snapshot.project] : Boolean(snapshot.build_available)
+    return { buildAvailability: { ...state.buildAvailability, [snapshot.project]: allowed },
+      projectSync: { ...state.projectSync, [snapshot.project]: snapshot.sync },
+      projectSessions: { ...state.projectSessions, [snapshot.project]: restored },
+      ...(state.project === snapshot.project ? restored[state.agentRole] : {}) }
+  }),
 
   status: 'connecting',
   statusText: 'connecting…',
   setStatus: (status, statusText) => set({ status, statusText }),
 
   busy: false,
-  // Stored projects use the build overlay while opening.
+  // Preview startup is independent of an agent build in another project.
   opening: false,
+  runtimes: {},
+  setRuntime: (runtime) => set(state => {
+    if (!runtime?.project) return {}
+    const previous = state.runtimes[runtime.project]
+    if (previous?.serverId === runtime.serverId && previous.revision > runtime.revision) return {}
+    return { runtimes: { ...state.runtimes, [runtime.project]: runtime },
+      ...(state.project === runtime.project ? { opening: runtime.status === 'starting' } : {}) }
+  }),
 
   // Increment when projects on disk change.
   projectsStamp: 0,
@@ -70,7 +174,40 @@ export const useStore = create((set, get) => ({
   setE2eLive: (e2eLive) => set({ e2eLive }),
   project: null,
   view: 'preview',
-  setView: (view) => set({ view }),
+  // The deployment run the Deploy panel is showing, so the chat beside it can
+  // show that run's conversation without fetching the deploy state twice.
+  deployRunId: '',
+  setDeployRunId: (deployRunId) => set({ deployRunId: deployRunId || '' }),
+
+  // Store starred and recently opened project IDs in browser local storage.
+  starred: readList(KEYS.starred),
+  recent: readList(KEYS.recent),
+  // Which shelf the Projects screen is showing, set from the sidebar.
+  projectFilter: '',
+  setProjectFilter: (projectFilter) => set({ projectFilter: projectFilter || '' }),
+  toggleStar: (name) => {
+    if (!name) return
+    const starred = get().starred.includes(name)
+      ? get().starred.filter(x => x !== name)
+      : [...get().starred, name]
+    set({ starred })
+    try { LS?.setItem(KEYS.starred, JSON.stringify(starred)) } catch { }
+  },
+  noteOpened: (name) => {
+    if (!name) return
+    const recent = [name, ...get().recent.filter(x => x !== name)].slice(0, RECENT_KEPT)
+    set({ recent })
+    try { LS?.setItem(KEYS.recent, JSON.stringify(recent)) } catch { }
+  },
+  setView: (view) => {
+    const state = get()
+    if (['preview', 'testing', 'deploy'].includes(view) && state.project && !state.buildAvailability[state.project]) return
+    if (view === 'prototype' || view === 'design') get().switchAgent('designer')
+    else if (['preview', 'testing', 'deploy'].includes(view)) get().switchAgent('developer')
+    const views = state.project ? { ...state.projectViews, [state.project]: view } : state.projectViews
+    set({ view, projectViews: views })
+    try { LS?.setItem('agentforge-project-views', JSON.stringify(views)) } catch { }
+  },
 
   srsId: null,
 
@@ -81,10 +218,9 @@ export const useStore = create((set, get) => ({
     set(patch)
     try {
       const s = get()
-      if (s.srsId) {
-        LS?.setItem(KEYS.srsId, s.srsId)
-        LS?.setItem(KEYS.srsPhase, s.srsPhase || 'idle')
-      }
+      if (s.srsId) LS?.setItem(KEYS.srsId, s.srsId)
+      else LS?.removeItem(KEYS.srsId)
+      LS?.setItem(KEYS.srsPhase, s.srsPhase || 'idle')
     } catch { }
   },
   resetSrs: () => {
@@ -99,6 +235,69 @@ export const useStore = create((set, get) => ({
   addLog: (level, text) => set(s => ({
     logs: [...s.logs.slice(-800), { level, text, at: Date.now() }],
   })),
+
+  // What the console shows about the run itself: the model, how much of its
+  // context window is in use, and how much work it has done.
+  runStats: null,
+  setRunStats: (runStats) => set({ runStats }),
+
+  // Composing the next move, or carrying one out. The gap between the two is
+  // where a feed looks stalled, so it is shown rather than left blank.
+  agentState: '',
+  setAgentState: (agentState) => set({ agentState }),
+
+  // The one question a run is waiting on, if any. It carries its own deadline
+  // and clears itself, so a closed dialog costs a choice and not a build.
+  approval: null,
+  setApproval: (approval) => set({ approval }),
+
+  // A question the agent stopped to ask, shown in the chat stream rather than
+  // over the top of it. The deployment agent has always asked this way and it
+  // reads as the agent waiting on you; a dialog reads as the app interrupting.
+  ask: null,
+  setAsk: (ask) => set({ ask }),
+
+  // Prototype drawing state displayed in preview for interactive user approval.
+  drawing: null,
+  setDrawing: (drawing) => set({ drawing }),
+
+  // The engine's own browser, as it is right now. Headless, so this is the
+  // only way to see what it is doing.
+  browserFrame: null,
+  setBrowserFrame: (browserFrame) => set({ browserFrame }),
+
+  // Visual attachments for pending messages, including element selections and annotated screenshots.
+  selection: [],
+  addSelection: (item) => set(s => (
+    s.selection.some(x => x.key === item.key)
+      ? s
+      : { selection: [...s.selection, item].slice(-8) })),
+  patchSelection: (key, patch) => set(s => ({
+    selection: s.selection.map(x => (x.key === key ? { ...x, ...patch } : x)),
+  })),
+  removeSelection: (key) => set(s => ({
+    selection: s.selection.filter(x => x.key !== key),
+  })),
+  clearSelection: () => set({ selection: [] }),
+
+  // What the agent and the user actually said to each other, as opposed to the
+  // tool activity the chat panel derives from `logs`.
+  chat: [],
+  pushChat: (entry) => set(s => ({
+    chat: [...s.chat.slice(-200), { at: Date.now(), ...entry }],
+  })),
+
+  // Queue messages entered while a run is in progress to be sent automatically once it finishes.
+  queue: [],
+  enqueue: (entry) => set(s => ({
+    queue: [...s.queue, { id: `q-${Date.now()}-${s.queue.length}`, at: Date.now(), ...entry }],
+  })),
+  dropQueued: (id) => set(s => ({ queue: s.queue.filter(item => item.id !== id) })),
+  takeQueued: (project, role = get().agentRole) => {
+    const next = get().queue.find(item => item.project === project && (!item.payload?.agent || item.payload.agent === role))
+    if (next) set(s => ({ queue: s.queue.filter(item => item.id !== next.id) }))
+    return next || null
+  },
 
   steps: {},
   setStep: (id, status) => set(s => ({ steps: { ...s.steps, [id]: status } })),
@@ -129,14 +328,17 @@ export const useStore = create((set, get) => ({
 
   hydrate: () => {
     if (!LS) return
-    const theme = read(KEYS.theme, DEFAULTS.theme)
     // Migrate the former single Agent choice into each explicit role. Once a
     // role is picked it has its own key and no longer follows the legacy one.
     const legacyAgent = read(KEYS.agent, DEFAULTS.models.agent)
 
-    try { document.documentElement.setAttribute('data-theme', theme) } catch { }
+    try {
+      document.documentElement.setAttribute('data-theme', 'dark')
+      document.documentElement.classList.add('dark')
+      LS?.setItem(KEYS.theme, 'dark')
+    } catch { }
     set({
-      theme,
+      theme: 'dark',
       models: {
         planner: read(KEYS.planner, legacyAgent),
         design: read(KEYS.design, legacyAgent),
@@ -147,41 +349,89 @@ export const useStore = create((set, get) => ({
         deploy: read(KEYS.deploy, DEFAULTS.models.deploy),
         image: read(KEYS.image, DEFAULTS.models.image),
       },
-      // Fresh installs start with thinking off. A user must opt in with the
-      // shared Builder + QA Think button before either role receives it.
-      think: read(KEYS.think, DEFAULTS.think ? '1' : '0') === '1',
+      // Both tiers think. What an older browser saved came from the switch
+      // the tiers replaced, and would have sent High without its thinking.
+      think: DEFAULTS.think,
       images: read(KEYS.images, '0') === '1',
       hist: readJSON(KEYS.hist, []),
+      projectViews: readJSON('agentforge-project-views', {}),
     })
 
     const srsId = read(KEYS.srsId, '')
     const srsPhase = read(KEYS.srsPhase, 'idle')
-    if (srsId && RESUMABLE_SRS_PHASES.has(srsPhase)) {
-      set({ srsId, srsPhase })
+    if ((srsId || srsPhase === 'planning') && RESUMABLE_SRS_PHASES.has(srsPhase)) {
+      set({ srsId: srsId || null, srsPhase })
     }
   },
 
-  setTheme: (theme) => {
-    set({ theme })
+  setTheme: () => {
+    set({ theme: 'dark' })
     try {
-      document.documentElement.setAttribute('data-theme', theme)
-      LS?.setItem(KEYS.theme, theme)
+      document.documentElement.setAttribute('data-theme', 'dark')
+      document.documentElement.classList.add('dark')
+      LS?.setItem(KEYS.theme, 'dark')
     } catch { }
   },
+  toggleTheme: () => {},
   persist: (key, value) => { try { LS?.setItem(key, value) } catch { } },
 
-      // Clear project state before opening another project.
-  reset: (project) => set({
-    project, logs: [], steps: {}, phases: [], files: {},
+  /** Agent roles that adopt the globally selected language model. */
+  ROLE_MODELS: ['agent', 'planner', 'design', 'builder', 'qa', 'srs', 'deploy'],
+
+  applyModel: (model) => {
+    const chosen = String(model || '').trim()
+    if (!chosen) return []
+    const roles = useStore.getState().ROLE_MODELS
+    set(state => ({
+      models: { ...state.models,
+                ...Object.fromEntries(roles.map(role => [role, chosen])) },
+    }))
+    for (const role of roles) {
+      try { LS?.setItem(KEYS[role], chosen) } catch { }
+    }
+    return roles
+  },
+
+  /** Persisted chat and log streams cached per project across workspace navigation. */
+  streams: {},
+
+  // The project a run belongs to, which is not always the one on screen: you
+  // can start a build and go and look at something else while it works.
+  busyProject: '',
+  setBusyProject: (busyProject) => set({ busyProject }),
+
+  /** Merges restored historical project stream events behind any live incoming socket messages. */
+  adoptStream: (stream) => set(state => ({
+    logs: [...(stream.logs || []), ...state.logs],
+    chat: [...(stream.chat || []), ...state.chat],
+  })),
+
+      // Persist active project chat stream when switching project context.
+  reset: (project) => set(state => {
+    const sessions = { ...state.projectSessions }
+    if (state.project) sessions[state.project] = { ...sessions[state.project], [state.agentRole]: captureSession(state) }
+    const restoredSession = sessions[project]?.[state.agentRole]
+    // Event histories and model contexts are durable on the server. Bound browser caches.
+    const evictable = Object.keys(sessions).filter(name => name !== project && !ROLES.some(role => sessions[name]?.[role]?.busy))
+    for (const name of evictable.slice(0, Math.max(0, Object.keys(sessions).length - 8))) delete sessions[name]
+    return {
+    project, agentState: '', approval: null, drawing: null,
+    browserFrame: null, selection: [],
+    steps: {}, phases: [], files: {},
     activeFile: null, liveFile: null, liveBuf: '', follow: true,
     progress: emptyProgress(),
     tests: emptyTests(),
+    ask: null,
     question: null,
     qaReport: null,
     undo: null,
     previewRoute: '/',
     e2eLive: null,
     e2eParallel: emptyE2eParallel(),
+    ...emptySession(), ...restoredSession,
+    projectSessions: sessions,
+    opening: false,
+    }
   }),
 
   tests: emptyTests(),
@@ -255,7 +505,6 @@ export const useStore = create((set, get) => ({
       message: m.message ?? (state === 'journey_start' ? '' : old.message),
       index: Number.isFinite(Number(m.index)) ? Number(m.index) : old.index,
       total: Number.isFinite(Number(m.total)) ? Number(m.total) : old.total,
-      frame: m.frame || old.frame,
       ok: m.ok ?? old.ok,
       updatedAt: Date.now(),
     }
@@ -277,6 +526,13 @@ export const useStore = create((set, get) => ({
   question: null,
 }))
 
+/** A project's saved stream, or a clean one for a project with no history. */
+function restored(stream) {
+  return { logs: stream?.logs || [], chat: stream?.chat || [],
+           runStats: stream?.runStats || null }
+}
+
+
 function emptyTests() {
   return { running: false, attempt: 0, rows: [], fixing: [],
            pass: 0, fail: 0, warn: 0, startedAt: 0 }
@@ -285,7 +541,7 @@ function emptyTests() {
 function emptyE2eLane(lane) {
   return {
     lane, state: 'idle', title: '', role: '', route: '', label: '',
-    message: '', index: 0, total: 0, frame: '', ok: null, updatedAt: 0,
+    message: '', index: 0, total: 0, ok: null, updatedAt: 0,
   }
 }
 

@@ -1,10 +1,25 @@
 'use client'
 
-import { Empty, Table, TR, TH, TD } from '../ui'
+import { Badge, Empty, Table, TR, TH, TD } from '../ui'
 import { cn } from '@/lib/utils'
 
 
 export default function Timeline({ qa }) {
+  if (qa?.timeline?.length) return (
+    <div>
+      <p className="mb-4 text-[11.5px] text-muted">Recorded checks in time order. Retry attempts remain visible; saved artifacts use their recorded timestamps.</p>
+      <Table><thead><TR><TH>When</TH><TH>Stage</TH><TH>Check / source</TH><TH>Result</TH></TR></thead>
+        <tbody>{qa.timeline.map((row, index) => (
+          <TR key={index}>
+            <TD className="whitespace-nowrap text-muted">{row.at ? new Date(row.at).toLocaleString() : 'Time not recorded'}</TD>
+            <TD>{row.kind}</TD>
+            <TD><p className="text-ink">{row.suite}</p><code className="break-all text-[10px] text-muted2">{row.command || row.source}</code></TD>
+            <TD><Badge tone={row.status === 'failed' ? 'bad' : row.status === 'passed' ? 'ok' : 'mute'}>{row.status}</Badge></TD>
+          </TR>
+        ))}</tbody>
+      </Table>
+    </div>
+  )
   const rows = qa?.history || []
   if (!rows.length) {
     return <Empty>No history yet — it starts at the next build.</Empty>

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibrant — Bold, Playful Design System</title>
+    <!-- Google Fonts: Fascinate (display), Noto Sans (primary), Fira Code (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fascinate&family=Fira+Code:wght@400;700&family=Noto+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7C61D4',
+                        secondary: '#EAAE87',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#2F281D',
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans', 'sans-serif'],
+                        display: ['Fascinate', 'cursive'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    spacing: {
+                        '2': '2px',
+                        '4': '4px',
+                        '8': '8px',
+                        '12': '12px',
+                        '16': '16px',
+                        '24': '24px',
+                        '32': '32px',
+                        '48': '48px',
+                    },
+                    borderRadius: {
+                        none: '0px',
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Sharp corners everywhere — no border-radius */
+        * {
+            border-radius: 0 !important;
+        }
+        /* Focus visible states — high contrast, 2px offset */
+        :focus-visible {
+            outline: 3px solid #2F281D;
+            outline-offset: 2px;
+        }
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+        /* Custom scrollbar for fun */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: #F5F0E8; }
+        ::-webkit-scrollbar-thumb { background: #7C61D4; }
+    </style>
+</head>
+<body class="bg-surface text-text font-sans antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="bg-primary text-white sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-secondary rotate-45"></div>
+                    <span class="font-display text-2xl tracking-wide">Vibrant</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8 font-medium">
+                    <a href="#features" class="hover:text-secondary transition-colors">Features</a>
+                    <a href="#process" class="hover:text-secondary transition-colors">Process</a>
+                    <a href="#benefits" class="hover:text-secondary transition-colors">Benefits</a>
+                    <a href="#pricing" class="hover:text-secondary transition-colors">Pricing</a>
+                    <a href="#faq" class="hover:text-secondary transition-colors">FAQ</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="hidden sm:block font-medium hover:text-secondary transition-colors">Sign in</a>
+                    <a href="#pricing" class="bg-secondary text-text font-bold px-4 py-2 hover:bg-white transition-colors">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="bg-primary text-white relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-sm mb-4 text-secondary">// design system in action</p>
+                    <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl leading-tight mb-6">
+                        Bold ideas,<br>vibrant results.
+                    </h1>
+                    <p class="text-lg sm:text-xl mb-8 max-w-xl opacity-90">
+                        Build playful, accessible interfaces with a design system that loves color, personality, and clarity.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#features" class="bg-secondary text-text font-bold px-8 py-4 text-lg hover:bg-white transition-colors">
+                            Explore Features
+                        </a>
+                        <a href="#pricing" class="border-2 border-white font-bold px-8 py-4 text-lg hover:bg-white hover:text-primary transition-colors">
+                            View Pricing
+                        </a>
+                    </div>
+                </div>
+                <!-- Abstract CSS shape art -->
+                <div class="relative h-64 sm:h-80 lg:h-96">
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-secondary rotate-12"></div>
+                    <div class="absolute top-20 right-20 w-32 h-32 bg-white rotate-45"></div>
+                    <div class="absolute bottom-0 right-40 w-48 h-48 bg-warning -rotate-6"></div>
+                    <div class="absolute bottom-10 right-0 w-24 h-24 bg-success rotate-12"></div>
+                    <div class="absolute top-10 left-10 w-16 h-16 bg-danger rotate-45"></div>
+                    <div class="absolute bottom-0 left-0 w-20 h-20 bg-secondary -rotate-12"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Decorative bottom bar -->
+        <div class="h-4 bg-gradient-to-r from-secondary via-warning to-success"></div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="bg-text text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+                <div>
+                    <p class="font-display text-5xl text-secondary">99%</p>
+                    <p class="mt-2 font-medium">WCAG 2.2 AA</p>
+                </div>
+                <div>
+                    <p class="font-display text-5xl text-secondary">120+</p>
+                    <p class="mt-2 font-medium">Components</p>
+                </div>
+                <div>
+                    <p class="font-display text-5xl text-secondary">44px</p>
+                    <p class="mt-2 font-medium">Touch Targets</p>
+                </div>
+                <div>
+                    <p class="font-display text-5xl text-secondary">0</p>
+                    <p class="mt-2 font-medium">Rounded Corners</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="py-24 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-primary mb-2">// features</p>
+                <h2 class="font-display text-4xl sm:text-5xl mb-4">Everything you need</h2>
+                <p class="text-lg max-w-2xl mx-auto text-text/70">Powerful, accessible, and delightfully bold.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-primary text-white p-8 hover:bg-text transition-colors">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mb-6">
+                        <i data-lucide="palette" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">Vibrant Tokens</h3>
+                    <p class="opacity-90">Semantic color, spacing, and typography tokens that keep your UI consistent and accessible.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-secondary text-text p-8 hover:bg-text hover:text-white transition-colors">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                        <i data-lucide="keyboard" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">Keyboard First</h3>
+                    <p class="opacity-80">Every component is keyboard-navigable with visible focus states and logical tab order.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-text text-white p-8 hover:bg-primary transition-colors">
+                    <div class="w-12 h-12 bg-warning flex items-center justify-center mb-6">
+                        <i data-lucide="zap" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">Playful Motion</h3>
+                    <p class="opacity-90">Dynamic interactions with reduced-motion support built in. Fun without the motion sickness.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="bg-success text-white p-8 hover:bg-text transition-colors">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mb-6">
+                        <i data-lucide="accessibility" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">AA Compliant</h3>
+                    <p class="opacity-90">Tested contrast ratios, screen-reader labels, and 44px+ touch targets on every component.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="bg-warning text-text p-8 hover:bg-text hover:text-white transition-colors">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                        <i data-lucide="code" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">Developer Friendly</h3>
+                    <p class="opacity-80">Clear APIs, predictable tokens, and documentation that reads like a good conversation.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="bg-danger text-white p-8 hover:bg-text transition-colors">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mb-6">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">Battle Tested</h3>
+                    <p class="opacity-90">Used by teams shipping production apps. Proven patterns, zero surprises.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="py-24 bg-primary text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-secondary mb-2">// process</p>
+                <h2 class="font-display text-4xl sm:text-5xl mb-4">How it works</h2>
+                <p class="text-lg max-w-2xl mx-auto opacity-90">From idea to launch in four bold steps.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <div class="bg-secondary text-text p-8 h-full">
+                        <p class="font-display text-6xl mb-4">01</p>
+                        <h3 class="font-bold text-xl mb-3">Discover</h3>
+                        <p class="opacity-80">We dig into your goals, users, and brand personality. No assumptions, just insights.</p>
+                    </div>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative">
+                    <div class="bg-white text-text p-8 h-full">
+                        <p class="font-display text-6xl mb-4 text-primary">02</p>
+                        <h3 class="font-bold text-xl mb-3">Design</h3>
+                        <p class="opacity-80">Wireframes become vibrant prototypes. Every pixel has a purpose and a token.</p>
+                    </div>
+                </div>
+                <!-- Step 3 -->
+                <div class="relative">
+                    <div class="bg-secondary text-text p-8 h-full">
+                        <p class="font-display text-6xl mb-4">03</p>
+                        <h3 class="font-bold text-xl mb-3">Build</h3>
+                        <p class="opacity-80">Clean, accessible code. Components that snap together like LEGO bricks.</p>
+                    </div>
+                </div>
+                <!-- Step 4 -->
+                <div class="relative">
+                    <div class="bg-warning text-text p-8 h-full">
+                        <p class="font-display text-6xl mb-4">04</p>
+                        <h3 class="font-bold text-xl mb-3">Launch</h3>
+                        <p class="opacity-80">Ship fast, iterate faster. Your product evolves without breaking a sweat.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section id="benefits" class="py-24 bg-secondary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <p class="font-mono text-primary mb-2">// benefits</p>
+                    <h2 class="font-display text-4xl sm:text-5xl mb-6">Why teams choose Vibrant</h2>
+                    <p class="text-lg mb-8 text-text/80">We make accessibility feel like a superpower, not a checklist.</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-primary flex items-center justify-center shrink-0 mt-1">
+                                <i data-lucide="check" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">Faster shipping</h3>
+                                <p class="text-text/70">Pre-built components cut development time by 40%.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-primary flex items-center justify-center shrink-0 mt-1">
+                                <i data-lucide="check" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">Consistent UX</h3>
+                                <p class="text-text/70">Every screen feels like part of one family. No design drift.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-primary flex items-center justify-center shrink-0 mt-1">
+                                <i data-lucide="check" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">Accessible by default</h3>
+                                <p class="text-text/70">WCAG 2.2 AA compliance is baked in, not bolted on.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <div class="w-8 h-8 bg-primary flex items-center justify-center shrink-0 mt-1">
+                                <i data-lucide="check" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">Happy users</h3>
+                                <p class="text-text/70">Playful, clear interfaces that people actually enjoy using.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Abstract CSS illustration -->
+                <div class="relative h-96">
+                    <div class="absolute top-0 left-0 w-48 h-48 bg-primary rotate-12"></div>
+                    <div class="absolute top-10 left-10 w-32 h-32 bg-white rotate-45"></div>
+                    <div class="absolute bottom-0 right-0 w-56 h-56 bg-success -rotate-6"></div>
+                    <div class="absolute bottom-10 right-10 w-40 h-40 bg-warning rotate-12"></div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-danger rotate-45"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="py-24 bg-text text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-secondary mb-2">// testimonials</p>
+                <h2 class="font-display text-4xl sm:text-5xl mb-4">Loved by teams</h2>
+                <p class="text-lg max-w-2xl mx-auto opacity-80">Real words from real builders.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-primary p-8">
+                    <div class="flex gap-1 mb-4 text-secondary">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="mb-6">"Vibrant transformed our product. The accessibility features are incredible — our audit went from 60% to 98% in a week."</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-secondary flex items-center justify-center font-display text-xl text-text">A</div>
+                        <div>
+                            <p class="font-bold">Alex Rivera</p>
+                            <p class="text-sm opacity-70">Product Lead, BrightLabs</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="bg-secondary text-text p-8">
+                    <div class="flex gap-1 mb-4 text-primary">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="mb-6">"The design tokens are a dream. We rebranded our entire app in a day. The playful personality is a huge hit with users."</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-primary flex items-center justify-center font-display text-xl text-white">M</div>
+                        <div>
+                            <p class="font-bold">Maya Chen</p>
+                            <p class="text-sm opacity-70">Design Director, PixelForge</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="bg-warning text-text p-8">
+                    <div class="flex gap-1 mb-4 text-primary">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="mb-6">"Finally a system that's both bold and accessible. The keyboard navigation and focus states are flawless. Our QA team loves it."</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-primary flex items-center justify-center font-display text-xl text-white">J</div>
+                        <div>
+                            <p class="font-bold">James Okafor</p>
+                            <p class="text-sm opacity-70">Engineering Manager, CloudPeak</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="py-24 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-primary mb-2">// pricing</p>
+                <h2 class="font-display text-4xl sm:text-5xl mb-4">Simple, honest pricing</h2>
+                <p class="text-lg max-w-2xl mx-auto text-text/70">Start free. Scale when you're ready.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Starter -->
+                <div class="bg-text text-white p-8 flex flex-col">
+                    <h3 class="font-display text-2xl mb-2">Starter</h3>
+                    <p class="font-mono text-sm mb-6 text-secondary">// for side projects</p>
+                    <p class="font-display text-5xl mb-6">$0<span class="text-lg font-sans opacity-70">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Core components</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Community support</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> 1 project</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Basic tokens</li>
+                    </ul>
+                    <a href="#" class="bg-secondary text-text font-bold text-center py-3 hover:bg-white transition-colors">Start Free</a>
+                </div>
+                <!-- Pro (highlighted) -->
+                <div class="bg-primary text-white p-8 flex flex-col relative">
+                    <p class="absolute top-0 right-0 bg-warning text-text font-bold px-4 py-1 text-sm">POPULAR</p>
+                    <h3 class="font-display text-2xl mb-2">Pro</h3>
+                    <p class="font-mono text-sm mb-6 text-secondary">// for growing teams</p>
+                    <p class="font-display text-5xl mb-6">$49<span class="text-lg font-sans opacity-70">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> All components</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Priority support</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Unlimited projects</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Advanced tokens</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Figma library</li>
+                    </ul>
+                    <a href="#" class="bg-secondary text-text font-bold text-center py-3 hover:bg-white transition-colors">Go Pro</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-text text-white p-8 flex flex-col">
+                    <h3 class="font-display text-2xl mb-2">Enterprise</h3>
+                    <p class="font-mono text-sm mb-6 text-secondary">// for scale</p>
+                    <p class="font-display text-5xl mb-6">Custom</p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Everything in Pro</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Dedicated support</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> Custom components</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> SSO & audit logs</li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-5 h-5 text-secondary"></i> SLA guarantee</li>
+                    </ul>
+                    <a href="#" class="bg-secondary text-text font-bold text-center py-3 hover:bg-white transition-colors">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="py-24 bg-secondary">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-primary mb-2">// faq</p>
+                <h2 class="font-display text-4xl sm:text-5xl mb-4">Frequently asked</h2>
+                <p class="text-lg text-text/70">Everything you need to know.</p>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <details class="bg-surface p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-bold text-lg">
+                        Is Vibrant really accessible?
+                        <i data-lucide="chevron-down" class="w-6 h-6 text-primary group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-text/70">Yes! We're WCAG 2.2 AA compliant and test every component with screen readers, keyboard-only navigation, and automated tools. Accessibility is our foundation, not an afterthought.</p>
+                </details>
+                <!-- FAQ Item 2 -->
+                <details class="bg-surface p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-bold text-lg">
+                        Can I customize the design tokens?
+                        <i data-lucide="chevron-down" class="w-6 h-6 text-primary group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-text/70">Absolutely. Every color, spacing, and font token is exposed as a CSS variable. You can override them globally or per-component. Your brand, your rules.</p>
+                </details>
+                <!-- FAQ Item 3 -->
+                <details class="bg-surface p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-bold text-lg">
+                        What about reduced motion preferences?
+                        <i data-lucide="chevron-down" class="w-6 h-6 text-primary group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-text/70">We respect <code class="font-mono bg-secondary px-2 py-1">prefers-reduced-motion</code> out of the box. All animations gracefully degrade to static states, and transitions are minimized for users who need it.</p>
+                </details>
+                <!-- FAQ Item 4 -->
+                <details class="bg-surface p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-bold text-lg">
+                        Do you support dark mode?
+                        <i data-lucide="chevron-down" class="w-6 h-6 text-primary group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-text/70">Yes, dark mode is built in. Our semantic tokens automatically adjust for contrast in both light and dark themes, so you never have to worry about readability.</p>
+                </details>
+                <!-- FAQ Item 5 -->
+                <details class="bg-surface p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-bold text-lg">
+                        How do I migrate from another design system?
+                        <i data-lucide="chevron-down" class="w-6 h-6 text-primary group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-text/70">We provide a migration guide and codemods that automate most of the work. Most teams complete the switch in under a week, with full support from our docs and community.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-text text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-12 mb-12">
+                <!-- Brand -->
+                <div class="md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-secondary rotate-45"></div>
+                        <span class="font-display text-2xl">Vibrant</span>
+                    </div>
+                    <p class="text-sm opacity-70">Bold, accessible, and playful design system for modern teams.</p>
+                </div>
+                <!-- Product -->
+                <div>
+                    <h4 class="font-bold mb-4 text-secondary">Product</h4>
+                    <ul class="space-y-2 text-sm opacity-80">
+                        <li><a href="#features" class="hover:text-secondary transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-secondary transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Changelog</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Roadmap</a></li>
+                    </ul>
+                </div>
+                <!-- Resources -->
+                <div>
+                    <h4 class="font-bold mb-4 text-secondary">Resources</h4>
+                    <ul class="space-y-2 text-sm opacity-80">
+                        <li><a href="#" class="hover:text-secondary transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Components</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Tokens</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Blog</a></li>
+                    </ul>
+                </div>
+                <!-- Connect -->
+                <div>
+                    <h4 class="font-bold mb-4 text-secondary">Connect</h4>
+                    <ul class="space-y-2 text-sm opacity-80">
+                        <li><a href="#" class="hover:text-secondary transition-colors">GitHub</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Twitter</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Discord</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/20 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="text-sm opacity-60">© 2025 Vibrant Design System. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-sm opacity-60 hover:text-secondary transition-colors">Privacy</a>
+                    <a href="#" class="text-sm opacity-60 hover:text-secondary transition-colors">Terms</a>
+                    <a href="#" class="text-sm opacity-60 hover:text-secondary transition-colors">Accessibility</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

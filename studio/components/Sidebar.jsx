@@ -2,141 +2,100 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Moon, Sun, FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
+  FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
+  PanelLeftClose, PanelLeftOpen, Home, LayoutGrid, Star, Clock,
+  BookOpen, FileText, Activity, ChevronDown, CreditCard, LogOut,
+  X, Menu,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
-import { cloudModel, hasVision, connection } from '@/lib/models'
-import ModelPicker from './ModelPicker'
-import { Badge, Button, Input, SectionLabel, Seg, SegOpt, Tag, Tip } from './ui'
+import { Badge, Button, Input, SectionLabel, Tag, Tip } from './ui'
 import { cn } from '@/lib/utils'
 
-
 export default function Sidebar({
-  models: cat, projects, onOpen, onImport, onSettings, onZip, onResume, onDeleted,
+  projects = [],
+  onOpen,
+  onImport,
+  onSettings,
+  onZip,
+  onResume,
+  onDeleted,
+  screen = 'home',
+  onScreenChange,
+  user = null,
+  onLogout = null,
+  mobileOpen = false,
+  onMobileClose = null,
 }) {
-  const s = useStore()
-  const { models, think, images, project, status, statusText, theme } = s
+  const project = useStore(z => z.project)
+  const status = useStore(z => z.status)
+  const statusText = useStore(z => z.statusText)
+  const busyProject = useStore(z => z.busyProject)
+  const persist = useStore(z => z.persist)
+  const starred = useStore(z => z.starred)
+  const addLog = useStore(z => z.addLog)
+
+  const [collapsed, setCollapsed] = useState(false)
   const folderRef = useRef(null)
   const [q, setQ] = useState('')
-  const [fooocus, setFooocus] = useState(null)
   const [confirming, setConfirming] = useState('')
   const [removing, setRemoving] = useState('')
+
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountMenuRef = useRef(null)
+
+  const initial = (user?.name || user?.username || 'R')[0]?.toUpperCase() || 'R'
+  const displayName = user?.name || user?.username || 'Ravindu'
+  const displaySubtitle = user?.email || 'Developer Workspace'
+
+  useEffect(() => {
+    if (!accountOpen) return
+    const handleClickAway = (e) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+        setAccountOpen(false)
+      }
+    }
+    window.addEventListener('mousedown', handleClickAway)
+    return () => window.removeEventListener('mousedown', handleClickAway)
+  }, [accountOpen])
+
+  async function openInNewTab() {
+    if (!project) return
+    const tab = window.open('about:blank', '_blank')
+    try {
+      const runtime = await api.open(project)
+      useStore.getState().setRuntime(runtime)
+      if (tab) { tab.opener = null; tab.location.href = runtime.previewUrl }
+    } catch (error) {
+      tab?.close()
+      useStore.getState().addLog('WARN', `Could not open app: ${error.message}`)
+    }
+  }
 
   async function remove(name) {
     setRemoving(name)
     try {
       await api.deleteProject(name)
-      s.addLog('SUCCESS', `Deleted ${name}`)
+      addLog('SUCCESS', `Deleted ${name}`)
     } catch (e) {
-      // Reported, not trusted.
-      s.addLog('WARN', `Delete of ${name} did not report back — ${e.message}. `
+      addLog('WARN', `Delete of ${name} did not report back — ${e.message}. `
                      + 'Checking whether it went.')
     }
-      // Release a project folder that may no longer exist.
     if (project === name) useStore.getState().reset(null)
     onDeleted?.(name)
     setRemoving('')
     setConfirming('')
   }
 
-  function pickModel(id) {
-    const next = {
-      ...models,
-      agent: id,
-      planner: id,
-      design: id,
-      builder: id,
-    }
-    useStore.setState({ models: next })
-    s.persist(KEYS.agent, id)
-    s.persist(KEYS.planner, id)
-    s.persist(KEYS.design, id)
-    s.persist(KEYS.builder, id)
-    api.saveSettings({ agent_model: id }).catch(() =>
-      s.addLog('WARN', 'Could not save the model setting — it will not stick.'))
-    if (cloudModel(cat, id) && !cat.cloudEnabled) {
-      s.addLog('WARN', 'Cloud model selected but Ollama is not signed in — run `ollama signin`.')
-    }
-  }
-
-  function toggle(key, storeKey) {
-    const next = !s[key]
-    useStore.setState({ [key]: next })
-    s.persist(storeKey, next ? '1' : '0')
-  }
-
-    // The backend also tracks the Images switch.
-  async function checkFooocus() {
-    setFooocus(f => ({ ...(f || {}), checking: true }))
-    try {
-      const r = await api.imageCheck()
-      setFooocus({ ...r, checking: false })
-      return r
-    } catch (e) {
-      setFooocus({ error: e.message, checking: false })
-      return null
-    }
-  }
-
   useEffect(() => {
     api.settings()
       .then(cfg => {
-        // Follow the server's image setting.
         if (!cfg || !('image_enabled' in cfg)) return
         useStore.setState({ images: !!cfg.image_enabled })
-        s.persist(KEYS.images, cfg.image_enabled ? '1' : '0')
-        if (cfg.image_enabled) checkFooocus()
+        persist(KEYS.images, cfg.image_enabled ? '1' : '0')
       })
       .catch(() => { })
-  }, [])
-
-  async function toggleImages() {
-    const next = !images
-    useStore.setState({ images: next })
-    s.persist(KEYS.images, next ? '1' : '0')
-    try {
-      await api.saveSettings({ image_enabled: next })
-    } catch {
-      s.addLog('WARN', 'Could not save the images setting — it will not stick.')
-    }
-    if (!next) return setFooocus(null)
-
-    const r = await checkFooocus()
-    if (r?.available) {
-      s.addLog('INFO', `Fooocus is answering at ${r.host} — pictures will be drawn.`)
-    } else if (r?.can_start) {
-      s.addLog('WARN', 'No Fooocus is answering. Press “start it” in the '
-                     + 'sidebar, or run it yourself.')
-    } else {
-      s.addLog('WARN', 'No Fooocus is answering and none was found on this '
-                     + 'machine — start it, or set its address in Settings.')
-    }
-  }
-
-  async function startFooocus() {
-    setFooocus(f => ({ ...(f || {}), checking: true }))
-    try {
-      const r = await api.imageStart()
-      s.addLog('INFO', `Starting Fooocus — ${r.launcher}. It takes a `
-                     + 'minute or two to load its model.')
-    } catch (e) {
-      s.addLog('WARN', `Could not start Fooocus — ${e.message}`)
-      return setFooocus(f => ({ ...(f || {}), checking: false }))
-    }
-        // Keep the chip aligned with the backend result.
-    for (let i = 0; i < 60; i++) {
-      await new Promise(r => setTimeout(r, 5000))
-      const r = await api.imageCheck().catch(() => null)
-      if (r?.available) {
-        setFooocus({ ...r, checking: false })
-        return s.addLog('INFO', `Fooocus is up at ${r.host}.`)
-      }
-    }
-    setFooocus(f => ({ ...(f || {}), checking: false }))
-    s.addLog('WARN', 'Fooocus did not come up within five minutes — check '
-                   + 'its window for what it is waiting on.')
-  }
+  }, [persist])
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -146,183 +105,160 @@ export default function Sidebar({
       String(p.name || '').toLowerCase().includes(needle))
   }, [projects, q])
 
-  const activeModel = models.builder || models.agent || models.planner || models.design || ''
-  const conn = connection(cat, activeModel)
-  const dot = { live: 'bg-ok', busy: 'bg-warn', connecting: 'bg-muted2' }[status]
-    || 'bg-bad'
+  const dot = { live: 'bg-[#22C55E]', busy: 'bg-[#FFAB00]', connecting: 'bg-[#1877F2]' }[status]
+    || 'bg-[#FF5630]'
 
-  return (
-    <aside className="glass-panel flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden rounded-[24px]">
-      <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line/70 px-4 py-4">
-        <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
-             width={34} height={34}
-             className="size-9 shrink-0 rounded-xl border border-white/60 object-cover shadow-sm" />
-        <div className="min-w-0">
-          <div className="font-display text-[16px] font-bold leading-none
-                          tracking-[-.02em] text-ink">
-            AGENTFORGE
+  const renderBody = (isMobile = false) => (
+    <>
+      {/* Primary Navigation Menu */}
+      <nav className="flex flex-col gap-0.5 p-2 border-b border-line text-[13px]">
+        <button
+          onClick={() => {
+            onScreenChange?.('home')
+            if (isMobile) onMobileClose?.()
+          }}
+          className={cn(
+            'flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-all text-left',
+            screen === 'home'
+              ? 'bg-[#1877F2]/10 text-[#1877F2] font-semibold shadow-sm'
+              : 'text-muted hover:bg-ink/[.05] hover:text-ink'
+          )}
+        >
+          <Home className="size-4 shrink-0 text-muted2" />
+          <span>Home</span>
+        </button>
+
+        <button
+          onClick={() => {
+            onScreenChange?.('projects')
+            if (isMobile) onMobileClose?.()
+          }}
+          className={cn(
+            'flex items-center justify-between rounded-xl px-3 py-2 font-medium transition-all text-left',
+            screen === 'projects'
+              ? 'bg-[#1877F2]/10 text-[#1877F2] font-semibold shadow-sm'
+              : 'text-muted hover:bg-ink/[.05] hover:text-ink'
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <LayoutGrid className="size-4 shrink-0 text-muted2" />
+            <span>Projects</span>
           </div>
-          <div className="mt-[5px] flex items-center gap-[6px]">
-            <span className="h-[2px] w-[15px] rounded-full bg-accent" />
-            <span className="text-[9.5px] font-semibold tracking-[.24em] text-label">
-              STUDIO
+          <span className={cn(
+            "rounded-full px-2 py-0.5 font-mono text-[10px]",
+            screen === 'projects' ? "bg-[#1877F2]/20 text-[#1877F2] font-bold" : "bg-panel2 text-muted"
+          )}>
+            {projects.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => {
+            onSettings?.()
+            if (isMobile) onMobileClose?.()
+          }}
+          className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink text-left"
+        >
+          <Settings className="size-4 shrink-0 text-muted2" />
+          <span>Settings</span>
+        </button>
+
+        {/* Both open the Projects screen on a shelf of their own. "Shared with
+            you" used to sit here too and was removed: accounts on this server
+            are isolated by design - `auth_db` says nothing is shared between
+            them - so it was a door onto a room that cannot exist. */}
+        <button
+          onClick={() => {
+            useStore.getState().setProjectFilter('starred')
+            onScreenChange?.('projects')
+            if (isMobile) onMobileClose?.()
+          }}
+          className="flex items-center justify-between rounded-xl px-3 py-1.5 text-left text-muted hover:bg-ink/[.05] hover:text-ink">
+          <div className="flex items-center gap-3">
+            <Star className="size-4 shrink-0 text-muted2" />
+            <span>Starred</span>
+          </div>
+          {starred.length > 0 && (
+            <span className="rounded-full bg-panel2 px-2 py-0.5 font-mono text-[10px] text-muted">
+              {starred.length}
             </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            useStore.getState().setProjectFilter('recent')
+            onScreenChange?.('projects')
+            if (isMobile) onMobileClose?.()
+          }}
+          className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-left text-muted hover:bg-ink/[.05] hover:text-ink">
+          <Clock className="size-4 shrink-0 text-muted2" />
+          <span>Recently viewed</span>
+        </button>
+      </nav>
+
+      {/* Secondary Resources & Status */}
+      <div className="flex flex-col gap-0.5 p-2 border-b border-line text-[12px]">
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
+          <BookOpen className="size-3.5 shrink-0 text-muted2" />
+          <span>Help Center</span>
+        </button>
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
+          <FileText className="size-3.5 shrink-0 text-muted2" />
+          <span>Release notes</span>
+        </button>
+        <div className="flex items-center justify-between rounded-xl px-3 py-1.5 text-muted">
+          <div className="flex items-center gap-3">
+            <Activity className="size-3.5 shrink-0 text-muted2" />
+            <span>Status</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={cn('size-2 rounded-full', dot)} />
+            <span className="font-mono text-[10px] text-muted">{status}</span>
           </div>
         </div>
-        <Tip text="Toggle theme">
-          <Button variant="outline" size="icon" className="size-[28px]"
-                  onClick={() => s.setTheme(theme === 'dark' ? 'light' : 'dark')}>
-            <Moon className="hidden size-3.5 dark:block" />
-            <Sun className="size-3.5 dark:hidden" />
-          </Button>
-        </Tip>
-      </header>
-
-      <div className="mx-3 mt-3 flex items-center gap-2 rounded-xl border border-line/70 bg-white/45 px-3 py-2 shadow-sm dark:bg-white/[.025]">
-        <span className={cn('size-2 shrink-0 rounded-full shadow-sm', dot)} />
-        <span className="min-w-0 truncate font-mono text-[10.5px] text-muted">
-          {statusText}
-        </span>
-        <span className="flex-1" />
-        <span className="label-2xs shrink-0 text-muted2">{status}</span>
       </div>
 
-      <SectionLabel className="border-b border-line2 px-[14px] py-[9px]">
-        Model
-      </SectionLabel>
-      <ModelPicker label="Model" value={activeModel} options={cat.all}
-                   onChange={pickModel} conn={conn}
-                   hint={hasVision(cat.all, activeModel)
-                     ? 'Used by planning, design and building. This model can also inspect images.'
-                     : 'Used by planning, design and building.'} />
-
-      <SectionLabel className="border-b border-line2 px-[14px] py-[9px]">
-        Build controls
-      </SectionLabel>
-
-      <Seg block className="mb-1">
-        <Tip className="flex-1"
-             text="Enable the reasoning pass for Builder and QA work">
-          <SegOpt block on={think} onClick={() => toggle('think', KEYS.think)}>
-            Think
-          </SegOpt>
-        </Tip>
-        <Tip className="flex-1" text={fooocusTip(fooocus, images)}>
-          <SegOpt block on={images} onClick={toggleImages}>
-            Images
-            {images && (
-              <span className={cn('inline-block size-[5px] align-middle',
-                fooocus?.checking ? 'animate-pulse bg-bg/70'
-                  : fooocus?.available ? 'bg-bg'
-                  : 'bg-bg/30')} />
-            )}
-          </SegOpt>
-        </Tip>
-      </Seg>
-
-      {images && fooocus && !fooocus.checking && !fooocus.available && (
-        <p className="border-b border-line2 px-[14px] py-1.5 text-[10.5px]
-                      leading-snug text-muted">
-          No Fooocus is answering
-          {fooocus.can_start ? (<>
-            {' — '}
-            <button onClick={startFooocus}
-                    className="font-semibold text-accent underline
-                               underline-offset-2 hover:text-ink">
-              start it
-            </button>
-          </>) : ' — start it, or set its address in Settings'}
-        </p>
-      )}
-
-      <SectionLabel className="border-b border-line2 px-[14px] py-[9px]"
-                    right={<span className="font-mono text-[10px] font-normal
-                                            tracking-normal text-muted2">
-                             {String(projects.length).padStart(2, '0')}
-                           </span>}>
-        Projects
-      </SectionLabel>
-
-      {projects.length > 6 && (
-        <div className="relative border-b border-line2 p-2">
-          <Search className="pointer-events-none absolute left-[11px] top-1/2 size-3
-                             -translate-y-1/2 text-muted2" />
-          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter…"
-                 className="pl-[26px]" />
-        </div>
-      )}
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {shown.map((p, i) => {
-          const name = p.name || p
-          const on = project === name
-          const asking = confirming === name
-          const busyHere = removing === name
-          return (
-            <div key={name}
-                 className={cn('group grid w-full grid-cols-[26px_1fr_auto]',
-                   'items-center gap-2.5 rounded-[14px] border-l-[3px]',
-                   'py-[11px] pl-[7px] pr-[14px] transition-colors',
-                   asking ? 'border-l-accent bg-tint'
-                          : on ? 'border-l-accent bg-panel2'
-                               : 'border-l-transparent hover:bg-panel2')}>
-              <span className={cn('font-mono text-[10.5px] tabular-nums',
-                                  on || asking ? 'text-accent' : 'text-faint')}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <button onClick={() => onOpen(name)} disabled={asking || busyHere}
-                      className="min-w-0 text-left">
-                <span className={cn('block truncate text-[13.5px] leading-tight',
-                                    'tracking-[-.012em] text-ink',
-                                    on ? 'font-extrabold' : 'font-semibold')}>
-                  {p.title || name}
-                </span>
-                <span className={cn('mt-[3px] block truncate text-[11px] leading-tight',
-                                    asking ? 'text-deep' : 'text-muted2')}>
-                  {asking ? 'delete this and its database?'
-                          : (p.file_count ? `${p.file_count} files` : 'project')}
-                </span>
-              </button>
-
-              {asking ? (
-                <span className="flex shrink-0 items-center">
-                  <button onClick={() => remove(name)} disabled={busyHere}
-                          className="border border-accent bg-accent px-[6px] py-px
-                                     font-mono text-[10px] text-bg transition-colors
-                                     hover:bg-press disabled:opacity-50">
-                    {busyHere ? '…' : 'delete'}
-                  </button>
-                  <button onClick={() => setConfirming('')} disabled={busyHere}
-                          className="px-1.5 font-mono text-[10px] text-muted
-                                     hover:text-ink">
-                    keep
-                  </button>
+      {/* Active Project Card */}
+      {project && (() => {
+        const name = project
+        const working = busyProject === name
+        return (
+          <div className="p-3 border-b border-line">
+            <div className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-muted2">
+              Active Workspace
+            </div>
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-panel2 p-2.5 shadow-sm">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[12.5px] font-semibold text-ink">{name}</div>
+              </div>
+              {working ? (
+                <span className="flex items-center gap-1.5 rounded-full bg-[#1877F2]/15 px-2 py-0.5 text-[10px] font-semibold text-[#1877F2]">
+                  <span className="size-1.5 rounded-full bg-[#1877F2] animate-pulse" />
+                  working
                 </span>
               ) : (
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <DeployTag deployed={p.deployed} />
-                  {p.unfinished ? <Badge tone="bad">{p.unfinished}</Badge> : null}
-                  <Tip text={`Delete ${name} from disk`}>
-                    <button onClick={() => setConfirming(name)}
-                            className="shrink-0 p-0.5 text-muted2 opacity-0
-                                       transition-opacity hover:text-accent
-                                       group-hover:opacity-100">
-                      <Trash2 className="size-3" />
-                    </button>
-                  </Tip>
-                </span>
+                <button
+                  onClick={() => {
+                    onScreenChange?.('projects')
+                    if (isMobile) onMobileClose?.()
+                  }}
+                  className="text-[11px] font-medium text-[#1877F2] hover:underline"
+                >
+                  Change
+                </button>
               )}
             </div>
-          )
-        })}
-        {!shown.length && (
-          <p className="px-[14px] py-3 text-[11.5px] text-muted">
-            {projects.length ? `Nothing matches “${q}”.` : 'No projects yet.'}
-          </p>
-        )}
-      </div>
+          </div>
+        )
+      })()}
 
-      <footer className="flex items-stretch border-t-2 border-line2">
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* User Account Row */}
+      <div className="relative border-t border-line px-3 py-2.5" ref={accountMenuRef}>
+        {/* Hidden folder input for import */}
         <input ref={folderRef} type="file" hidden
                webkitdirectory="" directory="" multiple
                onChange={e => {
@@ -330,19 +266,276 @@ export default function Sidebar({
                  e.target.value = ''
                  if (list?.length) onImport(list)
                }} />
-        <Foot icon={FolderUp} tip="Import a project folder"
-              onClick={() => folderRef.current?.click()} />
-        <Foot icon={Play} tip="Resume this build where it stopped"
-              disabled={!project || status === 'busy'} onClick={onResume} />
-        <Foot icon={Settings} tip="Settings" onClick={onSettings} />
-        <Foot icon={Download} tip="Download this project as a zip"
-              disabled={!project} onClick={onZip} />
-        <Foot icon={ExternalLink} tip="Open the app in a new tab"
-              disabled={!project} onClick={() => window.open('/', '_blank')} />
-      </footer>
-    </aside>
+
+        {/* Account Menu Popover */}
+        {accountOpen && (
+          <div
+            className="absolute bottom-full left-3 mb-2 w-56 rounded-2xl border border-line bg-[#1C252E] p-1.5 shadow-[0_20px_40px_-4px_rgba(0,0,0,0.48)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+          >
+            <button
+              onClick={() => { setAccountOpen(false); onSettings?.(); if (isMobile) onMobileClose?.() }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white transition-colors"
+            >
+              <Settings className="size-4 text-white/80" />
+              <span>Settings</span>
+            </button>
+            <button
+              onClick={() => { setAccountOpen(false); folderRef.current?.click(); if (isMobile) onMobileClose?.() }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white transition-colors"
+            >
+              <FolderUp className="size-4 text-white/80" />
+              <span>Import project folder</span>
+            </button>
+            <button
+              onClick={() => { setAccountOpen(false); onResume?.(); if (isMobile) onMobileClose?.() }}
+              disabled={!project || status === 'busy'}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            >
+              <Play className="size-4 text-muted2" />
+              <span>Resume build</span>
+            </button>
+            <button
+              onClick={() => { setAccountOpen(false); onZip?.(); if (isMobile) onMobileClose?.() }}
+              disabled={!project}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            >
+              <Download className="size-4 text-muted2" />
+              <span>Download project as zip</span>
+            </button>
+            <button
+              onClick={() => { setAccountOpen(false); openInNewTab(); if (isMobile) onMobileClose?.() }}
+              disabled={!project}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            >
+              <ExternalLink className="size-4 text-muted2" />
+              <span>Open in new tab</span>
+            </button>
+            {onLogout && (
+              <>
+                <div className="my-1 border-t border-line" />
+                <button
+                  onClick={() => { setAccountOpen(false); onLogout?.(); if (isMobile) onMobileClose?.() }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-[#FF5630] hover:bg-[#FF5630]/10 hover:text-[#FF5630] transition-colors"
+                >
+                  <LogOut className="size-4" />
+                  <span>Sign out</span>
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={() => setAccountOpen(v => !v)}
+          className="flex w-full items-center justify-between gap-2.5 rounded-xl p-1.5 hover:bg-ink/[.06] transition-colors group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#1877F2] font-bold text-[13px] text-white shadow-sm transition-transform group-hover:scale-105">
+              {initial}
+            </div>
+            <div className="min-w-0 text-left">
+              <div className="truncate text-[12.5px] font-semibold text-ink">{displayName}</div>
+              <div className="truncate text-[10.5px] text-muted2">{displaySubtitle}</div>
+            </div>
+          </div>
+          <ChevronDown className={cn("size-3.5 text-muted2 transition-transform", accountOpen && "rotate-180")} />
+        </button>
+      </div>
+    </>
+  )
+
+  const renderMobileDrawer = () => (
+    <div className={cn(
+      "fixed inset-0 z-50 md:hidden transition-all duration-300",
+      mobileOpen ? "visible opacity-100" : "invisible opacity-0 pointer-events-none"
+    )}>
+      <div
+        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+        onClick={onMobileClose}
+      />
+      <aside className={cn(
+        "absolute top-0 bottom-0 left-0 w-[280px] max-w-[85vw] flex flex-col bg-panel border-r border-line shadow-2xl transition-transform duration-300 ease-out z-10",
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <header className="flex items-center justify-between border-b border-line px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#1877F2]/10 ring-1 ring-[#1877F2]/20 shadow-sm overflow-hidden">
+              <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" width={22} height={22} className="size-5 object-contain" />
+            </div>
+            <span className="font-display text-[14.5px] font-bold tracking-tight text-ink">
+              agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={onMobileClose}
+              className="grid size-7 place-items-center rounded-lg border border-line bg-panel2/80 text-muted hover:bg-raised hover:text-ink"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        </header>
+        {renderBody(true)}
+      </aside>
+    </div>
+  )
+
+  if (collapsed) {
+    return (
+      <>
+        {renderMobileDrawer()}
+        <aside className="hidden md:flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-panel py-3">
+          <Tip text="Show the sidebar" side="right">
+            <button onClick={() => setCollapsed(false)}
+                    className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-raised hover:text-ink">
+              <PanelLeftOpen className="size-4" />
+            </button>
+          </Tip>
+          <span className={cn('size-2 shrink-0 rounded-full', dot)} title={statusText} />
+          <span className="my-1 h-px w-6 bg-line" />
+
+          <Tip text="Home" side="right">
+            <button onClick={() => onScreenChange?.('home')}
+                    className={cn('grid size-9 place-items-center rounded-xl transition-colors',
+                      screen === 'home' ? 'bg-[#1877F2]/15 text-[#1877F2] font-semibold' : 'text-muted hover:bg-raised hover:text-ink')}>
+              <Home className="size-4" />
+            </button>
+          </Tip>
+
+          <Tip text="All Projects" side="right">
+            <button onClick={() => onScreenChange?.('projects')}
+                    className={cn('grid size-9 place-items-center rounded-xl transition-colors',
+                      screen === 'projects' ? 'bg-[#1877F2]/15 text-[#1877F2] font-semibold' : 'text-muted hover:bg-raised hover:text-ink')}>
+              <LayoutGrid className="size-4" />
+            </button>
+          </Tip>
+
+          <Tip text="Settings" side="right">
+            <button onClick={onSettings}
+                    className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-raised hover:text-ink">
+              <Settings className="size-3.5" />
+            </button>
+          </Tip>
+          <Tip text="Resume this build where it stopped" side="right">
+            <button onClick={onResume} disabled={!project || status === 'busy'}
+                    className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-30">
+              <Play className="size-3.5" />
+            </button>
+          </Tip>
+          <span className="flex-1" />
+          {project && (
+            <span className="max-h-[220px] [writing-mode:vertical-rl] truncate text-[10px] font-semibold text-muted2"
+                  title={project}>
+              {project}
+            </span>
+          )}
+
+          {/* Collapsed Account Avatar Button with Popover */}
+          <div className="relative mt-auto" ref={accountMenuRef}>
+            {accountOpen && (
+              <div
+                className="absolute bottom-0 left-full ml-3 w-56 rounded-2xl border border-line bg-panel p-1.5 shadow-[0_20px_40px_-4px_rgba(0,0,0,0.48)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+              >
+                <button
+                  onClick={() => { setAccountOpen(false); onSettings?.() }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] transition-colors"
+                >
+                  <Settings className="size-4 text-muted2" />
+                  <span>Settings</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); folderRef.current?.click() }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] transition-colors"
+                >
+                  <FolderUp className="size-4 text-muted2" />
+                  <span>Import project folder</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); onResume?.() }}
+                  disabled={!project || status === 'busy'}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <Play className="size-4 text-muted2" />
+                  <span>Resume build</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); onZip?.() }}
+                  disabled={!project}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <Download className="size-4 text-white/80" />
+                  <span>Download project as zip</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); openInNewTab() }}
+                  disabled={!project}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <ExternalLink className="size-4 text-white/80" />
+                  <span>Open in new tab</span>
+                </button>
+                {onLogout && (
+                  <>
+                    <div className="my-1 border-t border-line" />
+                    <button
+                      onClick={() => { setAccountOpen(false); onLogout?.() }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-[#FF5630] hover:bg-[#FF5630]/10 hover:text-[#FF5630] transition-colors"
+                    >
+                      <LogOut className="size-4" />
+                      <span>Sign out</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => setAccountOpen(v => !v)}
+              title={`Account: ${displayName}`}
+              className="flex size-8 items-center justify-center rounded-lg bg-[#1877F2] font-bold text-[13px] text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+            >
+              {initial}
+            </button>
+          </div>
+        </aside>
+      </>
+    )
+  }
+
+  return (
+    <>
+      {renderMobileDrawer()}
+      <aside className="hidden md:flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-panel">
+        {/* Top Header: Brand and Controls */}
+        <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#1877F2]/10 ring-1 ring-[#1877F2]/20 shadow-sm overflow-hidden">
+              <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
+                   width={22} height={22}
+                   className="size-5 object-contain" />
+            </div>
+            <span className="font-display text-[14.5px] font-bold tracking-tight text-ink">
+              agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
+            </span>
+          </div>
+
+          <div className="flex justify-end items-center gap-1.5 col-span-2">
+            <Tip text="Hide the sidebar">
+              <button
+                className="grid size-[26px] place-items-center rounded-lg border border-line bg-panel2/80 text-muted transition-colors hover:bg-raised hover:text-ink"
+                onClick={() => setCollapsed(true)}
+              >
+                <PanelLeftClose className="size-3" />
+              </button>
+            </Tip>
+          </div>
+        </header>
+        {renderBody(false)}
+      </aside>
+    </>
   )
 }
+
+
 
 
 function DeployTag({ deployed }) {
@@ -358,22 +551,3 @@ function DeployTag({ deployed }) {
     </Tip>
   )
 }
-
-function fooocusTip(state, on) {
-  if (!on) return 'Generate pictures, and offer a logo before the build'
-  if (!state || state.checking) return 'Looking for Fooocus…'
-  if (state.available) return `Fooocus is answering at ${state.host}`
-  if (state.error) return `Could not ask the server — ${state.error}`
-  return 'No Fooocus is answering — pictures will be skipped'
-}
-
-const Foot = ({ icon: Icon, tip, ...rest }) => (
-  <Tip className="flex-1 border-r border-line2 last:border-r-0" text={tip}>
-    <button {...rest}
-            className="grid h-[34px] w-full place-items-center text-ink
-                       transition-colors hover:bg-ink/[.07]
-                       disabled:pointer-events-none disabled:text-faint">
-      <Icon className="size-3.5" />
-    </button>
-  </Tip>
-)

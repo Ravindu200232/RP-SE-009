@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bauhaus — Constructivist Design System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * { font-family: 'Outfit', sans-serif; }
+        .dot-grid { background-image: radial-gradient(#121212 2px, transparent 2px); background-size: 20px 20px; }
+        .triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+        .rotate-45 { transform: rotate(45deg); }
+        .rotate-45-inner { transform: rotate(-45deg); }
+    </style>
+</head>
+<body class="bg-[#F0F0F0] text-[#121212]">
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="border-b-4 border-[#121212] bg-white sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <!-- Geometric Logo -->
+            <a href="#" class="flex items-center gap-3">
+                <div class="flex items-center">
+                    <div class="w-4 h-4 rounded-full bg-[#D02020] border-2 border-[#121212]"></div>
+                    <div class="w-4 h-4 bg-[#1040C0] border-2 border-[#121212] -ml-1"></div>
+                    <div class="w-0 h-0 border-l-[8px] border-l-transparent border-b-[14px] border-b-[#F0C020] border-r-[8px] border-r-transparent -ml-1"></div>
+                </div>
+                <span class="text-xl font-black uppercase tracking-tighter">Bauhaus</span>
+            </a>
+
+            <!-- Desktop Nav -->
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#" class="text-sm font-bold uppercase tracking-widest hover:text-[#D02020] transition-colors duration-200">Work</a>
+                <a href="#" class="text-sm font-bold uppercase tracking-widest hover:text-[#1040C0] transition-colors duration-200">Studio</a>
+                <a href="#" class="text-sm font-bold uppercase tracking-widest hover:text-[#D02020] transition-colors duration-200">Journal</a>
+                <a href="#" class="text-sm font-bold uppercase tracking-widest hover:text-[#1040C0] transition-colors duration-200">Contact</a>
+                <a href="#" class="bg-[#D02020] text-white border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-6 py-2 text-sm font-bold uppercase tracking-widest hover:bg-[#D02020]/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Start Project</a>
+            </div>
+
+            <!-- Mobile Hamburger -->
+            <button class="md:hidden border-2 border-[#121212] p-2">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="border-b-4 border-[#121212] bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <!-- Left Content -->
+            <div>
+                <div class="flex items-center gap-2 mb-6">
+                    <div class="w-2 h-2 rounded-full bg-[#D02020]"></div>
+                    <div class="w-2 h-2 bg-[#1040C0]"></div>
+                    <div class="w-2 h-2 bg-[#F0C020]"></div>
+                    <span class="text-xs font-bold uppercase tracking-widest ml-2">Design System v2.0</span>
+                </div>
+                <h1 class="text-5xl sm:text-6xl lg:text-8xl font-black uppercase leading-[0.9] tracking-tighter mb-8">
+                    Form<br>Follows<br><span class="text-[#D02020]">Function</span>
+                </h1>
+                <p class="text-base sm:text-lg font-medium leading-relaxed mb-10 max-w-lg">
+                    A constructivist approach to digital design. Pure geometry, primary colors, and unapologetic modernism — built for the web.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#" class="bg-[#1040C0] text-white border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-8 py-4 font-bold uppercase tracking-wider hover:bg-[#1040C0]/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Explore Work</a>
+                    <a href="#" class="bg-white text-[#121212] border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-8 py-4 font-bold uppercase tracking-wider hover:bg-gray-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Our Process</a>
+                </div>
+            </div>
+
+            <!-- Right Geometric Composition -->
+            <div class="bg-[#1040C0] border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 sm:p-12 lg:p-16 relative min-h-[400px] flex items-center justify-center">
+                <!-- Overlapping Circle -->
+                <div class="absolute top-8 right-8 w-24 h-24 rounded-full bg-[#F0C020] border-4 border-[#121212]"></div>
+                <!-- Rotated Square -->
+                <div class="absolute bottom-12 left-8 w-20 h-20 bg-[#D02020] border-4 border-[#121212] rotate-45"></div>
+                <!-- Center Composition -->
+                <div class="relative">
+                    <div class="w-32 h-32 bg-white border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] flex items-center justify-center">
+                        <div class="w-0 h-0 border-l-[24px] border-l-transparent border-b-[40px] border-b-[#D02020] border-r-[24px] border-r-transparent"></div>
+                    </div>
+                    <div class="absolute -bottom-4 -right-4 w-16 h-16 bg-[#F0C020] border-4 border-[#121212]"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== STATS ==================== -->
+    <section class="bg-[#F0C020] border-b-4 border-[#121212]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y-4 sm:divide-y-0 sm:divide-x-4 divide-[#121212] border-4 border-[#121212] bg-white">
+                <div class="p-8 text-center">
+                    <div class="w-12 h-12 rounded-full bg-[#D02020] border-4 border-[#121212] mx-auto mb-4 flex items-center justify-center">
+                        <span class="text-white font-black text-xl">12</span>
+                    </div>
+                    <p class="font-bold uppercase tracking-widest text-sm">Years</p>
+                </div>
+                <div class="p-8 text-center">
+                    <div class="w-12 h-12 bg-[#1040C0] border-4 border-[#121212] mx-auto mb-4 flex items-center justify-center rotate-45">
+                        <span class="text-white font-black text-xl rotate-45-inner">240</span>
+                    </div>
+                    <p class="font-bold uppercase tracking-widest text-sm">Projects</p>
+                </div>
+                <div class="p-8 text-center">
+                    <div class="w-0 h-0 border-l-[24px] border-l-transparent border-b-[40px] border-b-[#F0C020] border-r-[24px] border-r-transparent mx-auto mb-4"></div>
+                    <p class="font-bold uppercase tracking-widest text-sm">98%</p>
+                    <p class="font-bold uppercase tracking-widest text-sm">Satisfaction</p>
+                </div>
+                <div class="p-8 text-center">
+                    <div class="w-12 h-12 bg-[#121212] border-4 border-[#121212] mx-auto mb-4 flex items-center justify-center">
+                        <span class="text-[#F0C020] font-black text-xl">15</span>
+                    </div>
+                    <p class="font-bold uppercase tracking-widest text-sm">Awards</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURES ==================== -->
+    <section class="border-b-4 border-[#121212] bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter mb-4">What We Build</h2>
+                <div class="w-16 h-2 bg-[#D02020] mx-auto"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-white border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 hover:-translate-y-2 transition-transform duration-200 relative">
+                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full bg-[#D02020]"></div>
+                    <div class="w-16 h-16 bg-white border-4 border-[#121212] shadow-[4px_4px_0px_0px_#121212] flex items-center justify-center mb-6">
+                        <i data-lucide="circle" class="w-8 h-8 text-[#D02020]"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase tracking-tight mb-4">Geometric UI</h3>
+                    <p class="font-medium leading-relaxed">Every interface element is constructed from pure geometric forms — circles, squares, and triangles — creating visual harmony through mathematical precision.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-white border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 hover:-translate-y-2 transition-transform duration-200 relative">
+                    <div class="absolute top-4 right-4 w-3 h-3 bg-[#1040C0]"></div>
+                    <div class="w-16 h-16 bg-white border-4 border-[#121212] shadow-[4px_4px_0px_0px_#121212] flex items-center justify-center mb-6">
+                        <i data-lucide="square" class="w-8 h-8 text-[#1040C0]"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase tracking-tight mb-4">Primary Palette</h3>
+                    <p class="font-medium leading-relaxed">A strictly limited color system of Bauhaus primaries — red, blue, and yellow — delivers maximum impact with minimal visual noise.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-white border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 hover:-translate-y-2 transition-transform duration-200 relative">
+                    <div class="absolute top-4 right-4 w-3 h-3 bg-[#F0C020]"></div>
+                    <div class="w-16 h-16 bg-white border-4 border-[#121212] shadow-[4px_4px_0px_0px_#121212] flex items-center justify-center mb-6">
+                        <i data-lucide="triangle" class="w-8 h-8 text-[#F0C020]"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase tracking-tight mb-4">Hard Shadows</h3>
+                    <p class="font-medium leading-relaxed">Depth is created through offset shadows — never soft or blurred — giving every element a crisp, printed, poster-like quality.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PROCESS ==================== -->
+    <section class="border-b-4 border-[#121212] bg-[#F0F0F0]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter mb-4">How We Work</h2>
+                <div class="w-16 h-2 bg-[#1040C0] mx-auto"></div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <div class="w-20 h-20 bg-[#D02020] border-4 border-[#121212] shadow-[6px_6px_0px_0px_#121212] rotate-45 mx-auto mb-6 flex items-center justify-center">
+                        <span class="text-white font-black text-3xl rotate-45-inner">01</span>
+                    </div>
+                    <h3 class="text-xl font-bold uppercase tracking-tight text-center mb-3">Discover</h3>
+                    <p class="font-medium text-center leading-relaxed">We immerse ourselves in your world, understanding the problem before sketching solutions.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative">
+                    <div class="w-20 h-20 bg-[#1040C0] border-4 border-[#121212] shadow-[6px_6px_0px_0px_#121212] rotate-45 mx-auto mb-6 flex items-center justify-center">
+                        <span class="text-white font-black text-3xl rotate-45-inner">02</span>
+                    </div>
+                    <h3 class="text-xl font-bold uppercase tracking-tight text-center mb-3">Define</h3>
+                    <p class="font-medium text-center leading-relaxed">We distill insights into a clear creative direction and functional specification.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="relative">
+                    <div class="w-20 h-20 bg-[#F0C020] border-4 border-[#121212] shadow-[6px_6px_0px_0px_#121212] rotate-45 mx-auto mb-6 flex items-center justify-center">
+                        <span class="text-[#121212] font-black text-3xl rotate-45-inner">03</span>
+                    </div>
+                    <h3 class="text-xl font-bold uppercase tracking-tight text-center mb-3">Design</h3>
+                    <p class="font-medium text-center leading-relaxed">We construct the interface from geometric components, testing every interaction.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="relative">
+                    <div class="w-20 h-20 bg-white border-4 border-[#121212] shadow-[6px_6px_0px_0px_#121212] rotate-45 mx-auto mb-6 flex items-center justify-center">
+                        <span class="text-[#121212] font-black text-3xl rotate-45-inner">04</span>
+                    </div>
+                    <h3 class="text-xl font-bold uppercase tracking-tight text-center mb-3">Deliver</h3>
+                    <p class="font-medium text-center leading-relaxed">We ship pixel-perfect, accessible, and performant experiences that last.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BENEFITS ==================== -->
+    <section class="bg-[#D02020] border-b-4 border-[#121212]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter text-white mb-8">Why Choose<br>Bauhaus?</h2>
+                    <p class="text-white font-medium text-lg leading-relaxed mb-8">We don't just make things look different — we make them work better. Our constructivist approach strips away the unnecessary, leaving only what serves the user.</p>
+                    <a href="#" class="inline-block bg-[#F0C020] text-[#121212] border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-8 py-4 font-bold uppercase tracking-wider hover:bg-[#F0C020]/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Get Started</a>
+                </div>
+                <div class="space-y-6">
+                    <div class="flex items-start gap-4 bg-white border-4 border-[#121212] shadow-[6px_6px_0px_0px_#121212] p-6">
+                        <div class="w-10 h-10 rounded-full bg-[#F0C020] border-2 border-[#121212] flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="check" class="w-5 h-5 text-[#121212]"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold uppercase tracking-tight text-lg mb-2">Clarity First</h3>
+                            <p class="font-medium leading-relaxed">Every element has a purpose. No decoration for decoration's sake — just clear, functional design.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4 bg-white border-4 border-[#121212] shadow-[6px_6px_0px_0px_#121212] p-6">
+                        <div class="w-10 h-10 rounded-full bg-[#F0C020] border-2 border-[#121212] flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="check" class="w-5 h-5 text-[#121212]"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold uppercase tracking-tight text-lg mb-2">Timeless Aesthetic</h3>
+                            <p class="font-medium leading-relaxed">Bauhaus design doesn't follow trends — it sets them. Your product stays relevant for decades, not seasons.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4 bg-white border-4 border-[#121212] shadow-[6px_6px_0px_0px_#121212] p-6">
+                        <div class="w-10 h-10 rounded-full bg-[#F0C020] border-2 border-[#121212] flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="check" class="w-5 h-5 text-[#121212]"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold uppercase tracking-tight text-lg mb-2">Accessible by Design</h3>
+                            <p class="font-medium leading-relaxed">High contrast, clear hierarchy, and simple geometry make our interfaces usable by everyone.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TESTIMONIALS ==================== -->
+    <section class="border-b-4 border-[#121212] bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter mb-4">What Clients Say</h2>
+                <div class="w-16 h-2 bg-[#F0C020] mx-auto"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-[#F0F0F0] border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 relative">
+                    <div class="absolute top-4 right-4 w-3 h-3 bg-[#D02020]"></div>
+                    <i data-lucide="quote" class="w-8 h-8 text-[#D02020] mb-6"></i>
+                    <p class="font-medium leading-relaxed mb-8">"The Bauhaus team transformed our digital presence. The design is bold, distinctive, and incredibly effective. We've never had such positive feedback from users."</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-[#1040C0] border-4 border-[#121212] flex items-center justify-center text-white font-black text-xl">AK</div>
+                        <div>
+                            <p class="font-bold uppercase tracking-tight">Anna Kova</p>
+                            <p class="text-sm font-medium">CEO, Construct Studio</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="bg-[#F0F0F0] border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 relative">
+                    <div class="absolute top-4 right-4 w-3 h-3 bg-[#1040C0]"></div>
+                    <i data-lucide="quote" class="w-8 h-8 text-[#1040C0] mb-6"></i>
+                    <p class="font-medium leading-relaxed mb-8">"Working with this team was like watching a masterpiece being constructed. Every pixel has a purpose. The attention to detail is unmatched in the industry."</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-[#D02020] border-4 border-[#121212] flex items-center justify-center text-white font-black text-xl">MR</div>
+                        <div>
+                            <p class="font-bold uppercase tracking-tight">Marcus Roth</p>
+                            <p class="text-sm font-medium">Director, Form & Function</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="bg-[#F0F0F0] border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 relative">
+                    <div class="absolute top-4 right-4 w-3 h-3 bg-[#F0C020]"></div>
+                    <i data-lucide="quote" class="w-8 h-8 text-[#F0C020] mb-6"></i>
+                    <p class="font-medium leading-relaxed mb-8">"They didn't just redesign our website — they redefined our brand. The geometric approach gave us a visual language that's both modern and timeless."</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-[#F0C020] border-4 border-[#121212] flex items-center justify-center text-[#121212] font-black text-xl">SL</div>
+                        <div>
+                            <p class="font-bold uppercase tracking-tight">Sofia Lind</p>
+                            <p class="text-sm font-medium">Founder, Nordic Design Co.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PRICING ==================== -->
+    <section class="border-b-4 border-[#121212] bg-[#F0F0F0]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter mb-4">Pricing Plans</h2>
+                <div class="w-16 h-2 bg-[#D02020] mx-auto"></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+                <!-- Basic -->
+                <div class="bg-white border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 flex flex-col">
+                    <div class="w-12 h-12 bg-[#F0C020] border-4 border-[#121212] mb-6"></div>
+                    <h3 class="text-2xl font-bold uppercase tracking-tight mb-2">Basic</h3>
+                    <p class="text-5xl font-black mb-6">$499</p>
+                    <p class="font-medium text-sm uppercase tracking-widest mb-8">Per Project</p>
+                    <ul class="space-y-4 mb-8 flex-grow">
+                        <li class="flex items-center gap-3 font-medium">
+                            <i data-lucide="check" class="w-5 h-5 text-[#D02020] flex-shrink-0"></i>
+                            Single Page Design
+                        </li>
+                        <li class="flex items-center gap-3 font-medium">
+                            <i data-lucide="check" class="w-5 h-5 text-[#D02020] flex-shrink-0"></i>
+                            Geometric UI Kit
+                        </li>
+                        <li class="flex items-center gap-3 font-medium">
+                            <i data-lucide="check" class="w-5 h-5 text-[#D02020] flex-shrink-0"></i>
+                            2 Revisions
+                        </li>
+                        <li class="flex items-center gap-3 font-medium">
+                            <i data-lucide="check" class="w-5 h-5 text-[#D02020] flex-shrink-0"></i>
+                            2 Week Delivery
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center bg-white text-[#121212] border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-6 py-3 font-bold uppercase tracking-wider hover:bg-gray-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Choose Basic</a>
+                </div>
+                <!-- Pro (Elevated) -->
+                <div class="bg-[#1040C0] border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 flex flex-col lg:-translate-y-4 relative">
+                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full bg-[#F0C020]"></div>
+                    <div class="w-12 h-12 bg-[#D02020] border-4 border-[#121212] mb-6"></div>
+                    <h3 class="text-2xl font-bold uppercase tracking-tight text-white mb-2">Pro</h3>
+                    <p class="text-5xl font-black text-white mb-6">$999</p>
+                    <p class="font-medium text-sm uppercase tracking-widest text-white mb-8">Per Project</p>
+                    <ul class="space-y-4 mb-8 flex-grow">
+                        <li class="flex items-center gap-3 font-medium text-white">
+                            <i data-lucide="check" class="w-5 h-5 text-[#F0C020] flex-shrink-0"></i>
+                            Up to 5 Pages
+                        </li>
+                        <li class="flex items-center gap-3 font-medium text-white">
+                            <i data-lucide="check" class="w-5 h-5 text-[#F0C020] flex-shrink-0"></i>
+                            Custom Geometric System
+                        </li>
+                        <li class="flex items-center gap-3 font-medium text-white">
+                            <i data-lucide="check" class="w-5 h-5 text-[#F0C020] flex-shrink-0"></i>
+                            5 Revisions
+                        </li>
+                        <li class="flex items-center gap-3 font-medium text-white">
+                            <i data-lucide="check" class="w-5 h-5 text-[#F0C020] flex-shrink-0"></i>
+                            4 Week Delivery
+                        </li>
+                        <li class="flex items-center gap-3 font-medium text-white">
+                            <i data-lucide="check" class="w-5 h-5 text-[#F0C020] flex-shrink-0"></i>
+                            Priority Support
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center bg-[#F0C020] text-[#121212] border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-6 py-3 font-bold uppercase tracking-wider hover:bg-[#F0C020]/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Choose Pro</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-white border-4 border-[#121212] shadow-[8px_8px_0px_0px_#121212] p-8 flex flex-col">
+                    <div class="w-12 h-12 bg-[#D02020] border-4 border-[#121212] mb-6"></div>
+                    <h3 class="text-2xl font-bold uppercase tracking-tight mb-2">Enterprise</h3>
+                    <p class="text-5xl font-black mb-6">Custom</p>
+                    <p class="font-medium text-sm uppercase tracking-widest mb-8">Tailored Solution</p>
+                    <ul class="space-y-4 mb-8 flex-grow">
+                        <li class="flex items-center gap-3 font-medium">
+                            <i data-lucide="check" class="w-5 h-5 text-[#1040C0] flex-shrink-0"></i>
+                            Unlimited Pages
+                        </li>
+                        <li class="flex items-center gap-3 font-medium">
+                            <i data-lucide="check" class="w-5 h-5 text-[#1040C0] flex-shrink-0"></i>
+                            Full Design System
+                        </li>
+                        <li class="flex items-center gap-3 font-medium">
+                            <i data-lucide="check" class="w-5 h-5 text-[#1040C0] flex-shrink-0"></i>
+                            Unlimited Revisions
+                        </li>
+                        <li class="flex items-center gap-3 font-medium">
+                            <i data-lucide="check" class="w-5 h-5 text-[#1040C0] flex-shrink-0"></i>
+                            Dedicated Team
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center bg-[#121212] text-white border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-6 py-3 font-bold uppercase tracking-wider hover:bg-[#121212]/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FAQ ==================== -->
+    <section class="border-b-4 border-[#121212] bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tighter mb-4">FAQ</h2>
+                <div class="w-16 h-2 bg-[#1040C0] mx-auto"></div>
+            </div>
+            <div class="space-y-6">
+                <!-- FAQ Item 1 -->
+                <div class="bg-white border-4 border-[#121212] shadow-[4px_4px_0px_0px_#121212]">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-bold uppercase tracking-tight text-lg">
+                        What makes Bauhaus design unique?
+                        <i data-lucide="chevron-down" class="w-6 h-6 flex-shrink-0"></i>
+                    </button>
+                    <div class="hidden border-t-4 border-[#121212] bg-[#FFF9C4] p-6">
+                        <p class="font-medium leading-relaxed">Bauhaus design strips away all ornamentation to reveal the essential structure. It uses pure geometric forms, primary colors, and bold typography to create designs that are both functional and visually striking.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 2 -->
+                <div class="bg-white border-4 border-[#121212] shadow-[4px_4px_0px_0px_#121212]">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-bold uppercase tracking-tight text-lg">
+                        How long does a typical project take?
+                        <i data-lucide="chevron-down" class="w-6 h-6 flex-shrink-0"></i>
+                    </button>
+                    <div class="hidden border-t-4 border-[#121212] bg-[#FFF9C4] p-6">
+                        <p class="font-medium leading-relaxed">A single page design takes about 2 weeks. Multi-page projects typically take 4-6 weeks depending on complexity. We provide a detailed timeline before we begin any work.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 3 -->
+                <div class="bg-white border-4 border-[#121212] shadow-[4px_4px_0px_0px_#121212]">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-bold uppercase tracking-tight text-lg">
+                        Do you work with existing brands?
+                        <i data-lucide="chevron-down" class="w-6 h-6 flex-shrink-0"></i>
+                    </button>
+                    <div class="hidden border-t-4 border-[#121212] bg-[#FFF9C4] p-6">
+                        <p class="font-medium leading-relaxed">Absolutely! We often adapt existing brands into the Bauhaus style. We'll work with your current identity and transform it into a geometric, constructivist visual language.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 4 -->
+                <div class="bg-white border-4 border-[#121212] shadow-[4px_4px_0px_0px_#121212]">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-bold uppercase tracking-tight text-lg">
+                        What is your revision policy?
+                        <i data-lucide="chevron-down" class="w-6 h-6 flex-shrink-0"></i>
+                    </button>
+                    <div class="hidden border-t-4 border-[#121212] bg-[#FFF9C4] p-6">
+                        <p class="font-medium leading-relaxed">Every plan includes a set number of revisions. We work iteratively, presenting designs at key milestones so you can provide feedback throughout the process, not just at the end.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FINAL CTA ==================== -->
+    <section class="bg-[#F0C020] border-b-4 border-[#121212] relative overflow-hidden">
+        <!-- Decorative Shapes -->
+        <div class="absolute top-8 left-8 w-24 h-24 rounded-full bg-[#D02020] border-4 border-[#121212] opacity-50"></div>
+        <div class="absolute bottom-8 right-8 w-32 h-32 bg-[#1040C0] border-4 border-[#121212] rotate-45 opacity-50"></div>
+        
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 text-center relative">
+            <h2 class="text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-8">
+                Let's Build<br>Something Bold
+            </h2>
+            <p class="text-lg sm:text-xl font-medium leading-relaxed mb-12 max-w-2xl mx-auto">
+                Ready to break free from generic design? Let's create a digital experience that's as functional as it is unforgettable.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#" class="bg-[#D02020] text-white border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-10 py-4 font-bold uppercase tracking-wider hover:bg-[#D02020]/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">Start Your Project</a>
+                <a href="#" class="bg-white text-[#121212] border-2 border-[#121212] shadow-[4px_4px_0px_0px_#121212] px-10 py-4 font-bold uppercase tracking-wider hover:bg-gray-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">View Our Work</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-[#121212] text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <!-- Brand -->
+                <div class="md:col-span-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-[#D02020] border-2 border-white"></div>
+                            <div class="w-4 h-4 bg-[#1040C0] border-2 border-white -ml-1"></div>
+                            <div class="w-0 h-0 border-l-[8px] border-l-transparent border-b-[14px] border-b-[#F0C020] border-r-[8px] border-r-transparent -ml-1"></div>
+                        </div>
+                        <span class="text-xl font-black uppercase tracking-tighter">Bauhaus</span>
+                    </div>
+                    <p class="text-gray-400 font-medium leading-relaxed max-w-sm">
+                        A constructivist design studio building bold, functional digital experiences. Form follows function — always.
+                    </p>
+                </div>
+                <!-- Links -->
+                <div>
+                    <h4 class="font-bold uppercase tracking-widest text-sm mb-4 text-[#F0C020]">Studio</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 font-medium">About</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 font-medium">Work</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 font-medium">Journal</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 font-medium">Careers</a></li>
+                    </ul>
+                </div>
+                <!-- Contact -->
+                <div>
+                    <h4 class="font-bold uppercase tracking-widest text-sm mb-4 text-[#F0C020]">Contact</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 font-medium">hello@bauhaus.design</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 font-medium">+1 (555) 123-4567</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 font-medium">Bauhausstrasse 1, Berlin</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t-4 border-[#F0C020] pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="text-gray-400 font-medium text-sm">© 2024 Bauhaus Studio. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="w-10 h-10 border-2 border-white flex items-center justify-center hover:bg-[#D02020] hover:border-[#D02020] transition-colors duration-200">
+                        <i data-lucide="circle" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 border-2 border-white flex items-center justify-center hover:bg-[#1040C0] hover:border-[#1040C0] transition-colors duration-200">
+                        <i data-lucide="square" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 border-2 border-white flex items-center justify-center hover:bg-[#F0C020] hover:border-[#F0C020] hover:text-[#121212] transition-colors duration-200">
+                        <i data-lucide="triangle" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+        
+        // FAQ Accordion functionality
+        document.querySelectorAll('.faq-item button').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('i');
+                const isOpen = !content.classList.contains('hidden');
+                
+                // Close all
+                document.querySelectorAll('.faq-item .content').forEach(c => c.classList.add('hidden'));
+                document.querySelectorAll('.faq-item button i').forEach(i => i.classList.remove('rotate-180'));
+                document.querySelectorAll('.faq-item button').forEach(b => b.closest('.faq-item').classList.remove('bg-[#D02020]'));
+                
+                // Open clicked
+                if (!isOpen) {
+                    content.classList.remove('hidden');
+                    icon.classList.add('rotate-180');
+                    button.closest('.faq-item').classList.add('bg-[#D02020]');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

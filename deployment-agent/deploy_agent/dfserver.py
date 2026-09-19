@@ -36,6 +36,7 @@ from deployment_agent.aws_onboarding import (
 )
 from deployment_agent.mongodb_check import check_mongodb_uri
 from deployment_agent.security import redact_data
+from deployment_agent.hosted import azure_connection_status, netlify_connection_status
 from deployment_agent.vercel_auth import connection_status as vercel_connection_status
 from deployment_agent.state import StateStore
 from deployment_agent.supervisor import reconcile_once, start_supervisor
@@ -75,6 +76,8 @@ def public_run(run: dict[str, Any]) -> dict[str, Any]:
         pass
     value["artifact_schema_version"] = version
     value["artifacts_current"] = version == ARTIFACT_SCHEMA_VERSION
+    question = STORE.get_question(run["id"])
+    value["pending_question"] = question if question and question.get("answer") is None else None
 
     masked = MonitorAgent._mask_identifiers(value)
     masked["id"] = run["id"]
@@ -158,7 +161,9 @@ class APIHandler(SimpleHTTPRequestHandler):
                 except ValueError as exc:
                     raise ValueError(f"Unsupported deployment target: {body.get('target')}") from exc
                 run_id = ORCHESTRATOR.start_analysis(
-                    source, bool(body.get("validate_container", True)), target
+                    source, bool(body.get("validate_container", True)), target,
+                    customization=body.get("customization"), previous_run_id=str(body.get("previous_run_id") or ""),
+                    owner=str(body.get("owner") or ""),
                 )
                 return self._json({"run_id": run_id, "state": "ANALYZING"}, HTTPStatus.ACCEPTED)
             match = self._run_path(path)
@@ -180,17 +185,28 @@ class APIHandler(SimpleHTTPRequestHandler):
             return parts[2], "/".join(parts[3:])
         return None
 
+    @staticmethod
+    def _act_for(run: dict[str, Any], body: dict[str, Any] | None = None) -> None:
+        """Sign this request's work in as the run's owner (owner_credentials.py)."""
+        from deployment_agent import owner_credentials
+
+        repo = run.get("repo") if isinstance(run.get("repo"), dict) else {}
+        owner_credentials.set_owner(str(repo.get("owner") or (body or {}).get("owner") or ""))
+
     def _get_run_action(self, run_id: str, action: str, query: dict[str, list[str]]) -> None:
         run = STORE.get_run(run_id)
         if not run:
             return self._error(HTTPStatus.NOT_FOUND, "Run not found")
+        self._act_for(run)
         if not action:
             return self._json(public_run(run))
         if action == "domains":
             return self._json({"domains": DEPLOYER.vercel_domains(run_id)})
         if action == "events":
             after = int((query.get("after") or ["0"])[0])
-            return self._json({"events": STORE.get_events(run_id, after_id=after)})
+            recent = int((query.get("recent") or ["0"])[0])
+            return self._json({"events": STORE.get_events(run_id, after_id=after,
+                               limit=max(1, min(recent, 1000)) if recent else 1000, latest=bool(recent))})
         if action == "artifacts":
             return self._json({"artifacts": STORE.get_artifacts(run_id)})
         if action == "diff":
@@ -277,6 +293,10 @@ class APIHandler(SimpleHTTPRequestHandler):
             )
         if action == "vercel/status":
             return self._json(vercel_connection_status(str(body.get("token", ""))))
+        if action == "netlify/status":
+            return self._json(netlify_connection_status(str(body.get("token", ""))))
+        if action == "azure/status":
+            return self._json(azure_connection_status(str(body.get("token", ""))))
         if action == "bootstrap-role-template":
             return self._json(
                 {"template": bootstrap_role_template(str(body.get("principal_arn", "")))}
@@ -296,6 +316,11 @@ class APIHandler(SimpleHTTPRequestHandler):
         run = STORE.get_run(run_id)
         if not run:
             return self._error(HTTPStatus.NOT_FOUND, "Run not found")
+        self._act_for(run, body)
+        if action == "answer":
+            from deployment_agent.repair import submit_answer
+            submit_answer(STORE, run_id, str(body.get("question_id") or ""), str(body.get("answer") or ""))
+            return self._json({"answered": True})
         if action == "deploy":
             if body.get("approved") is not True:
                 raise ValueError("Deployment approval is required")
@@ -305,7 +330,8 @@ class APIHandler(SimpleHTTPRequestHandler):
             credential_reference = str(body.get("credential_reference", "")).strip()
             vercel_token = str(body.get("vercel_token", "")).strip()
             DEPLOYER.start_deployment(
-                run_id, profile, region, mongodb_uri, True, credential_reference, vercel_token
+                run_id, profile, region, mongodb_uri, True, credential_reference, vercel_token,
+                owner=str(body.get("owner", "")).strip(),
             )
             return self._json({"accepted": True, "run_id": run_id}, HTTPStatus.ACCEPTED)
         if action == "domains":
@@ -332,13 +358,18 @@ class APIHandler(SimpleHTTPRequestHandler):
                 HTTPStatus.ACCEPTED,
             )
         if action == "rollback":
-            threading.Thread(target=self._rollback, args=(run_id,), daemon=True).start()
+            from deployment_agent import owner_credentials
+
+            threading.Thread(target=owner_credentials.carry(self._rollback), args=(run_id,),
+                             daemon=True).start()
             return self._json({"accepted": True}, HTTPStatus.ACCEPTED)
         if action == "retry":
             new_id = ORCHESTRATOR.start_analysis(
                 run["project_path"],
                 bool(body.get("validate_container", True)),
                 target_of(run),
+                customization=(run.get("plan") or {}).get("customization"), previous_run_id=run_id,
+                owner=str((run.get("repo") or {}).get("owner") or ""),
             )
             return self._json({"run_id": new_id}, HTTPStatus.ACCEPTED)
         if action == "evidence":
@@ -359,21 +390,8 @@ class APIHandler(SimpleHTTPRequestHandler):
 
     @staticmethod
     def _spec_object(data: dict[str, Any]):
-        from deployment_agent.models import EnvironmentVariable, ProjectSpec, RepositorySpec, ServiceSpec
-
-        services = []
-        for raw in data.get("services", []):
-            raw = dict(raw)
-            raw["environment"] = [EnvironmentVariable(**item) for item in raw.get("environment", [])]
-            services.append(ServiceSpec(**raw))
-        return ProjectSpec(
-            name=data["name"],
-            source_path=data["source_path"],
-            staged_path=data["staged_path"],
-            services=services,
-            repository=RepositorySpec(**data["repository"]),
-            warnings=data.get("warnings", []),
-        )
+        from deployment_agent.models import ProjectSpec
+        return ProjectSpec.from_dict(data)
 
     def _artifact(self, run: dict[str, Any], relative: str) -> None:
         allowed = {item["path"] for item in STORE.get_artifacts(run["id"])}

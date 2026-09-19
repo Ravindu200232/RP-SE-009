@@ -12,17 +12,28 @@ class DeploymentPrepareMixin:
         if missing:
             raise RuntimeError("Missing required deployment tools: " + ", ".join(missing))
     @staticmethod
-    def _runtime_secret_values(mongodb_uri: str, outputs: dict) -> dict:
+    def _runtime_secret_values(mongodb_uri: str, outputs: dict, plan: dict | None = None, existing: dict | None = None) -> dict:
         """Everything the running application needs, not just the database."""
         url = str(outputs.get("ApplicationUrl") or "").rstrip("/")
-        values = {
+        values = {**(existing or {}),
             "MONGODB_URI": mongodb_uri,
-            "BETTER_AUTH_SECRET": secrets.token_urlsafe(48),
+            "BETTER_AUTH_SECRET": (existing or {}).get("BETTER_AUTH_SECRET") or secrets.token_urlsafe(48),
         }
+        # Every secret the contract says the deployer generates, AUTH_SECRET
+        # among them. An ECS task naming a key the secret lacks never starts.
+        for entry in ((plan or {}).get("environment") or {}).get("entries") or []:
+            if entry.get("resolution") == "auto_generate" and not values.get(entry.get("name")):
+                values[str(entry["name"])] = secrets.token_urlsafe(48)
         if url:
 
             values.update({name: url for name in DEPLOYER_INJECTED})
         return values
+
+    @staticmethod
+    def _stored_runtime_secrets(session, secret_id):
+        response = session.client("secretsmanager").get_secret_value(SecretId=secret_id)
+        raw = response.get("SecretString")
+        return json.loads(raw) if isinstance(raw, str) and raw else {}
     def _prepare_aws(
         self,
         run_id: str,
@@ -59,7 +70,7 @@ class DeploymentPrepareMixin:
         session.client("secretsmanager").put_secret_value(
             SecretId=runtime_secret,
             SecretString=json.dumps(
-                self._runtime_secret_values(mongodb_uri, outputs)
+                self._runtime_secret_values(mongodb_uri, outputs, plan, self._stored_runtime_secrets(session, runtime_secret))
             ),
         )
         self.emit(run_id, "step", "secrets", "complete", 45, "Runtime secrets stored in AWS Secrets Manager")
@@ -121,7 +132,7 @@ class DeploymentPrepareMixin:
         session.client("secretsmanager").put_secret_value(
             SecretId=runtime_secret,
             SecretString=json.dumps(
-                self._runtime_secret_values(mongodb_uri, outputs)
+                self._runtime_secret_values(mongodb_uri, outputs, plan, self._stored_runtime_secrets(session, runtime_secret))
             ),
         )
         self.emit(run_id, "step", "secrets", "complete", 45,
@@ -179,8 +190,9 @@ class DeploymentPrepareMixin:
         team_id = str((run.get("repo") or {}).get("vercel_team_id", ""))
 
         self.emit(run_id, "step", "link", "running", 20, f"Linking the Vercel project {slug}")
+        scope = (plan.get("customization") or {}).get("vercel_scope")
         link = run_command(
-            ["vercel", "link", "--yes", "--project", slug, "--cwd", str(cwd)],
+            ["vercel", "link", "--yes", "--project", slug, "--cwd", str(cwd), *(["--scope", scope] if scope else [])],
             cwd=cwd,
             timeout=180,
 

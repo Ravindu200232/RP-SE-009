@@ -11,6 +11,20 @@ from ..services import orchestrator
 
 router = APIRouter(prefix="/projects", tags=["srs"])
 
+from pydantic import BaseModel, Field
+
+
+class ParentChange(BaseModel):
+    change_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,100}$")
+    source: str = Field(pattern=r"^(designer|developer|design-customizer|qa)$")
+    summary: str = Field(min_length=1, max_length=12000)
+
+
+@router.post("/{project_id}/changes")
+async def parent_change(project_id: str, request: ParentChange):
+    from ..services.parent_sync import synchronize
+    return await synchronize(project_id, request.change_id, request.source, request.summary)
+
 
 async def _doc_or_404(project_id: str) -> dict:
     srs = await orchestrator.latest_srs(project_id)
@@ -34,6 +48,103 @@ async def srs_json(project_id: str):
     if not srs:
         raise HTTPException(404, "no SRS generated yet")
     return srs
+
+
+@router.get("/{project_id}/wireframes")
+async def wireframes(project_id: str):
+    """Every page of the product, plus the journeys through them.
+
+    The page list is derived on save, so this is a read of what the document
+    already implies. Each page says whether its drawing exists and whether the
+    specification has moved since it was made.
+
+    `drawing` says whether the pages are being drawn at this moment. Generating
+    a specification schedules them and does not wait, so for the first half
+    minute after approval the list is real and every drawing is missing -
+    which, without this flag, looks exactly like a project whose pages failed.
+    """
+    from ..agents.wireframe_generator import drawing as drawing_now
+    from ..services import storage
+    saved = storage.read_wireframes(project_id)
+    if not saved.get("pages"):
+        # A project generated before wireframes existed has none on disk yet.
+        srs = await orchestrator.latest_srs(project_id)
+        if not srs:
+            raise HTTPException(404, "no SRS generated yet")
+        storage.save_wireframes(project_id, srs)
+        saved = storage.read_wireframes(project_id)
+    return {**saved, "drawing": drawing_now(project_id)}
+
+
+class WireframeHtmlRequest(BaseModel):
+    """Which page to draw. Empty means every page of the specification."""
+    route: str = ""
+
+
+class WireframeHtmlEdit(BaseModel):
+    route: str = Field(min_length=1, max_length=400)
+    html: str = Field(min_length=1, max_length=4_000_000)
+
+
+@router.post("/{project_id}/wireframes/html/edit")
+async def edit_wireframe_html(project_id: str, request: WireframeHtmlEdit):
+    """Keep a page the editor rearranged.
+
+    The tools editor works on the rendered document rather than on a model of
+    it, so what comes back is the page itself - reordered, retyped, with parts
+    removed - and it replaces the drawn one. Stamped with the version it was
+    edited against, so the page still reports itself stale when the
+    specification moves on underneath it.
+    """
+    from ..services import storage
+    if not storage.read_page_html(project_id, request.route):
+        raise HTTPException(404, f"{request.route} has not been drawn yet")
+    srs = await orchestrator.latest_srs(project_id)
+    version = str(((srs or {}).get("srs_document") or {}).get("version") or "")
+    storage.save_page_html(project_id, request.route, request.html, version)
+    return {"saved": request.route, "bytes": len(request.html)}
+
+
+@router.post("/{project_id}/wireframes/html")
+async def draw_wireframe_html(project_id: str, request: WireframeHtmlRequest):
+    """Draw one page, or every page when no route is named.
+
+    A page is one model call, so the whole set is minutes rather than seconds.
+    A saved specification starts this on its own; this endpoint is for drawing
+    again after an edit or a change.
+    """
+    from ..agents.wireframe_generator import (draft_html_wireframe,
+                                              draft_html_wireframes,
+                                              handoff_context)
+    from ..services import storage
+    srs = await orchestrator.latest_srs(project_id)
+    if not srs:
+        raise HTTPException(404, "no SRS generated yet")
+    doc = srs["srs_document"]
+    version = str(doc.get("version") or "")
+    if request.route:
+        pages = (doc.get("public_pages") or []) + (doc.get("protected_pages") or [])
+        page = next((p for p in pages
+                     if isinstance(p, dict) and p.get("route") == request.route), None)
+        if not page:
+            raise HTTPException(404, f"no page at {request.route}")
+        storage.save_page_html(
+            project_id, request.route,
+            await draft_html_wireframe(page, doc, handoff_context(project_id)), version)
+        return {"drawn": [request.route]}
+    drawn = await draft_html_wireframes(doc, project_id=project_id)
+    for page_route, html in drawn.items():
+        storage.save_page_html(project_id, page_route, html, version)
+    return {"drawn": sorted(drawn)}
+
+
+@router.get("/{project_id}/wireframes/html", response_class=PlainTextResponse)
+async def wireframe_html(project_id: str, route: str):
+    from ..services import storage
+    html = storage.read_page_html(project_id, route)
+    if not html:
+        raise HTTPException(404, f"{route} has not been drawn in full yet")
+    return PlainTextResponse(html, media_type="text/html")
 
 
 @router.get("/{project_id}/requirements")
@@ -101,7 +212,7 @@ async def _live_handoff(project_id: str) -> dict:
         from ..services import plan_approval
         plan_doc = (await plan_approval.approved_plan(project_id)
                     or await repo.latest_plan(project_id))
-        plan = (plan_doc or {}).get("plan") or {}
+        plan = doc.get("effective_plan") or (plan_doc or {}).get("plan") or {}
         if plan:
             fresh = refresh_handoff(handoff, plan, doc)
             if fresh.get("prompt") and len(fresh["prompt"]) > 200:
@@ -115,6 +226,19 @@ async def _live_handoff(project_id: str) -> dict:
 async def builder_handoff(project_id: str):
     """The plan restated in the app builder's vocabulary, plus its prompt."""
     return await _live_handoff(project_id)
+
+
+@router.get("/{project_id}/agent-handoff")
+async def agent_handoff(project_id: str):
+    from ..generators.agent_handoff import FILES
+    from ..services.storage import project_dir
+    project = await repo.get_project(project_id)
+    if not project:
+        raise HTTPException(404, "Project not found")
+    target = project_dir(project_id) / "handoff"
+    if not all((target / name).is_file() for name in FILES):
+        raise HTTPException(409, "Generate or revise the SRS to create its agent handoffs")
+    return {"files": {name: (target / name).read_text(encoding="utf-8") for name in FILES}}
 
 
 @router.get("/{project_id}/builder-prompt", response_class=PlainTextResponse)

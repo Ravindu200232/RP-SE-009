@@ -1,24 +1,31 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Languages, Loader2, PencilLine, Sparkles } from 'lucide-react'
-import { useStore } from '@/lib/store'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ArrowRight, Check, ChevronDown, CloudUpload, FileText, FlaskConical, Languages, Layers,
+  PencilLine, Rocket, Search, Sparkles,
+} from 'lucide-react'
+import { useStore, KEYS } from '@/lib/store'
 import { send } from '@/lib/ws'
 import { api } from '@/lib/api'
-import { TextArea } from './ui'
+import { Modal, TextArea } from './ui'
 import { cn } from '@/lib/utils'
 import { useAttachments } from '@/lib/use-attachments'
 import { AttachButtons, AttachList } from './srs/Attachments'
 import LogoPanel from './LogoPanel'
+import BuildSetup from './BuildSetup'
+import PluginAccounts from './PluginAccounts'
+import DesignCustomize from './DesignCustomize'
 import Interview from './srs/Interview'
 import PlanReview from './srs/PlanReview'
 import SrsReview from './srs/SrsReview'
 import SrsActivity from './srs/SrsActivity'
 import { displaySrsLanguages, SRS_LANGUAGES } from '@/lib/languages'
-
+import { TIERS, tierDisplayName } from '@/lib/models'
 
 const EXAMPLES = [
-  { label: 'Darkroom co-op',
+  {
+    label: 'Darkroom co-op',
     blurb: 'Three roles — member, technician, manager. Benches, chemicals, money.',
     text: 'A community darkroom with three roles. MEMBER: browses sessions with '
         + 'photos, filters by film type, books a bench for a session on a date, '
@@ -27,86 +34,223 @@ const EXAMPLES = [
         + 'with a form, and records the chemicals used. MANAGER: the only role '
         + 'that sees money and stock. Each screen is its own page under its '
         + 'role\u2019s section. Seed enough data that every screen has something on '
-        + 'it, and one demo user of each role.' },
-  { label: 'Bike workshop',
+        + 'it, and one demo user of each role.',
+  },
+  {
+    label: 'Bike workshop',
     blurb: 'Rider bookings, a mechanic’s day, dues and the parts bin.',
     text: 'A neighbourhood bicycle workshop. RIDER: browses repair slots, books '
         + 'one, and sees their bookings. MECHANIC: today\u2019s repairs in time '
         + 'order, marks a repair done, records the parts used, and has a page '
         + 'for warranty claims. TREASURER: dues paid and unpaid this month, and '
         + 'the parts bin with reorder levels. Seed real data and a demo user for '
-        + 'each role.' },
-  { label: 'Small hotel',
+        + 'each role.',
+  },
+  {
+    label: 'Small hotel',
     blurb: 'Rooms with photos, availability by date, an admin who sees every booking.',
     text: 'A boutique hotel site. A guest browses rooms with photos, checks '
         + 'availability for a date range and books one. An admin sees every '
         + 'booking, can change a room\u2019s price and mark a booking paid. Seed a '
-        + 'handful of rooms and bookings, and a demo user of each role.' },
+        + 'handful of rooms and bookings, and a demo user of each role.',
+  },
 ]
 
-export default function Home({ onStarted }) {
+function attachToken() {
+  const raw = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
+  return raw.replace(/[^a-z0-9]/gi, '').slice(0, 24)
+}
+
+export default function Home({
+  onStarted,
+  onKept,
+  modelOptions = [],
+  user = null,
+  onRequireAuth = null,
+  onSignIn = null,
+  onSignUp = null,
+}) {
   const s = useStore()
   const { images, think, models, srsId, srsPhase } = s
   const [prompt, setPrompt] = useState('')
   const [logoFor, setLogoFor] = useState(null)
   const [srsError, setSrsError] = useState('')
   const [srsLanguage, setSrsLanguage] = useState('en')
+  const [langOpen, setLangOpen] = useState(false)
+  const [langSearch, setLangSearch] = useState('')
+  const [stack, setStack] = useState('')
+  // Providers this build should start with. Held here because the app they
+  // belong to does not exist yet, and the sheet is here rather than in
+  // BuildSetup because that row opens no dialog of its own.
+  const [plugins, setPlugins] = useState([])
+  const [pluginsOpen, setPluginsOpen] = useState(false)
   const [languageOptions, setLanguageOptions] = useState(SRS_LANGUAGES)
   const box = useRef(null)
+  const langRef = useRef(null)
+  const planning = useRef(false)
   const attach = useAttachments()
-  const builderModel = models.builder || models.agent
+  const builderModel = models.builder || models.agent || TIERS.medium.model
   const plannerModel = models.planner || models.agent || builderModel
   const designModel = models.design || models.agent || builderModel
 
   useEffect(() => { setLanguageOptions(displaySrsLanguages()) }, [])
+  useEffect(() => {
+    if (!user || srsPhase !== 'planning' || planning.current) return
+    planning.current = true
+    const epoch = useStore.getState().accountEpoch
+    const resume = async () => {
+      try {
+        let id = srsId
+        if (!id) {
+          const pending = await api.resumeSrs('/projects')
+          id = pending.result?.project?.id
+          if (!id) throw new Error('The project was not saved yet. Submit your idea again.')
+          if (useStore.getState().accountEpoch !== epoch) return
+          s.setSrs({ srsId: id, srsBusy: 'Resuming the interview…' })
+        }
+        await api.srs(`/projects/${id}/analyze`, {})
+        const current = useStore.getState()
+        if (current.accountEpoch === epoch && current.srsId === id && current.srsPhase === 'planning')
+          s.setSrs({ srsPhase: 'interview', srsBusy: '' })
+      } catch (error) {
+        if (useStore.getState().accountEpoch === epoch) {
+          setSrsError(error.message)
+          s.setSrs({ srsPhase: srsId ? 'interview' : 'idle', srsBusy: '' })
+        }
+      } finally { planning.current = false }
+    }
+    resume()
+  }, [user, srsPhase, srsId])
+  useEffect(() => {
+    if (!srsId) return
+    let live = true
+    api.srs(`/projects/${srsId}`).then(result => {
+      if (live && result?.project?.stack) setStack(result.project.stack)
+    }).catch(() => {})
+    return () => { live = false }
+  }, [srsId])
 
-  function begin(p, srs = '') {
-    if (!p) return
-    // The approved SRS/plan already owns the visual direction.
-    // Continue directly to the optional logo step.
-    if (images) return setLogoFor({ idea: p, srs })
-    startBuild(p, '', srs)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (langRef.current && !langRef.current.contains(e.target)) {
+        setLangOpen(false)
+        setLangSearch('')
+      }
+    }
+    if (langOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [langOpen])
+
+  const currentLang = languageOptions.find(l => l.code === srsLanguage)
+  const currentLangLabel = currentLang ? currentLang.name : 'English'
+
+  const filteredLanguages = useMemo(() => {
+    const q = langSearch.trim().toLowerCase()
+    if (!q) return languageOptions
+    return languageOptions.filter(l =>
+      l.name.toLowerCase().includes(q) || l.code.toLowerCase().includes(q)
+    )
+  }, [languageOptions, langSearch])
+
+  function begin(p, srs = '', prototypeOnly = false) {
+    if (!p || !builderModel.trim()) return
+    const config = { model: builderModel.trim(), stack, think }
+    chooseModel(config.model)
+    if (images && !prototypeOnly) return setLogoFor({ idea: p, srs, config })
+    startBuild(p, '', srs, null, config, prototypeOnly)
+  }
+
+  // One implementation, shared with Settings, so a model chosen in either
+  // place reaches the same set of agents.
+  const chooseModel = model => useStore.getState().applyModel(model)
+
+  function chooseThinking(value) {
+    useStore.setState({ think: value })
+    s.persist(KEYS.think, value ? '1' : '0')
   }
 
   function submit() {
-    begin(prompt.trim())
+    planFirst()
   }
 
-  function startBuild(p, logo, srs = '', uploads = null) {
+  function submitPrototype() {
+    planFirst()
+  }
+
+  async function startBuild(p, logo, srs = '', uploads = null, config = null, prototypeOnly = false) {
+    onStarted?.()
     setLogoFor(null)
     s.reset(null)
+    s.switchAgent(prototypeOnly ? 'designer' : 'developer')
     s.setBusy(true)
+
+    let token = ''
+    if (attach.items.length) {
+      const wanted = attachToken()
+      s.setProgress(attach.items.length === 1
+        ? 'Sending your attachment…' : `Sending your ${attach.items.length} attachments…`, 0)
+      const { staged, failed } = await attach.stage(wanted)
+      if (failed) {
+        s.addLog('WARN', `${failed} attachment(s) could not be sent — building with what did arrive.`)
+      }
+      if (staged) {
+        token = wanted
+        s.addLog('INFO', `${staged} attachment(s) go into the build`)
+      }
+    }
+
     s.setProgress('Starting…', 0)
-    onStarted?.()
-    s.addLog('INFO', `Planner — ${plannerModel} · Design — ${designModel} · Builder — ${builderModel}`)
+    const selected = config?.model || builderModel
+    s.addLog('INFO', `Build mode — ${tierDisplayName(selected)} · Thinking — ${(config?.think ?? think) ? 'on' : 'off'}`)
+    if (prototypeOnly) s.addLog('INFO', '🎨 Prototype Build mode — generating interactive HTML prototype first')
     if (logo) s.addLog('INFO', 'Building around the logo you accepted')
     if (srs) s.addLog('INFO', 'Building from the SRS you approved')
-    send({ type: 'agent_build', prompt: p, model: builderModel,
-           builder_model: builderModel, planner_model: plannerModel,
-           design_model: designModel,
-           think, qa_model: models.qa, logo, srs_id: srs || '',
-           uploads: uploads && Object.keys(uploads).length ? uploads : undefined })
+
+    send({
+      type: 'agent_build',
+      prompt: p,
+      model: selected,
+      builder_model: selected,
+      planner_model: config?.model || plannerModel,
+      design_model: config?.model || designModel,
+      stack: config?.stack || stack,
+      think: config?.think ?? think,
+      qa_model: models.qa,
+      logo,
+      srs_id: srs || '',
+      attachments: token || undefined,
+      uploads: uploads && Object.keys(uploads).length ? uploads : undefined,
+      prototype_only: Boolean(prototypeOnly),
+      agent: prototypeOnly ? 'designer' : 'developer',
+      // There is no project yet to tick these against, so they travel with the
+      // request and are written onto the workspace the moment it is made.
+      plugins: plugins.length ? plugins : undefined,
+    })
   }
 
   async function planFirst() {
     const idea = prompt.trim()
     const files = attach.items.length
     if (!idea && !files) return box.current?.focus()
+    if (planning.current) return
+    planning.current = true
+    const epoch = useStore.getState().accountEpoch
     setSrsError('')
-    s.setSrs({ srsPhase: 'planning', srsBusy: 'Reading your idea…' })
+    s.setSrs({ srsId: null, srsPhase: 'planning', srsBusy: 'Reading your idea…' })
     try {
-
-      await api.saveSettings({ srs_model: models.srs || plannerModel || '' })
-        .catch(() => { })
-  // Attachments need a project and a written idea.
       const created = await api.srs('/projects', {
         idea: idea || 'See the attached files.',
         language: languageOptions.find(item => item.code === srsLanguage)?.name || srsLanguage,
+        stack: stack || 'nextjs-mongo',
       })
       const id = created.project.id
+      if (useStore.getState().accountEpoch !== epoch || useStore.getState().srsPhase !== 'planning') return
+      s.setSrs({ srsId: id })
 
       if (files) {
-        // Before `analyze`, not after.
         s.setSrs({ srsId: id, srsBusy: `Reading your ${files === 1 ? 'attachment' : `${files} attachments`}…` })
         const { ids, failed } = await attach.upload(id)
 
@@ -116,182 +260,403 @@ export default function Home({ onStarted }) {
             : 'none of those files could be read, and there is nothing typed to go on')
         }
         if (failed) {
-          s.addLog('WARN', `${failed} of ${files} attachments could not be read — `
-                         + 'carrying on with the rest.')
+          s.addLog('WARN', `${failed} of ${files} attachments could not be read — carrying on with the rest.`)
         }
       }
 
+      if (useStore.getState().accountEpoch !== epoch || useStore.getState().srsId !== id) return
       s.setSrs({ srsId: id, srsBusy: 'Working out what to ask you…' })
       await api.srs(`/projects/${id}/analyze`, {})
+      if (useStore.getState().accountEpoch !== epoch || useStore.getState().srsId !== id) return
       s.setSrs({ srsPhase: 'interview', srsBusy: '' })
     } catch (e) {
+      if (useStore.getState().accountEpoch !== epoch) return
       setSrsError(e.message)
-      s.resetSrs()
-    }
+      const id = useStore.getState().srsId
+      s.setSrs({ srsPhase: id ? 'interview' : 'idle', srsBusy: '' })
+    } finally { planning.current = false }
   }
 
   function acceptSrs(handoffPrompt, id) {
-    s.setSrs({ srsPhase: 'idle', srsBusy: '' })
-    setPrompt(handoffPrompt)
-    setTimeout(() => begin(handoffPrompt, id), 900)
+    s.setSrs({ srsId: id, srsPhase: 'design', srsBusy: '' })
+  }
+
+  if (srsPhase === 'design' && srsId) {
+    return (
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] text-white">
+        <DesignCustomize key={srsId} projectId={srsId}
+          onBack={() => s.setSrs({ srsPhase: 'review' })}
+          onContinue={async direction => {
+            // Keep the operation ID across transport retries and reloads.
+            const key = `agentforge-design-change-${srsId}`
+            let saved
+            try { saved = JSON.parse(localStorage.getItem(key) || 'null') } catch { }
+            if (saved?.summary !== direction) saved = { change_id: `design-${crypto.randomUUID()}`, summary: direction }
+            localStorage.setItem(key, JSON.stringify(saved))
+            await api.srs(`/projects/${srsId}/changes`, { ...saved, source: 'design-customizer' })
+            localStorage.removeItem(key)
+            onStarted?.()
+            startBuild(direction, '', srsId, null, { model: designModel, stack, think }, true)
+            s.setSrs({ srsPhase: 'idle', srsBusy: '' })
+          }} />
+      </div>
+    )
   }
 
   if (srsPhase === 'review' && srsId) {
     return (
-      <SrsReview projectId={srsId}
+      <SrsReview key={srsId} projectId={srsId}
                  onApproved={acceptSrs}
+                 onKept={(project) => { s.resetSrs(); setPrompt(''); onKept?.(project) }}
                  onBack={() => s.setSrs({ srsPhase: 'plan' })} />
     )
   }
 
-  // The interview gets the whole pane, the way the review already does.
   if (srsPhase === 'interview' && srsId) {
     return (
-      <Interview projectId={srsId}
+      <Interview key={srsId} projectId={srsId}
                  onDone={() => s.setSrs({ srsPhase: 'plan' })}
                  onCancel={() => s.resetSrs()} />
     )
   }
 
+  if (srsPhase === 'plan' && srsId) {
+    return (
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-3.5 sm:px-6 py-6 sm:py-10 text-white">
+        <PlanReview key={srsId} projectId={srsId}
+                    onGenerated={() => s.setSrs({ srsPhase: 'review' })}
+                    onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
+      </div>
+    )
+  }
+
   return (
-    // Flush left and unadorned.
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-auto bg-[radial-gradient(circle_at_30%_10%,rgba(93,106,251,.12),transparent_34%),radial-gradient(circle_at_85%_80%,rgba(80,180,255,.10),transparent_32%)] px-6">
-      <div className="relative mx-auto my-auto w-full max-w-[980px] py-8">
-        <div className="glass-panel grid grid-cols-[auto_1fr] items-center gap-5 rounded-[28px] p-6">
-          <img src="/__agentforge/agentforge-mark.png"
-               alt="AgentForge Studio — AI-powered full stack app builder"
-               className="size-[84px] shrink-0 select-none rounded-[22px] border border-white/60 object-cover shadow-lg" />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
-              <span className="h-[3px] w-[26px] bg-accent" />
-              <span className="text-[10px] font-semibold uppercase
-                               tracking-[.24em] text-accent">
-                Describe · Generate · Deploy
-              </span>
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-3.5 sm:px-6 py-6 sm:py-10 text-white">
+      {/* Bolt.new Public Top Navigation (When signed out, matching media_1789153650649.png) */}
+      {!user && (
+        <header className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 md:px-10 border-b border-white/[.07] bg-[#0c0f17]/60 backdrop-blur-md">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 ring-1 ring-blue-500/30">
+              <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" className="size-5 object-contain" />
             </div>
-            <h2 className="mt-2 font-display text-[46px] font-semibold leading-[.94] tracking-[-.04em] text-ink">
-              AGENTFORGE<br />STUDIO
-            </h2>
+            <span className="font-display text-[17px] font-bold italic tracking-tight text-white">
+              agentforge<span className="text-blue-500 font-normal">.ai</span>
+            </span>
           </div>
-        </div>
 
-        <div className="soft-card mt-5 p-4">
-          <p className="m-0 text-[14px] leading-[1.55] text-ink">
-            Describe an app. It gets planned, written, tested, repaired and
-            served — and you watch each useful step.
+          <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-white/70">
+            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Solutions</button>
+            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Resources</button>
+            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Careers</button>
+            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Pricing</button>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onSignIn}
+              className="px-3.5 py-1.5 text-[13px] font-medium text-white/80 hover:text-white transition-colors"
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={onSignUp}
+              className="rounded-xl bg-blue-600 px-3.5 sm:px-4 py-1.5 sm:py-2 font-display text-[12px] sm:text-[13px] font-semibold text-white shadow-md shadow-blue-500/25 hover:bg-blue-500 transition-all active:scale-95"
+            >
+              Get Started
+            </button>
+          </div>
+        </header>
+      )}
+
+      <div className={cn("relative mx-auto my-auto w-full max-w-[940px]", !user && "pt-12")}>
+        {/* Bolt.new Style Hero */}
+        <div className="text-center px-2">
+          <h1 className="font-display text-[28px] sm:text-[44px] md:text-[56px] font-bold tracking-tight text-ink leading-[1.12]">
+            What will you build today?
+          </h1>
+          <p className="mt-2 sm:mt-3 text-[14px] sm:text-[16px] text-muted">
+            Create stunning apps & websites by chatting with AI.
           </p>
         </div>
 
-        {srsPhase === 'plan' && srsId && (
-          <PlanReview projectId={srsId}
-                      onGenerated={() => s.setSrs({ srsPhase: 'review' })}
-                      onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
-        )}
         {srsPhase === 'planning' && (
-          <SrsActivity phase="planning" message={s.srsBusy || 'Reading your idea…'} />
+          <div className="mt-6">
+            <SrsActivity phase="planning" message={s.srsBusy || 'Reading your idea…'} />
+          </div>
         )}
 
-        {srsPhase === 'idle' && (<>
-        {/* Main product brief. */}
-        <div className="glass-panel mt-6 overflow-hidden rounded-[26px] transition-all focus-within:border-accent/50 focus-within:shadow-[0_18px_50px_rgba(93,106,251,.12)]">
-          <div className="flex items-center gap-2.5 border-b border-line/70 bg-white/35 px-4 py-3 dark:bg-white/[.02]">
-            <PencilLine className="size-[13px] shrink-0 text-accent" />
-            <span className="label-xs text-ink">The brief</span>
-            <span className="flex-1" />
-            <span className="font-mono text-[10px] text-muted2">
-              {prompt.length} / ∞
-            </span>
-          </div>
+        {srsPhase === 'idle' && (
+          <>
+            {/* Main Central Prompt Box */}
+            <div className="mt-8 relative z-30 rounded-[26px] border border-line bg-panel shadow-2xl backdrop-blur-2xl transition-all focus-within:border-accent/60 focus-within:shadow-[0_20px_60px_rgba(24,119,242,.2)]">
+              <TextArea
+                value={prompt}
+                autoFocus
+                rows={4}
+                ref={box}
+                aria-label="Describe your app"
+                placeholder="How can AgentForge help you today? Describe an app, prototype, or SRS..."
+                onChange={e => {
+                  setPrompt(e.target.value)
+                  if (!user && onRequireAuth && e.target.value.length > 0) {
+                    onRequireAuth()
+                  }
+                }}
+                onKeyDown={e => {
+                  if (!user && onRequireAuth) {
+                    onRequireAuth()
+                    return
+                  }
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    submit()
+                  }
+                }}
+                className="min-h-[130px] w-full resize-none rounded-t-[26px] bg-transparent p-5 text-[15px] leading-[1.6] text-ink caret-accent outline-none placeholder:text-muted2"
+              />
 
-          <TextArea value={prompt} autoFocus rows={5} ref={box}
-                    placeholder="A community darkroom with three roles: members book sessions, technicians run the bench, a manager sees the money…"
-                    onChange={e => setPrompt(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit()
-                    }}
-                    className="min-h-[148px] w-full resize-none bg-transparent p-5 text-[15px] leading-[1.6] text-ink caret-accent outline-none placeholder:text-muted2" />
+              {/* Build Setup Configurations */}
+              <div className="relative z-30 border-t border-line px-5 pt-3 pb-2">
+                <BuildSetup
+                  model={builderModel}
+                  stack={stack}
+                  think={think}
+                  options={modelOptions}
+                  onModelChange={chooseModel}
+                  onStackChange={setStack}
+                  onThinkChange={chooseThinking}
+                  plugins={plugins}
+                  onPluginsOpen={() => setPluginsOpen(true)}
+                />
+              </div>
 
-          <div className="mx-4 mb-3 flex flex-wrap items-center gap-3 rounded-2xl border border-line/70 bg-white/45 px-3.5 py-3 dark:bg-white/[.025]">
-            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
-              <Languages className="size-4" />
-            </span>
-            <label htmlFor="srs-language" className="min-w-[210px] flex-1">
-              <span className="block font-display text-[11.5px] font-semibold text-ink">
-                1. Choose the interview language
-              </span>
-              <span className="block text-[10.5px] leading-relaxed text-muted2">
-                Interview and plan use this language. SRS, Builder handoff, PDF and diagrams stay in English.
-              </span>
-            </label>
-            <select id="srs-language" value={srsLanguage}
-                    onChange={event => setSrsLanguage(event.target.value)}
-                    className="ml-11 h-9 w-full max-w-none rounded-xl border border-line bg-white px-3 text-[11.5px] font-medium text-ink outline-none transition focus:border-accent dark:bg-white/[.06] sm:ml-0 sm:w-auto sm:max-w-[230px]">
-              {languageOptions.map(language => (
-                <option key={language.code} value={language.code}>{language.name}</option>
+              <AttachList attach={attach} className="mx-5 mb-2" />
+
+              {/* Bottom Action Row with Attachments, Prettified Language Selector & Submit */}
+              <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 rounded-b-[26px] border-t border-line bg-panel2/40 p-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <AttachButtons attach={attach} cell />
+
+                  {/* Custom Prettified Language Select Dropdown */}
+                  <div className="relative" ref={langRef}>
+                    <button
+                      type="button"
+                      onClick={() => setLangOpen(!langOpen)}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-line bg-panel2 px-2.5 text-[11px] font-medium text-muted shadow-sm transition-all hover:bg-raised hover:border-line2 hover:text-ink"
+                      title="Interview language. SRS and builder handoff stay in English."
+                    >
+                      <Languages className="size-2.5 shrink-0 text-accent" aria-hidden="true" />
+                      <span>{currentLangLabel}</span>
+                      <ChevronDown className={cn("size-2.5 shrink-0 text-muted2 transition-transform duration-200", langOpen && "rotate-180 text-ink")} />
+                    </button>
+
+                    {/* Hidden contract select */}
+                    <select
+                      id="srs-language"
+                      value={srsLanguage}
+                      onChange={event => setSrsLanguage(event.target.value)}
+                      className="sr-only"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    >
+                      {languageOptions.map(language => (
+                        <option key={language.code} value={language.code}>
+                          {language.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {langOpen && (
+                      <div className="absolute top-full mt-2 left-0 w-64 rounded-2xl border border-line bg-panel p-2 shadow-[0_20px_50px_rgba(0,0,0,0.75)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                        {/* Search Input */}
+                        <div className="relative mb-2">
+                          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 size-2.5 text-muted2" />
+                          <input
+                            type="text"
+                            value={langSearch}
+                            onChange={e => setLangSearch(e.target.value)}
+                            placeholder="Search language..."
+                            autoFocus
+                            className="w-full rounded-xl border border-line bg-panel2/60 py-1.5 pl-7 pr-2.5 text-[11px] text-ink outline-none placeholder:text-muted2 focus:border-accent"
+                          />
+                        </div>
+
+                        {/* Scrollable Language List */}
+                        <div className="max-h-48 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
+                          {filteredLanguages.map(language => {
+                            const isSelected = language.code === srsLanguage
+                            return (
+                              <button
+                                key={language.code}
+                                type="button"
+                                onClick={() => {
+                                  setSrsLanguage(language.code)
+                                  setLangOpen(false)
+                                  setLangSearch('')
+                                }}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-[11.5px] transition-colors",
+                                  isSelected
+                                    ? "bg-accent/15 text-accent font-semibold border border-accent/30"
+                                    : "text-muted hover:bg-ink/[.06] hover:text-ink border border-transparent"
+                                )}
+                              >
+                                <span className="truncate">{language.name}</span>
+                                {isSelected && <Check className="size-2.5 shrink-0 text-accent ml-2" />}
+                              </button>
+                            )
+                          })}
+                          {filteredLanguages.length === 0 && (
+                            <p className="px-2 py-3 text-center text-[11px] text-white/40">No languages found</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Action: Clean Bolt-style Submit Button */}
+                <button
+                  disabled={!prompt.trim() || !builderModel.trim()}
+                  onClick={() => {
+                    if (!user && onRequireAuth) {
+                      onRequireAuth()
+                      return
+                    }
+                    submit()
+                  }}
+                  title="Start SRS planning and specification"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 font-display text-[12px] font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <span>Start</span>
+                  <ArrowRight className="size-3 shrink-0" />
+                </button>
+              </div>
+            </div>
+
+            {srsError && srsPhase === 'idle' && (
+              <p className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-[12px] text-red-300">
+                The SRS could not start — {srsError}
+              </p>
+            )}
+
+            {/* Visual Workflow Pipeline Stages: SRS Generate | Prototype Build | App Build | Deployment */}
+            <div className="mt-7 relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[660px] w-full mx-auto">
+              {[
+                {
+                  id: 'srs',
+                  label: 'SRS Generate',
+                  desc: 'Interview & Spec',
+                  Icon: FileText,
+                  iconColor: 'text-amber-400',
+                  iconBg: 'bg-amber-500/15 ring-1 ring-amber-500/25',
+                  border: 'border-line bg-panel',
+                },
+                {
+                  id: 'prototype',
+                  label: 'Prototype Build',
+                  desc: 'Fast UI Preview',
+                  Icon: FlaskConical,
+                  iconColor: 'text-purple-400',
+                  iconBg: 'bg-purple-500/15 ring-1 ring-purple-500/25',
+                  border: 'border-line bg-panel',
+                },
+                {
+                  id: 'app',
+                  label: 'App Build',
+                  desc: 'Full-Stack Code',
+                  Icon: Rocket,
+                  iconColor: 'text-accent',
+                  iconBg: 'bg-accent/15 ring-1 ring-accent/25',
+                  border: 'border-line bg-panel',
+                },
+                {
+                  id: 'deploy',
+                  label: 'Deployment',
+                  desc: 'Cloud & CI/CD',
+                  Icon: CloudUpload,
+                  iconColor: 'text-emerald-400',
+                  iconBg: 'bg-emerald-500/15 ring-1 ring-emerald-500/25',
+                  border: 'border-line bg-panel',
+                },
+              ].map(card => (
+                <div
+                  key={card.id}
+                  className={cn(
+                    "relative flex flex-col items-center justify-center rounded-2xl border p-2.5 sm:p-3 w-full h-[88px] sm:h-[94px] shadow-sm select-none",
+                    card.border
+                  )}
+                >
+                  <div className={cn(
+                    "flex size-7 sm:size-8 items-center justify-center rounded-xl",
+                    card.iconBg
+                  )}>
+                    <card.Icon className={cn("size-3.5 sm:size-4", card.iconColor)} />
+                  </div>
+                  <span className="mt-1.5 text-[10.5px] sm:text-[11.5px] font-semibold text-ink truncate max-w-full">
+                    {card.label}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] text-muted2 truncate max-w-full">
+                    {card.desc}
+                  </span>
+                </div>
               ))}
-            </select>
-          </div>
-          <AttachList attach={attach} className="mx-4 mb-2" />
+            </div>
 
-          <div className="flex items-stretch border-t border-line/70 bg-white/28 dark:bg-white/[.018]">
-            <AttachButtons attach={attach} cell />
-            <span className="flex-1" />
-            <button onClick={planFirst}
-                    title="Answer a few questions first, and get a written spec before anything is built"
-                    className="m-2 inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 font-display text-[12px] font-semibold text-ink shadow-sm transition-all hover:bg-white dark:bg-white/5">
-              <Sparkles className="size-[13px]" /> Plan it first
-            </button>
-            <button disabled={!prompt.trim()} onClick={submit}
-                    className="m-2 ml-0 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 font-display text-[12px] font-semibold text-white shadow-[0_8px_20px_rgba(93,106,251,.25)] transition-all hover:bg-press disabled:pointer-events-none disabled:opacity-45">
-              Build it <ArrowRight className="size-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {attach.items.length > 0 && (
-          <p className="mt-2 text-[11.5px] text-muted">
-            Attachments are read into the specification — press{' '}
-            <b className="font-semibold text-ink">Plan it first</b>. Building
-            straight from the box uses only what you typed.
-          </p>
+            {/* Starter Briefs / Inspirations */}
+            <div className="mt-8">
+              <div className="text-center text-[12px] font-semibold text-muted mb-3">
+                or start from one of these
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {EXAMPLES.map(e => (
+                  <button
+                    key={e.label}
+                    onClick={() => setPrompt(e.text)}
+                    className="rounded-2xl border border-line bg-panel p-4 text-left shadow-sm transition-all hover:border-line2 hover:bg-raised hover:shadow-md cursor-pointer"
+                  >
+                    <div className="font-display text-[13.5px] font-bold text-ink">
+                      {e.label}
+                    </div>
+                    <div className="mt-1 text-[11px] leading-[1.5] text-muted">
+                      {e.blurb}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
         )}
-
-        {srsError && srsPhase === 'idle' && (
-          <p className="mt-2 border-l-[3px] border-accent bg-tint px-2.5 py-1.5
-                        text-[11.5px] text-deep">
-            The SRS could not start — {srsError}
-          </p>
-        )}
-
-        {/* Starter briefs. */}
-        <div className="mt-6">
-          <div className="label-xs py-2.5 text-label">Or start from one of these</div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {EXAMPLES.map((e, i) => (
-              <button key={e.label} onClick={() => setPrompt(e.text)}
-                      className={cn('py-3.5 text-left transition-colors',
-                        'rounded-[18px] border border-line bg-white/50 p-4 shadow-sm hover:bg-white dark:bg-white/[.025] dark:hover:bg-white/[.05]',
-                        i === 0 ? 'pr-4' : i === EXAMPLES.length - 1 ? 'pl-4' : 'px-4')}>
-                <div className="font-display text-[14px] font-extrabold text-ink">
-                  {e.label}
-                </div>
-                <div className="mt-[3px] text-[11.5px] leading-[1.45] text-label">
-                  {e.blurb}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-        </>)}
       </div>
 
+      {/* The plugins this build starts with. There is no project yet to tick
+          them against, so the picks are held here and travel with the request;
+          the workspace records them the moment it is made. After that the
+          chat's own plugin icon is where they change. */}
+      {pluginsOpen && (
+        <Modal onClose={() => setPluginsOpen(false)} className="max-w-[620px]">
+          <header className="mb-4">
+            <h2 className="text-[14px] font-bold tracking-tight text-ink">Plugins</h2>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
+              Set a provider up once and tick it for this build. Their settings are
+              written into the new app’s environment before it is written, and the
+              agent is given each provider’s own page to build against.
+            </p>
+          </header>
+          <div className="max-h-[60vh] overflow-y-auto pr-1">
+            <PluginAccounts pending={plugins} onPending={setPlugins} />
+          </div>
+        </Modal>
+      )}
 
       {logoFor && (
-        <LogoPanel idea={logoFor.idea} model={designModel}
-                   onAccept={(file, uploads) => startBuild(logoFor.idea, file,
-                                                  logoFor.srs, uploads)}
-                   onSkip={(uploads) => startBuild(logoFor.idea, '', logoFor.srs,
-                                            uploads)} />
+        <LogoPanel
+          idea={logoFor.idea}
+          model={designModel}
+          onAccept={(file, uploads) => startBuild(logoFor.idea, file, logoFor.srs, uploads, logoFor.config, false)}
+          onSkip={(uploads) => startBuild(logoFor.idea, '', logoFor.srs, uploads, logoFor.config, false)}
+        />
       )}
     </div>
   )

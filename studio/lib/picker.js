@@ -69,12 +69,14 @@ export function pickedFrom(frame, el, vpMode) {
 }
 
 
+// A picture has no text to name it by, so it is named by its alt text or its
+// file. Everything else reads better as the tag and the words in it.
 export function pickLabel(info) {
   if (!info) return ''
   if (info.isImage) {
     const name = info.attrs?.alt
       || (info.src || info.bg || 'image').split('/').pop()
-    return `${name.slice(0, 60)} — describe the picture you want instead ${info.route}`
+    return `<img> ${name.slice(0, 60)}   ${info.route}`
   }
   return `<${info.tag}>${info.text ? ' ' + info.text.slice(0, 60) : ''}   ${info.route}`
 }

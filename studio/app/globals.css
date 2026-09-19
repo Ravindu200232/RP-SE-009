@@ -1,86 +1,63 @@
 @import "tailwindcss";
 
-[data-theme="light"] {
-  --bg: #eef2f8;
-  --bg2: rgba(248, 250, 253, .9);
-  --bg3: #e8edf5;
-  --bg4: #ffffff;
-  --line: rgba(71, 85, 105, .12);
-  --line2: rgba(71, 85, 105, .22);
-  --ink: #172033;
-  --muted: #647084;
-  --muted2: #8d97a7;
-  --faint: #b2bac7;
-  --label: #7d8796;
-  --shadow: rgba(30, 41, 59, .12);
-  --code-bg: #f8fafc;
-  --canvas: #dfe6f1;
-  --accent: #5d6afb;
-  --press: #4f5ae8;
-  --deep: #3842c7;
-  --tint: #eef0ff;
-  --green: #25a56a;
-  --red: #e14b5a;
-  --yellow: #c98b22;
-  --ok-tint: #e9f8f1;
-  --warn-tint: #fff6df;
-
-  --tk-plain: #172033;
-  --tk-cmt: #8d97a7;
-  --tk-str: #248553;
-  --tk-kw: #7950c7;
-  --tk-lit: #b85b2b;
-  --tk-num: #b85b2b;
-  --tk-fn: #3667c8;
-  --tk-type: #8d681f;
-  --tk-tag: #c24170;
-  --tk-prop: #1677a6;
-  --tk-key: #b23d67;
-}
-
+:root,
 [data-theme="dark"] {
-  --bg: #0d1119;
-  --bg2: rgba(18, 24, 35, .92);
-  --bg3: #171e2a;
-  --bg4: #1b2331;
-  --line: rgba(255, 255, 255, .08);
-  --line2: rgba(255, 255, 255, .14);
-  --ink: #eef3fb;
-  --muted: #a0aabd;
-  --muted2: #758096;
-  --faint: #596378;
-  --label: #8c96aa;
-  --shadow: rgba(0, 0, 0, .44);
-  --code-bg: #0f151f;
-  --canvas: #0a0f17;
-  --accent: #7b86ff;
-  --press: #929bff;
-  --deep: #aeb5ff;
-  --tint: #20254b;
-  --green: #4fd29a;
-  --red: #ff7180;
-  --yellow: #e4b557;
-  --ok-tint: #10281f;
-  --warn-tint: #2d2618;
+  /* Material Kit React (Minimals MUI) Dark Theme Tokens */
+  --bg: #141A21;           /* grey[900] */
+  --bg2: #1C252E;          /* grey[800] - Cards / Panels */
+  --bg3: #28323D;          /* Neutral raised surface */
+  --bg4: #333F4D;          /* Active / Hover items */
+  --line: rgba(145, 158, 171, 0.16);   /* Divider / border */
+  --line2: rgba(145, 158, 171, 0.28);  /* Stronger border */
+  --ink: #FFFFFF;          /* Primary text */
+  --muted: #919EAB;        /* grey[500] - Secondary text */
+  --muted2: #637381;       /* grey[600] - Disabled / caption */
+  --faint: #454F5B;        /* grey[700] */
+  --label: #919EAB;
+  --shadow: rgba(0, 0, 0, 0.48);
+  --code-bg: #0E1318;
+  --canvas: #0E1318;
 
-  --tk-plain: #dce5f3;
-  --tk-cmt: #758096;
-  --tk-str: #8fd5a8;
-  --tk-kw: #c3a6ff;
-  --tk-lit: #ffa37f;
-  --tk-num: #ffa37f;
-  --tk-fn: #8ab4ff;
-  --tk-type: #f1ca79;
-  --tk-tag: #ff92ad;
-  --tk-prop: #83d7f5;
-  --tk-key: #ff92ad;
+  /* Material Kit Primary */
+  --accent: #1877F2;       /* Primary Main */
+  --press: #0C44AE;        /* Primary Dark */
+  --deep: #042174;         /* Primary Darker */
+  --tint: rgba(24, 119, 242, 0.08);
+
+  /* Material Kit Secondary & Status Colors */
+  --secondary: #8E33FF;
+  --green: #22C55E;        /* Success Main */
+  --ok-tint: rgba(34, 197, 94, 0.14);
+  --red: #FF5630;          /* Error Main */
+  --bad-tint: rgba(255, 86, 48, 0.14);
+  --yellow: #FFAB00;       /* Warning Main */
+  --warn-tint: rgba(255, 171, 0, 0.14);
+  --info: #00B8D9;         /* Info Main */
+  --info-tint: rgba(0, 184, 217, 0.14);
+
+  /* Syntax Highlighting */
+  --tk-plain: #E2E8F0;
+  --tk-cmt: #637381;
+  --tk-str: #22C55E;
+  --tk-kw: #8E33FF;
+  --tk-lit: #FFAB00;
+  --tk-num: #FFAB00;
+  --tk-fn: #61F3F3;
+  --tk-type: #73BAFB;
+  --tk-tag: #FF5630;
+  --tk-prop: #00B8D9;
+  --tk-key: #73BAFB;
 }
+
+
 
 :root {
   --accent2: var(--accent);
   --sidebar-w: 280px;
-  --radius-panel: 22px;
+  --radius-panel: 16px;
   --radius-ctl: 12px;
+  --card-shadow: 0 0 2px 0 rgba(145, 158, 171, 0.2), 0 12px 24px -4px rgba(145, 158, 171, 0.12);
+  --primary-shadow: 0 8px 16px 0 rgba(24, 119, 242, 0.24);
 }
 
 @theme inline {
@@ -105,12 +82,15 @@
   --color-ok: var(--green);
   --color-bad: var(--red);
   --color-warn: var(--yellow);
+  --color-info: var(--info);
   --color-ok-tint: var(--ok-tint);
   --color-warn-tint: var(--warn-tint);
+  --color-bad-tint: var(--bad-tint);
+  --color-info-tint: var(--info-tint);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-display: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-  --font-body: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-  --radius-panel: 22px;
+  --font-display: "Barlow", "Public Sans", "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Public Sans", "DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  --radius-panel: 16px;
   --radius-ctl: 12px;
 }
 

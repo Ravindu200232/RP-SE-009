@@ -27,9 +27,9 @@ export function AttachButtons({ attach, disabled, label = 'Attach', cell }) {
   const picker = useRef(null)
   const recorder = useRecorder(file => attach.add([file]))
 
-  const cellClass = 'm-2 mr-0 inline-flex h-9 items-center gap-2 rounded-xl border border-line bg-white/70 '
-                  + 'px-3 text-[11px] font-semibold text-ink shadow-sm transition-all hover:bg-white '
-                  + 'disabled:pointer-events-none disabled:text-faint dark:bg-white/5 dark:hover:bg-white/10'
+  const cellClass = 'inline-flex h-8 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.05] '
+                  + 'px-2.5 text-[11px] font-medium text-white/80 shadow-sm transition-all hover:bg-white/[.10] hover:border-white/20 hover:text-white '
+                  + 'disabled:pointer-events-none disabled:opacity-40'
 
   return (
     <>
@@ -44,17 +44,17 @@ export function AttachButtons({ attach, disabled, label = 'Attach', cell }) {
         <button disabled={disabled} className={cellClass}
                 onClick={() => picker.current?.click()}
                 title="Attach a PDF, document, screenshot or image">
-          <Paperclip className="size-3.5" /> PDF / image
+          <Paperclip className="size-2.5 shrink-0 text-white/70" /> PDF / image
         </button>
         <button disabled={disabled} onClick={recorder.toggle}
                 className={cn(cellClass, recorder.recording && 'border-accent bg-accent text-white')}
                 title={recorder.recording ? 'Stop recording' : 'Describe the app by voice'}>
           {recorder.recording
-            ? <><Square className="size-3 fill-current" /> Stop</>
-            : <><Mic className="size-3.5" /> Voice</>}
+            ? <><Square className="size-2.5 shrink-0 fill-current" /> Stop</>
+            : <><Mic className="size-2.5 shrink-0 text-white/70" /> Voice</>}
         </button>
         {recorder.recording && (
-          <span className="my-2 ml-2 flex items-center rounded-xl bg-accent/10 px-2.5
+          <span className="flex items-center rounded-xl bg-accent/10 px-2
                            font-mono text-[10.5px] text-accent">
             {clock(recorder.seconds)}
           </span>
@@ -63,7 +63,7 @@ export function AttachButtons({ attach, disabled, label = 'Attach', cell }) {
         <Button variant="ghost" size="sm" disabled={disabled}
                 onClick={() => picker.current?.click()}
                 title="Attach a document, a photo or a recording — a price list, a form you use today, a screenshot of the old system">
-          <Paperclip className="size-3" /> {label}
+          <Paperclip className="size-2.5" /> {label}
         </Button>
 
         <Button variant={recorder.recording ? 'solid' : 'ghost'} size="sm"
@@ -71,7 +71,7 @@ export function AttachButtons({ attach, disabled, label = 'Attach', cell }) {
                 title={recorder.recording ? 'Stop recording' : 'Say it instead of typing it'}>
           {recorder.recording
             ? <><Square className="size-2.5 fill-current" /> {clock(recorder.seconds)}</>
-            : <><Mic className="size-3" /> Record</>}
+            : <><Mic className="size-2.5" /> Record</>}
         </Button>
       </>)}
 

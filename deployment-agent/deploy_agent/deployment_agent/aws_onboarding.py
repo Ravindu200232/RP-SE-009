@@ -17,11 +17,7 @@ CLIENT_TYPE = "public"
 SSO_SCOPES = ["sso:account:access"]
 
 
-# The in-app device flow deliberately keeps AWS credentials in memory.  The
-# saved CLI profile is useful metadata, but the custom flow does not (and
-# should not) write AWS CLI's private SSO cache format.  Keep the opaque vault
-# reference beside the profile name so every AWS caller in this process can use
-# the short-lived credentials selected by the operator.
+# Keep opaque vault references alongside profile metadata so AWS callers use operator-selected credentials.
 _ACTIVE_SSO_LOCK = threading.RLock()
 _ACTIVE_SSO_PROFILES: dict[str, dict[str, Any]] = {}
 

@@ -46,7 +46,7 @@ export function MonitorConsole({ events, snapErrors }) {
   }, [open, shown.length])
 
   return (
-    <div className="sticky bottom-0 z-10 border-t-2 border-line2 bg-panel">
+    <div className="border-t-2 border-line2 bg-panel">
       {open && (
         <div ref={body}
              className="max-h-[240px] overflow-auto border-b border-line2 bg-panel2

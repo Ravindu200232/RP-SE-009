@@ -104,6 +104,11 @@ async def save_version(doc: dict) -> dict:
     return doc
 
 
+async def update_version_document(version_id: str, srs: dict) -> bool:
+    """Refresh derived documents without inventing a requirements revision."""
+    return await get_store().update_one(db.SRS_VERSIONS, {"id": version_id}, {"srs": srs})
+
+
 async def list_versions(project_id: str) -> list[dict]:
     return await get_store().find(
         db.SRS_VERSIONS, {"project_id": project_id}, sort=("created_at", 1)

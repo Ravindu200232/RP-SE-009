@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import os
+import json
 import shutil
 import socket
 import subprocess
 from pathlib import Path
 from typing import Any
 
+from . import owner_credentials
 from .config import OLLAMA_MODEL, OLLAMA_URL
 from .security import redact_text
+from .local_execution import assert_no_local_docker, docker_block_environment
 
 
 TOOL_COMMANDS = {
@@ -17,6 +20,8 @@ TOOL_COMMANDS = {
     "aws": ["aws", "--version"],
     "node": ["node", "--version"],
     "vercel": ["vercel", "--version"],
+    "netlify": ["netlify", "--version"],
+    "az": ["az", "--version"],
     "ollama": ["ollama", "--version"],
 }
 
@@ -39,11 +44,15 @@ def _windows_tool_directories() -> list[str]:
         str(Path(os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))) / "npm"),
 
         str(program_files / "nodejs" / "bin"),
+        str(program_files / "Microsoft SDKs" / "Azure" / "CLI2" / "wbin"),
     ]
 
 
 def _runtime_environment(extra: dict[str, str] | None = None) -> dict[str, str]:
     merged = os.environ.copy()
+    if owner_credentials.active():
+        for key in ("GH_TOKEN", "GITHUB_TOKEN", "VERCEL_TOKEN", "NETLIFY_AUTH_TOKEN", "AZURE_CONFIG_DIR"):
+            merged.pop(key, None)
     if extra:
         merged.update(extra)
     current = merged.get("PATH", "")
@@ -64,27 +73,45 @@ def run_command(
     env: dict[str, str] | None = None,
     check: bool = False,
     input: str | None = None,
+    authenticated: bool = True,
 ) -> subprocess.CompletedProcess[str]:
-    merged_env = _runtime_environment(env)
+    # A command run for a person signs in as them (owner_credentials.py).
+    assert_no_local_docker(args, cwd)
+    account_env = owner_credentials.command_env()
+    if not authenticated:
+        account_env = {key: value for key, value in account_env.items() if key in {"GH_CONFIG_DIR", "AZURE_CONFIG_DIR"}}
+        account_env.update({key: "" for key in ("GH_TOKEN", "GITHUB_TOKEN", "VERCEL_TOKEN", "NETLIFY_AUTH_TOKEN", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN")})
+    merged_env = _runtime_environment({**account_env, **(env or {})})
+    blocker = docker_block_environment()
+    merged_env['PATH'] = blocker['PATH'] + os.pathsep + merged_env.get('PATH', '')
+    merged_env['DOCKER_HOST'] = blocker['DOCKER_HOST']
+    merged_env['DOCKER_CONTEXT'] = blocker['DOCKER_CONTEXT']
     resolved_args = list(args)
     resolved_args[0] = resolve_command(resolved_args[0]) or resolved_args[0]
 
     if cwd and Path(resolved_args[0]).name.lower() in {"git", "git.exe"}:
         safe_directory = str(Path(cwd).resolve())
         resolved_args[1:1] = ["-c", f"safe.directory={safe_directory}"]
-    result = subprocess.run(
-        resolved_args,
-        cwd=str(cwd) if cwd else None,
-        env=merged_env,
-
-        input=input,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        shell=False,
-    )
-    result.stdout = redact_text(result.stdout or "")
-    result.stderr = redact_text(result.stderr or "")
+    private = [value for value in owner_credentials.current().values() if isinstance(value, str) and len(value) > 8]
+    private.extend(value for key, value in (env or {}).items() if any(word in key.upper() for word in ("SECRET", "TOKEN", "PASSWORD", "URI")) and len(value) > 8)
+    try:
+        azure = json.loads(owner_credentials.current().get("azure_credentials", "{}"))
+        private.append(azure.get("clientSecret", ""))
+    except (ValueError, TypeError):
+        pass
+    def sanitized(output):
+        for secret in private:
+            if secret:
+                output = output.replace(secret, "***REDACTED***")
+        return redact_text(output)
+    try:
+        result = subprocess.run(resolved_args, cwd=str(cwd) if cwd else None, env=merged_env,
+                                input=input, capture_output=True, text=True, timeout=timeout, shell=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(sanitized(str(exc))) from None
+    for attribute in ("stdout", "stderr"):
+        output = getattr(result, attribute) or ""
+        setattr(result, attribute, sanitized(output))
     if check and result.returncode:
         raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"Command failed: {args[0]}")
     return result

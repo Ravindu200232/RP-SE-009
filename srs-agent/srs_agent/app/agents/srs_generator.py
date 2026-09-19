@@ -23,6 +23,7 @@ from ..llm import LLMRepairFailed, LLMUnavailable, get_llm
 from ..schemas.srs import summarize_srs, validate_srs
 from ..generators.standards import apply_international_profile
 from ..services.events import bus
+from ..skills import get_active_skills_guidance
 from .state import AgentState
 
 _SYS = (
@@ -156,6 +157,36 @@ def _norm(name: str) -> str:
     return key
 
 
+def _review_block(state: AgentState) -> str:
+    """The previous round's findings, for the draft that answers them.
+
+    The skeleton is rebuilt from the approved plan on every pass and
+    `_plan_scope_guard` still refuses anything outside it, so this can sharpen
+    a requirement or supply a missing threshold and cannot widen scope.
+    """
+    verdict = state.get("review_feedback") or {}
+    findings = verdict.get("findings") or []
+    missing = verdict.get("missing_requirements") or []
+    if not findings and not missing:
+        return ""
+
+    lines = ["PRIOR REVIEW - FIX THESE FINDINGS:"]
+    for finding in findings[:12]:
+        rid = str(finding.get("requirement_id") or "").strip()
+        severity = str(finding.get("severity") or "").strip()
+        subject = f"{rid}: " if rid else ""
+        lines.append(f"- [{severity}] {subject}{finding.get('problem', '')}")
+        rewrite = str(finding.get("suggested_rewrite") or "").strip()
+        if rewrite:
+            lines.append(f"  rewrite as: {rewrite}")
+    for item in missing[:8]:
+        lines.append(f"- missing {item.get('kind', 'requirement')}: "
+                     f"{item.get('topic', '')} ({item.get('why', '')})")
+    lines.append("Address every one of these. Do not add features, screens, "
+                 "roles or tables that the plan does not already contain.")
+    return "\n".join(lines) + "\n\n"
+
+
 async def generate_srs_node(state: AgentState) -> AgentState:
     pid = state["project_id"]
     project = state.get("project", {})
@@ -191,6 +222,10 @@ async def generate_srs_node(state: AgentState) -> AgentState:
         await bus.emit(pid, "SrsJsonGeneratorAgent", "Asking the LLM for domain-specific content…", progress=35)
         digest = _answers_digest(questions, answers)
         plan_md = str(state.get("plan_markdown") or "").strip()
+        skills_guidance = get_active_skills_guidance(
+            f"{brief} {plan_md}",
+            only=("functional-requirements", "non-functional-quality",
+                  "security-architecture"))
         user = (
             f"DETECTED DOMAIN: {state.get('classification', {}).get('detected_domain')}\n\n"
             f"USER IDEA / BRIEF:\n{brief[:3000]}\n\n"
@@ -198,7 +233,9 @@ async def generate_srs_node(state: AgentState) -> AgentState:
             + (("This app has NO login and NO user accounts. Say nothing about "
                 "users, roles, permissions or admins.\n\n") if plan and not auth else "")
             + f"USER ANSWERS:\n{digest}\n\n"
-            "Now produce the enrichment JSON described in the system message, "
+            + (f"{skills_guidance}\n\n" if skills_guidance else "")
+            + _review_block(state)
+            + "Now produce the enrichment JSON described in the system message, "
             "tailored precisely to this idea."
         )
         pack = await llm.complete_json(

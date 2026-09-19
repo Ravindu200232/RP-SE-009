@@ -1,29 +1,48 @@
-// Every ISO 639-1 language supported by the browser's internationalization data.
-const ISO_639_1 = `
-aa ab ae af ak am an ar as av ay az ba be bg bh bi bm bn bo br bs ca ce ch co cr
-cs cu cv cy da de dv dz ee el en eo es et eu fa ff fi fj fo fr fy ga gd gl gn gu
-gv ha he hi ho hr ht hu hy hz ia id ie ig ii ik io is it iu ja jv ka kg ki kj kk
-kl km kn ko kr ks ku kv kw ky la lb lg li ln lo lt lu lv mg mh mi mk ml mn mr ms
-mt my na nb nd ne ng nl nn no nr nv ny oc oj om or os pa pi pl ps pt qu rm rn ro
-ru rw sa sc sd se sg si sk sl sm sn so sq sr ss st su sv sw ta te tg th ti tk tl
-tn to tr ts tt tw ty ug uk ur uz ve vi vo wa wo xh yi yo za zh zu
-`.trim().split(/\s+/)
-
-const preferred = ['en', 'si', 'ta']
-const rest = ISO_639_1.filter(code => !preferred.includes(code))
-const item = code => ({ code, name: code })
-
-export const SRS_LANGUAGES = [
-  ...preferred.map(item),
-  ...rest.map(item),
+// Curated languages for the SRS interview and planning process.
+export const COMMON_LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'si', name: 'Sinhala (සිංහල)' },
+  { code: 'ta', name: 'Tamil (தமிழ்)' },
+  { code: 'es', name: 'Spanish (Español)' },
+  { code: 'fr', name: 'French (Français)' },
+  { code: 'de', name: 'German (Deutsch)' },
+  { code: 'zh', name: 'Chinese (中文)' },
+  { code: 'ja', name: 'Japanese (日本語)' },
+  { code: 'ko', name: 'Korean (한국어)' },
+  { code: 'hi', name: 'Hindi (हिन्दी)' },
+  { code: 'ar', name: 'Arabic (العربية)' },
+  { code: 'pt', name: 'Portuguese (Português)' },
+  { code: 'ru', name: 'Russian (Русский)' },
+  { code: 'it', name: 'Italian (Italiano)' },
+  { code: 'nl', name: 'Dutch (Nederlands)' },
+  { code: 'tr', name: 'Turkish (Türkçe)' },
+  { code: 'pl', name: 'Polish (Polski)' },
+  { code: 'sv', name: 'Swedish (Svenska)' },
+  { code: 'id', name: 'Indonesian (Bahasa Indonesia)' },
+  { code: 'vi', name: 'Vietnamese (Tiếng Việt)' },
+  { code: 'th', name: 'Thai (ไทย)' },
+  { code: 'bn', name: 'Bengali (বাংলা)' },
+  { code: 'ur', name: 'Urdu (اردو)' },
+  { code: 'ms', name: 'Malay (Bahasa Melayu)' },
+  { code: 'fa', name: 'Persian (فارسی)' },
+  { code: 'el', name: 'Greek (Ελληνικά)' },
+  { code: 'he', name: 'Hebrew (עברית)' },
+  { code: 'da', name: 'Danish (Dansk)' },
+  { code: 'fi', name: 'Finnish (Suomi)' },
+  { code: 'no', name: 'Norwegian (Norsk)' },
+  { code: 'cs', name: 'Czech (Čeština)' },
+  { code: 'ro', name: 'Romanian (Română)' },
+  { code: 'hu', name: 'Hungarian (Magyar)' },
+  { code: 'uk', name: 'Ukrainian (Українська)' },
 ]
 
+export const SRS_LANGUAGES = COMMON_LANGUAGES
+
 export function displaySrsLanguages() {
-  if (typeof Intl === 'undefined' || !Intl.DisplayNames) return SRS_LANGUAGES
-  const names = new Intl.DisplayNames(['en'], { type: 'language' })
-  const named = code => ({ code, name: names.of(code) || code })
-  return [
-    ...preferred.map(named),
-    ...rest.map(named).sort((a, b) => a.name.localeCompare(b.name)),
-  ]
+  const preferredCodes = ['en', 'si', 'ta']
+  const preferred = COMMON_LANGUAGES.filter(l => preferredCodes.includes(l.code))
+  const rest = COMMON_LANGUAGES.filter(l => !preferredCodes.includes(l.code))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  return [...preferred, ...rest]
 }

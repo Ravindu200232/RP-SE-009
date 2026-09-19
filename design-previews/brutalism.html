@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRTL — Brutalist Design System</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#DD614C',
+                        secondary: '#DAA144',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        display: ['Darker Grotesque', 'sans-serif'],
+                        body: ['Darker Grotesque', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@300..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        @keyframes marquee {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+        .animate-marquee {
+            animation: marquee 30s linear infinite;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="font-body bg-surface text-text antialiased">
+
+    <!-- Skip link -->
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:font-mono focus:text-sm">Skip to content</a>
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="sticky top-0 z-50 bg-surface border-b-2 border-text">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="#" class="flex items-center gap-2">
+                    <span class="font-mono text-xl font-bold tracking-tighter bg-text text-surface px-2 py-1">BRTL</span>
+                    <span class="font-mono text-xs hidden sm:block text-text/60">v2.0</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="font-mono text-sm font-medium hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="font-mono text-sm font-medium hover:text-primary transition-colors">Process</a>
+                    <a href="#pricing" class="font-mono text-sm font-medium hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="font-mono text-sm font-medium hover:text-primary transition-colors">FAQ</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="hidden md:inline-block font-mono text-sm font-bold bg-primary text-white border-2 border-text px-4 py-2 hover:bg-text hover:text-white transition-colors">Get Started</a>
+                    <button id="menu-toggle" class="md:hidden p-2 border-2 border-text" aria-label="Toggle menu">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t-2 border-text bg-surface">
+            <div class="px-4 py-4 flex flex-col gap-4">
+                <a href="#features" class="font-mono text-sm font-medium hover:text-primary">Features</a>
+                <a href="#process" class="font-mono text-sm font-medium hover:text-primary">Process</a>
+                <a href="#pricing" class="font-mono text-sm font-medium hover:text-primary">Pricing</a>
+                <a href="#faq" class="font-mono text-sm font-medium hover:text-primary">FAQ</a>
+                <a href="#" class="font-mono text-sm font-bold bg-primary text-white border-2 border-text px-4 py-2 text-center">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <header class="relative overflow-hidden border-b-2 border-text">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-xs font-bold bg-secondary text-text border-2 border-text px-3 py-1 inline-block mb-6">DESIGN SYSTEM IN ACTION</p>
+                    <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.95] tracking-tight">
+                        RAW.<br>BOLD.<br><span class="text-primary">UNCOMPROMISING.</span>
+                    </h1>
+                    <p class="mt-6 text-lg sm:text-xl text-text/70 max-w-md font-medium">
+                        A brutalist design system for teams that value function over decoration. Sharp edges. Bold type. Zero compromise.
+                    </p>
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <a href="#" class="inline-flex items-center gap-2 font-mono text-sm font-bold bg-text text-surface border-2 border-text px-6 py-3 hover:bg-primary hover:border-primary transition-colors">
+                            Get Started <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="inline-flex items-center gap-2 font-mono text-sm font-bold bg-surface text-text border-2 border-text px-6 py-3 hover:bg-secondary transition-colors">
+                            View Docs <i data-lucide="book-open" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+                <!-- Hero visual composition -->
+                <div class="relative h-[320px] sm:h-[400px] lg:h-[480px]">
+                    <!-- Grid pattern -->
+                    <div class="absolute inset-0" style="background-image: linear-gradient(#11182710 1px, transparent 1px), linear-gradient(90deg, #11182710 1px, transparent 1px); background-size: 24px 24px;"></div>
+                    <!-- Main shape -->
+                    <div class="absolute top-4 right-4 w-48 h-48 sm:w-64 sm:h-64 bg-primary border-4 border-text"></div>
+                    <!-- Overlapping shape -->
+                    <div class="absolute top-16 right-16 w-36 h-36 sm:w-48 sm:h-48 bg-secondary border-4 border-text"></div>
+                    <!-- Dark block -->
+                    <div class="absolute bottom-8 right-32 w-24 h-24 sm:w-32 sm:h-32 bg-text"></div>
+                    <!-- Mono label -->
+                    <div class="absolute top-2 right-2 font-mono text-xs bg-surface border-2 border-text px-2 py-1 font-bold">BRTL-001</div>
+                    <!-- Mono label 2 -->
+                    <div class="absolute bottom-4 right-4 font-mono text-xs bg-surface border-2 border-text px-2 py-1 font-bold">SHARP-EDGE</div>
+                    <!-- Small accent square -->
+                    <div class="absolute top-32 left-8 w-12 h-12 bg-primary border-2 border-text"></div>
+                    <!-- Diagonal line -->
+                    <div class="absolute bottom-24 left-16 w-24 h-1 bg-text rotate-45"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== MARQUEE ===== -->
+    <div class="overflow-hidden bg-primary border-b-2 border-text py-3">
+        <div class="flex w-max animate-marquee">
+            <div class="flex gap-8 px-4 font-mono text-sm font-bold text-white">
+                <span>RAW DESIGN</span><span>✦</span><span>BOLD TYPE</span><span>✦</span><span>SHARP EDGES</span><span>✦</span><span>NO COMPROMISE</span><span>✦</span><span>FUNCTION FIRST</span><span>✦</span>
+            </div>
+            <div class="flex gap-8 px-4 font-mono text-sm font-bold text-white">
+                <span>RAW DESIGN</span><span>✦</span><span>BOLD TYPE</span><span>✦</span><span>SHARP EDGES</span><span>✦</span><span>NO COMPROMISE</span><span>✦</span><span>FUNCTION FIRST</span><span>✦</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== STATS ===== -->
+    <section class="bg-text text-surface border-b-2 border-text">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="border-2 border-white/20 p-6">
+                    <p class="font-mono text-4xl sm:text-5xl font-bold text-primary">99.9%</p>
+                    <p class="mt-2 font-mono text-xs text-white/60">UPTIME</p>
+                </div>
+                <div class="border-2 border-white/20 p-6">
+                    <p class="font-mono text-4xl sm:text-5xl font-bold text-secondary">12K+</p>
+                    <p class="mt-2 font-mono text-xs text-white/60">USERS</p>
+                </div>
+                <div class="border-2 border-white/20 p-6">
+                    <p class="font-mono text-4xl sm:text-5xl font-bold text-success">4.9/5</p>
+                    <p class="mt-2 font-mono text-xs text-white/60">RATING</p>
+                </div>
+                <div class="border-2 border-white/20 p-6">
+                    <p class="font-mono text-4xl sm:text-5xl font-bold text-primary">150+</p>
+                    <p class="mt-2 font-mono text-xs text-white/60">COMPONENTS</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="bg-surface border-b-2 border-text">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="mb-12">
+                <p class="font-mono text-xs font-bold bg-text text-surface px-3 py-1 inline-block mb-4">FEATURES</p>
+                <h2 class="font-display text-4xl sm:text-5xl font-black tracking-tight">Built to be<br><span class="text-primary">unapologetic.</span></h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature 1 -->
+                <div class="border-2 border-text p-6 hover:bg-primary hover:text-white transition-colors group">
+                    <div class="w-12 h-12 bg-primary border-2 border-text flex items-center justify-center mb-4 group-hover:bg-white">
+                        <i data-lucide="zap" class="w-6 h-6 text-white group-hover:text-text"></i>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold">Raw Aesthetics</h3>
+                    <p class="mt-2 font-body text-text/70 group-hover:text-white/80">Unpolished, honest design that exposes structure. No decorative fluff.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="border-2 border-text p-6 hover:bg-primary hover:text-white transition-colors group">
+                    <div class="w-12 h-12 bg-secondary border-2 border-text flex items-center justify-center mb-4 group-hover:bg-white">
+                        <i data-lucide="type" class="w-6 h-6 text-white group-hover:text-text"></i>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold">Bold Typography</h3>
+                    <p class="mt-2 font-body text-text/70 group-hover:text-white/80">Expressive type scale with Darker Grotesque. Weights from 100 to 900.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="border-2 border-text p-6 hover:bg-primary hover:text-white transition-colors group">
+                    <div class="w-12 h-12 bg-text border-2 border-text flex items-center justify-center mb-4 group-hover:bg-white">
+                        <i data-lucide="square" class="w-6 h-6 text-white group-hover:text-text"></i>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold">Sharp Geometry</h3>
+                    <p class="mt-2 font-body text-text/70 group-hover:text-white/80">Zero rounded corners. Every edge is intentional. Every angle is exact.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="border-2 border-text p-6 hover:bg-primary hover:text-white transition-colors group">
+                    <div class="w-12 h-12 bg-success border-2 border-text flex items-center justify-center mb-4 group-hover:bg-white">
+                        <i data-lucide="eye" class="w-6 h-6 text-white group-hover:text-text"></i>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold">High Contrast</h3>
+                    <p class="mt-2 font-body text-text/70 group-hover:text-white/80">WCAG 2.2 AA compliant. Every color pair meets contrast requirements.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="border-2 border-text p-6 hover:bg-primary hover:text-white transition-colors group">
+                    <div class="w-12 h-12 bg-warning border-2 border-text flex items-center justify-center mb-4 group-hover:bg-white">
+                        <i data-lucide="code" class="w-6 h-6 text-white group-hover:text-text"></i>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold">Mono Accents</h3>
+                    <p class="mt-2 font-body text-text/70 group-hover:text-white/80">JetBrains Mono for labels, code, and technical elements. Precision built-in.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="border-2 border-text p-6 hover:bg-primary hover:text-white transition-colors group">
+                    <div class="w-12 h-12 bg-danger border-2 border-text flex items-center justify-center mb-4 group-hover:bg-white">
+                        <i data-lucide="layout" class="w-6 h-6 text-white group-hover:text-text"></i>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold">Color Blocks</h3>
+                    <p class="mt-2 font-body text-text/70 group-hover:text-white/80">Stark visual hierarchy through bold color-blocked sections.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="bg-primary text-white border-b-2 border-text">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="mb-12">
+                <p class="font-mono text-xs font-bold bg-white text-text px-3 py-1 inline-block mb-4">PROCESS</p>
+                <h2 class="font-display text-4xl sm:text-5xl font-black tracking-tight">How it works.</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Step 1 -->
+                <div class="border-2 border-white/40 p-6">
+                    <p class="font-mono text-5xl font-bold text-white/30">01</p>
+                    <h3 class="font-display text-2xl font-bold mt-4">Define</h3>
+                    <p class="mt-2 font-body text-white/70">Establish tokens for color, spacing, and typography. Set the foundation.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="border-2 border-white/40 p-6">
+                    <p class="font-mono text-5xl font-bold text-white/30">02</p>
+                    <h3 class="font-display text-2xl font-bold mt-4">Build</h3>
+                    <p class="mt-2 font-body text-white/70">Create components with raw, unadorned structure. Function first.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="border-2 border-white/40 p-6">
+                    <p class="font-mono text-5xl font-bold text-white/30">03</p>
+                    <h3 class="font-display text-2xl font-bold mt-4">Test</h3>
+                    <p class="mt-2 font-body text-white/70">Verify accessibility, contrast, and keyboard navigation. No shortcuts.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="border-2 border-white/40 p-6">
+                    <p class="font-mono text-5xl font-bold text-white/30">04</p>
+                    <h3 class="font-display text-2xl font-bold mt-4">Ship</h3>
+                    <p class="mt-2 font-body text-white/70">Deploy with confidence. Every component is tested and documented.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="bg-surface border-b-2 border-text">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-xs font-bold bg-secondary text-text px-3 py-1 inline-block mb-4">BENEFITS</p>
+                    <h2 class="font-display text-4xl sm:text-5xl font-black tracking-tight">Why teams<br>choose <span class="text-primary">BRTL.</span></h2>
+                    <p class="mt-4 text-lg text-text/70 font-medium">We don't do pretty. We do functional. Here's what you get when you embrace the raw.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-6">
+                    <!-- Benefit 1 -->
+                    <div class="border-2 border-text p-6 bg-text text-surface">
+                        <i data-lucide="shield-check" class="w-8 h-8 text-secondary mb-4"></i>
+                        <h3 class="font-display text-xl font-bold">Accessibility First</h3>
+                        <p class="mt-2 font-body text-white/70 text-sm">WCAG 2.2 AA compliant out of the box. Every component tested.</p>
+                    </div>
+                    <!-- Benefit 2 -->
+                    <div class="border-2 border-text p-6">
+                        <i data-lucide="layers" class="w-8 h-8 text-primary mb-4"></i>
+                        <h3 class="font-display text-xl font-bold">Consistent Tokens</h3>
+                        <p class="mt-2 font-body text-text/70 text-sm">Semantic tokens for color, spacing, and type. No magic values.</p>
+                    </div>
+                    <!-- Benefit 3 -->
+                    <div class="border-2 border-text p-6">
+                        <i data-lucide="zap" class="w-8 h-8 text-warning mb-4"></i>
+                        <h3 class="font-display text-xl font-bold">Fast Performance</h3>
+                        <p class="mt-2 font-body text-text/70 text-sm">Zero runtime dependencies. CSS-first architecture. Blazing fast.</p>
+                    </div>
+                    <!-- Benefit 4 -->
+                    <div class="border-2 border-text p-6 bg-secondary text-text">
+                        <i data-lucide="refresh-cw" class="w-8 h-8 mb-4"></i>
+                        <h3 class="font-display text-xl font-bold">Easy Migration</h3>
+                        <p class="mt-2 font-body text-text/70 text-sm">Drop-in replacement for existing components. Guides included.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="bg-secondary border-b-2 border-text">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="mb-12">
+                <p class="font-mono text-xs font-bold bg-text text-white px-3 py-1 inline-block mb-4">TESTIMONIALS</p>
+                <h2 class="font-display text-4xl sm:text-5xl font-black tracking-tight">People are<br>talking.</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Testimonial 1 -->
+                <div class="border-2 border-text bg-surface p-6 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-body text-lg font-medium flex-1">"Brutalism changed how we think about design. Our users love the honesty. No more fake gradients."</p>
+                    <div class="mt-6 pt-4 border-t-2 border-text">
+                        <p class="font-mono text-sm font-bold">SARAH CHEN</p>
+                        <p class="font-mono text-xs text-text/60">Product Designer, Acme</p>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="border-2 border-text bg-surface p-6 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-body text-lg font-medium flex-1">"The most accessible design system we've ever used. Every component passes audit on the first try."</p>
+                    <div class="mt-6 pt-4 border-t-2 border-text">
+                        <p class="font-mono text-sm font-bold">MARCUS RODRIGUEZ</p>
+                        <p class="font-mono text-xs text-text/60">Engineering Lead, Globex</p>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="border-2 border-text bg-surface p-6 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-body text-lg font-medium flex-1">"We shipped our redesign in two weeks. Brutalism made it possible. Zero design debt."</p>
+                    <div class="mt-6 pt-4 border-t-2 border-text">
+                        <p class="font-mono text-sm font-bold">ALEX KIM</p>
+                        <p class="font-mono text-xs text-text/60">Founder, Initech</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="bg-surface border-b-2 border-text">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="mb-12 text-center">
+                <p class="font-mono text-xs font-bold bg-text text-surface px-3 py-1 inline-block mb-4">PRICING</p>
+                <h2 class="font-display text-4xl sm:text-5xl font-black tracking-tight">Simple, raw pricing.</h2>
+                <p class="mt-4 text-lg text-text/70 font-medium max-w-md mx-auto">No hidden fees. No surprises. Just honest pricing.</p>
+            </div>
+            <div class="grid sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                <!-- Starter -->
+                <div class="border-2 border-text p-6 flex flex-col">
+                    <p class="font-mono text-xs font-bold bg-text text-surface px-2 py-1 inline-block self-start">STARTER</p>
+                    <p class="font-mono text-5xl font-bold mt-4">$0</p>
+                    <p class="font-mono text-xs text-text/60 mt-1">/ forever</p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> 5 components</li>
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Basic tokens</li>
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Community support</li>
+                        <li class="flex items-center gap-2 font-body text-sm text-text/40"><i data-lucide="x" class="w-4 h-4 text-text/30"></i> Figma library</li>
+                    </ul>
+                    <a href="#" class="mt-6 font-mono text-sm font-bold border-2 border-text px-4 py-2 text-center hover:bg-text hover:text-surface transition-colors">Start Free</a>
+                </div>
+                <!-- Pro (highlighted) -->
+                <div class="border-2 border-text bg-primary text-white p-6 flex flex-col relative">
+                    <p class="font-mono text-xs font-bold bg-white text-text px-2 py-1 inline-block self-start">PRO</p>
+                    <p class="font-mono text-5xl font-bold mt-4">$29</p>
+                    <p class="font-mono text-xs text-white/60 mt-1">/ per month</p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-white"></i> All components</li>
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-white"></i> Custom tokens</li>
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-white"></i> Priority support</li>
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-white"></i> Figma library</li>
+                    </ul>
+                    <a href="#" class="mt-6 font-mono text-sm font-bold bg-white text-text border-2 border-white px-4 py-2 text-center hover:bg-text hover:text-white hover:border-text transition-colors">Get Pro</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="border-2 border-text p-6 flex flex-col">
+                    <p class="font-mono text-xs font-bold bg-text text-surface px-2 py-1 inline-block self-start">ENTERPRISE</p>
+                    <p class="font-mono text-5xl font-bold mt-4">Custom</p>
+                    <p class="font-mono text-xs text-text/60 mt-1">/ tailored</p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Everything in Pro</li>
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Dedicated support</li>
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom design system</li>
+                        <li class="flex items-center gap-2 font-body text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> SLA guarantee</li>
+                    </ul>
+                    <a href="#" class="mt-6 font-mono text-sm font-bold border-2 border-text px-4 py-2 text-center hover:bg-text hover:text-surface transition-colors">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="bg-surface border-b-2 border-text">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="mb-12 text-center">
+                <p class="font-mono text-xs font-bold bg-secondary text-text px-3 py-1 inline-block mb-4">FAQ</p>
+                <h2 class="font-display text-4xl sm:text-5xl font-black tracking-tight">Questions, answered.</h2>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <details class="border-2 border-text group">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer font-mono text-sm font-bold hover:bg-secondary transition-colors">
+                        What is brutalist design?
+                        <i data-lucide="plus" class="w-5 h-5 group-open:hidden"></i>
+                        <i data-lucide="minus" class="w-5 h-5 hidden group-open:block"></i>
+                    </summary>
+                    <div class="p-4 pt-0 border-t-2 border-text font-body text-text/70">
+                        <p class="pt-4">Brutalist design embraces raw, unpolished aesthetics inspired by 1950s concrete architecture. It prioritizes function over decoration, exposing structure and using bold, unadorned visual elements.</p>
+                    </div>
+                </details>
+                <!-- FAQ 2 -->
+                <details class="border-2 border-text group">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer font-mono text-sm font-bold hover:bg-secondary transition-colors">
+                        How do I migrate from my current design system?
+                        <i data-lucide="plus" class="w-5 h-5 group-open:hidden"></i>
+                        <i data-lucide="minus" class="w-5 h-5 hidden group-open:block"></i>
+                    </summary>
+                    <div class="p-4 pt-0 border-t-2 border-text font-body text-text/70">
+                        <p class="pt-4">Start by mapping your existing tokens to BRTL semantic tokens. Then replace components one by one. Our migration guide walks you through each step, and the drop-in replacement components make the transition seamless.</p>
+                    </div>
+                </details>
+                <!-- FAQ 3 -->
+                <details class="border-2 border-text group">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer font-mono text-sm font-bold hover:bg-secondary transition-colors">
+                        Do you support Figma?
+                        <i data-lucide="plus" class="w-5 h-5 group-open:hidden"></i>
+                        <i data-lucide="minus" class="w-5 h-5 hidden group-open:block"></i>
+                    </summary>
+                    <div class="p-4 pt-0 border-t-2 border-text font-body text-text/70">
+                        <p class="pt-4">Yes. The Pro plan includes a complete Figma library with all components, tokens, and design system documentation. It stays in sync with our code components.</p>
+                    </div>
+                </details>
+                <!-- FAQ 4 -->
+                <details class="border-2 border-text group">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer font-mono text-sm font-bold hover:bg-secondary transition-colors">
+                        What about accessibility?
+                        <i data-lucide="plus" class="w-5 h-5 group-open:hidden"></i>
+                        <i data-lucide="minus" class="w-5 h-5 hidden group-open:block"></i>
+                    </summary>
+                    <div class="p-4 pt-0 border-t-2 border-text font-body text-text/70">
+                        <p class="pt-4">Every component is WCAG 2.2 AA compliant. We test keyboard navigation, screen reader compatibility, color contrast, and focus states. Accessibility is non-negotiable.</p>
+                    </div>
+                </details>
+                <!-- FAQ 5 -->
+                <details class="border-2 border-text group">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer font-mono text-sm font-bold hover:bg-secondary transition-colors">
+                        Can I customize the tokens?
+                        <i data-lucide="plus" class="w-5 h-5 group-open:hidden"></i>
+                        <i data-lucide="minus" class="w-5 h-5 hidden group-open:block"></i>
+                    </summary>
+                    <div class="p-4 pt-0 border-t-2 border-text font-body text-text/70">
+                        <p class="pt-4">Absolutely. All tokens are CSS custom properties. Override them in your theme file. Change colors, spacing, typography — everything is customizable.</p>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA BAND ===== -->
+    <section class="bg-text text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-8">
+                <div>
+                    <h2 class="font-display text-3xl sm:text-4xl font-black tracking-tight">Ready to go raw?</h2>
+                    <p class="mt-2 font-mono text-sm text-white/60">Start building with BRTL today.</p>
+                </div>
+                <a href="#" class="inline-flex items-center gap-2 font-mono text-sm font-bold bg-primary text-white border-2 border-primary px-6 py-3 hover:bg-secondary hover:text-text hover:border-secondary transition-colors">
+                    Get Started Now <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-text text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div>
+                    <a href="#" class="flex items-center gap-2">
+                        <span class="font-mono text-xl font-bold tracking-tighter bg-primary text-white px-2 py-1">BRTL</span>
+                    </a>
+                    <p class="mt-4 font-body text-sm text-white/60">Raw. Bold. Uncompromising. A brutalist design system for teams that value function.</p>
+                </div>
+                <div>
+                    <p class="font-mono text-xs font-bold text-white/40 mb-4">PRODUCT</p>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="font-body text-sm text-white/70 hover:text-primary">Features</a></li>
+                        <li><a href="#pricing" class="font-body text-sm text-white/70 hover:text-primary">Pricing</a></li>
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">Changelog</a></li>
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="font-mono text-xs font-bold text-white/40 mb-4">RESOURCES</p>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">Documentation</a></li>
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">Components</a></li>
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">Tokens</a></li>
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">Figma Library</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="font-mono text-xs font-bold text-white/40 mb-4">CONNECT</p>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">GitHub</a></li>
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">Twitter / X</a></li>
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">LinkedIn</a></li>
+                        <li><a href="#" class="font-body text-sm text-white/70 hover:text-primary">Discord</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 pt-6 border-t-2 border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="font-mono text-xs text-white/40">© 2024 BRTL Design System. All rights reserved.</p>
+                <a href="#" class="font-mono text-xs text-white/40 hover:text-primary">Back to top ↑</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        document.getElementById('menu-toggle').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+            const icon = this.querySelector('i');
+            if (menu.classList.contains('hidden')) {
+                icon.setAttribute('data-lucide', 'menu');
+            } else {
+                icon.setAttribute('data-lucide', 'x');
+            }
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

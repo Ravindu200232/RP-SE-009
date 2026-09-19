@@ -1,14 +1,25 @@
 'use client'
 
+/**
+ * The journeys running in parallel, and how far each one has got.
+ *
+ * Each lane used to reserve most of its card for a screenshot of its own
+ * browser. There is one browser now and it streams into the preview, so that
+ * space was a black rectangle that never filled in — and it pushed the step
+ * the lane is actually on down to a line of small print.
+ *
+ * The step is the card now.
+ */
+
 import { useStore } from '@/lib/store'
 
 function tone(state, ok) {
-  if (state === 'step_failed' || ok === false) return 'border-bad/45 bg-bad/5'
-  if (state === 'journey_done') return 'border-ok/35 bg-ok/5'
+  if (state === 'step_failed' || ok === false) return 'border-rose-500/30 bg-rose-500/5 shadow-rose-500/5'
+  if (state === 'journey_done') return 'border-emerald-500/30 bg-emerald-500/5 shadow-emerald-500/5'
   if (state === 'step' || state === 'step_done' || state === 'journey_start') {
-    return 'border-accent/35 bg-accent/5'
+    return 'border-blue-500/30 bg-blue-500/5 shadow-blue-500/5'
   }
-  return 'border-line bg-panel'
+  return 'border-white/10 bg-[#121622]/80'
 }
 
 function label(state) {
@@ -30,55 +41,43 @@ export default function E2ELiveLanes() {
 
   return (
     <div className="flex h-full min-h-0 flex-col p-4">
-      <div className="mb-3 flex shrink-0 items-center gap-2">
-        <span className="size-2 animate-pulse rounded-full bg-accent" />
-        <span className="text-[12px] font-semibold text-ink">Parallel E2E</span>
-        <span className="font-mono text-[10px] text-muted">
+      <div className="mb-3 flex shrink-0 items-center gap-2.5">
+        <span className="size-2 animate-pulse rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+        <span className="text-[13px] font-bold text-white tracking-wide">Parallel E2E</span>
+        <span className="font-mono text-[11px] text-slate-400">
           {workers} lanes{e2e?.waves ? ` · wave ${e2e.wave || 1}/${e2e.waves}` : ''}
         </span>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-3">
+      <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2">
         {lanes.map((lane, i) => {
           const pct = lane.total ? Math.min(100, Math.round((lane.index / lane.total) * 100)) : 0
           return (
             <section key={lane.lane || i + 1}
-                     className={`flex min-h-0 flex-col overflow-hidden rounded-panel border ${tone(lane.state, lane.ok)}`}>
-              <div className="flex shrink-0 items-center gap-2 border-b border-line/70 px-3 py-2">
-                <b className="font-mono text-[10px] text-accent">LANE {lane.lane || i + 1}</b>
-                <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-ink">
+                     className={`flex min-h-0 flex-col overflow-hidden rounded-2xl border shadow-xl backdrop-blur-xl transition-all duration-200 ${tone(lane.state, lane.ok)}`}>
+              <div className="flex shrink-0 items-center gap-2.5 border-b border-white/5 px-4 py-2.5">
+                <b className="font-mono text-[11px] font-bold text-blue-400">LANE {lane.lane || i + 1}</b>
+                <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-white">
                   {lane.title || 'Waiting for a journey'}
                 </span>
-                <span className="text-[9px] uppercase tracking-wide text-muted">{label(lane.state)}</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-slate-400">{label(lane.state)}</span>
               </div>
 
-              <div className="relative min-h-0 flex-1 bg-black/90">
-                {lane.frame ? (
-                  <img src={lane.frame} alt={`E2E lane ${lane.lane || i + 1}`}
-                       className="h-full w-full object-contain" />
-                ) : (
-                  <div className="grid h-full place-items-center px-4 text-center text-[10px] text-muted">
-                    {lane.label || 'Browser lane is warming up…'}
-                  </div>
-                )}
-              </div>
-
-              <div className="shrink-0 space-y-1.5 border-t border-line/70 px-3 py-2">
-                <div className="flex items-center gap-2 text-[9.5px] text-muted">
+              <div className="space-y-2.5 px-4 py-3">
+                <p className={`text-[12px] leading-relaxed ${lane.message ? 'text-rose-400' : 'text-slate-200'}`}>
+                  {lane.message || lane.label || 'Waiting for a browser lane'}
+                </p>
+                <div className="flex items-center gap-2 text-[10.5px] text-slate-400">
                   <span className="truncate">{lane.role || 'browser'}</span>
                   <span>·</span>
-                  <code className="min-w-0 flex-1 truncate">{lane.route || '/'}</code>
-                  <span>{lane.total ? `${lane.index}/${lane.total}` : ''}</span>
+                  <code className="min-w-0 flex-1 truncate font-mono text-slate-300">{lane.route || '/'}</code>
+                  <span className="tabular-nums font-semibold text-white">{lane.total ? `${lane.index}/${lane.total}` : ''}</span>
                 </div>
-                <div className="h-1 overflow-hidden rounded-full bg-panel2">
-                  <div className="h-full bg-accent transition-[width] duration-200"
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div className={`h-full rounded-full transition-[width] duration-300 ${
+                    lane.ok === false ? 'bg-rose-500' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]'}`}
                        style={{ width: `${pct}%` }} />
                 </div>
-                {(lane.message || lane.label) && (
-                  <p className={`truncate text-[9.5px] ${lane.message ? 'text-bad' : 'text-muted'}`}>
-                    {lane.message || lane.label}
-                  </p>
-                )}
               </div>
             </section>
           )

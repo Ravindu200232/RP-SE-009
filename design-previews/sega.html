@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEGA — Level Up Your Game</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: '#4502FF',
+                            secondary: '#FFDA14',
+                            success: '#16A34A',
+                            warning: '#D97706',
+                            danger: '#DC2626',
+                            surface: '#FFFFFF',
+                            text: '#111827',
+                        },
+                        fontFamily: {
+                            pixel: ['VT323', 'monospace'],
+                            mono: ['JetBrains Mono', 'monospace'],
+                        },
+                        boxShadow: {
+                            'rainbow': '0 0 0 3px #FFDA14, 0 0 0 6px #4502FF, 0 0 0 9px #16A34A, 0 0 0 12px #D97706',
+                            'rainbow-sm': '0 0 0 2px #FFDA14, 0 0 0 4px #4502FF, 0 0 0 6px #16A34A',
+                            'press': '4px 4px 0 #111827',
+                            'press-sm': '2px 2px 0 #111827',
+                        },
+                    }
+                }
+            }
+    </script>
+    <style>
+        body {
+            font-family: 'VT323', monospace;
+        }
+        .btn-press {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn-press:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0 0 0 #111827 !important;
+        }
+        .btn-press-sm:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0 0 0 #111827 !important;
+        }
+        .pixel-grid {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .scanlines::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.08) 2px,
+                    rgba(0, 0, 0, 0.08) 4px);
+            pointer-events: none;
+            z-index: 1;
+        }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .faq-item.active .faq-answer {
+            max-height: 300px;
+        }
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        .pixel-border {
+            box-shadow: 0 0 0 2px #111827;
+        }
+        .text-outline {
+            text-shadow: 2px 2px 0 #111827;
+        }
+    </style>
+</head>
+<body class="bg-surface text-text antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="border-b-4 border-text bg-surface sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-primary flex items-center justify-center border-2 border-text">
+                    <span class="text-secondary text-xl leading-none">S</span>
+                </div>
+                <span class="text-[27px] font-bold tracking-widest">SEGA</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8 font-mono text-[15px]">
+                <a href="#features" class="hover:text-primary transition-colors">Features</a>
+                <a href="#process" class="hover:text-primary transition-colors">Process</a>
+                <a href="#pricing" class="hover:text-primary transition-colors">Pricing</a>
+                <a href="#faq" class="hover:text-primary transition-colors">FAQ</a>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="btn-press bg-primary text-white font-mono text-[15px] px-6 py-2 rounded-full shadow-press border-2 border-text">
+                    Play Now
+                </button>
+                <button class="md:hidden w-10 h-10 bg-secondary border-2 border-text flex items-center justify-center" id="menu-btn">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+        <div class="md:hidden hidden bg-surface border-t-2 border-text px-4 py-4" id="mobile-menu">
+            <div class="flex flex-col gap-4 font-mono text-[15px]">
+                <a href="#features" class="hover:text-primary">Features</a>
+                <a href="#process" class="hover:text-primary">Process</a>
+                <a href="#pricing" class="hover:text-primary">Pricing</a>
+                <a href="#faq" class="hover:text-primary">FAQ</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="bg-primary text-white relative overflow-hidden">
+        <div class="pixel-grid absolute inset-0"></div>
+        <div class="max-w-7xl mx-auto px-4 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center relative">
+            <div>
+                <p class="font-mono text-[15px] text-secondary mb-4 tracking-wider">// ARCADE-GRADE SOFTWARE</p>
+                <h1 class="text-[35px] md:text-[48px] font-bold leading-none mb-6 text-outline">
+                    LEVEL UP<br>YOUR GAME
+                </h1>
+                <p class="text-[17px] mb-8 max-w-md opacity-90">
+                    Build pixel-perfect experiences with the Sega design system. Fast, fun, and unapologetically arcade.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <button class="btn-press bg-secondary text-text font-mono text-[15px] px-8 py-3 rounded-full shadow-press border-2 border-text font-bold">
+                        Get Started
+                    </button>
+                    <button class="btn-press bg-transparent border-2 border-white text-white font-mono text-[15px] px-8 py-3 rounded-full">
+                        View Demo
+                    </button>
+                </div>
+            </div>
+            <div class="relative flex justify-center">
+                <!-- Game screen mockup -->
+                <div class="bg-surface p-3 border-2 border-text shadow-press relative" style="border-radius: 0;">
+                    <div class="bg-primary px-3 py-1.5 flex items-center gap-2 border-b-2 border-text">
+                        <div class="w-2 h-2 bg-danger border border-text"></div>
+                        <div class="w-2 h-2 bg-warning border border-text"></div>
+                        <div class="w-2 h-2 bg-success border border-text"></div>
+                        <span class="font-mono text-[13px] text-white ml-2">game.exe</span>
+                    </div>
+                    <div class="bg-text p-6 flex items-center justify-center relative scanlines" style="width: 280px; height: 200px;">
+                        <!-- Pixel character SVG -->
+                        <svg viewBox="0 0 32 32" width="110" height="110" class="relative z-10">
+                            <!-- Shadow -->
+                            <rect x="6" y="28" width="20" height="2" fill="rgba(0,0,0,0.3)"/>
+                            <!-- Cape -->
+                            <rect x="5" y="12" width="4" height="14" fill="#DC2626"/>
+                            <rect x="3" y="14" width="2" height="10" fill="#DC2626"/>
+                            <!-- Body -->
+                            <rect x="9" y="12" width="14" height="14" fill="#4502FF"/>
+                            <rect x="7" y="14" width="2" height="10" fill="#4502FF"/>
+                            <rect x="23" y="14" width="2" height="10" fill="#4502FF"/>
+                            <!-- Head -->
+                            <rect x="10" y="4" width="12" height="8" fill="#4502FF"/>
+                            <rect x="8" y="6" width="2" height="4" fill="#4502FF"/>
+                            <rect x="22" y="6" width="2" height="4" fill="#4502FF"/>
+                            <!-- Eyes -->
+                            <rect x="12" y="6" width="3" height="3" fill="#FFDA14"/>
+                            <rect x="18" y="6" width="3" height="3" fill="#FFDA14"/>
+                            <!-- Mouth -->
+                            <rect x="14" y="10" width="5" height="2" fill="#FFDA14"/>
+                            <!-- Belt -->
+                            <rect x="9" y="18" width="14" height="2" fill="#FFDA14"/>
+                            <rect x="14" y="18" width="4" height="2" fill="#D97706"/>
+                            <!-- Legs -->
+                            <rect x="9" y="26" width="4" height="4" fill="#4502FF"/>
+                            <rect x="19" y="26" width="4" height="4" fill="#4502FF"/>
+                            <!-- Boots -->
+                            <rect x="7" y="28" width="4" height="2" fill="#111827"/>
+                            <rect x="21" y="28" width="4" height="2" fill="#111827"/>
+                        </svg>
+                    </div>
+                    <div class="bg-secondary px-3 py-1.5 flex justify-between items-center border-t-2 border-text">
+                        <span class="font-mono text-[13px] text-text font-bold">SCORE: 00042</span>
+                        <span class="font-mono text-[13px] text-text font-bold">LIVES: 3</span>
+                    </div>
+                </div>
+                <!-- Floating elements -->
+                <div class="absolute -top-3 -right-3 w-10 h-10 bg-secondary border-2 border-text shadow-press-sm"></div>
+                <div class="absolute -bottom-3 -left-3 w-8 h-8 bg-success border-2 border-text shadow-press-sm"></div>
+                <div class="absolute top-1/2 -left-6 w-5 h-5 bg-warning border-2 border-text shadow-press-sm"></div>
+                <div class="absolute top-1/4 -right-8 w-4 h-4 bg-danger border-2 border-text shadow-press-sm"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="bg-secondary border-y-4 border-text py-12">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div class="text-center">
+                <p class="text-[35px] font-bold text-primary">10K+</p>
+                <p class="font-mono text-[13px] text-text mt-1">Games Built</p>
+            </div>
+            <div class="text-center">
+                <p class="text-[35px] font-bold text-primary">99.9%</p>
+                <p class="font-mono text-[13px] text-text mt-1">Uptime</p>
+            </div>
+            <div class="text-center">
+                <p class="text-[35px] font-bold text-primary">4.9/5</p>
+                <p class="font-mono text-[13px] text-text mt-1">Rating</p>
+            </div>
+            <div class="text-center">
+                <p class="text-[35px] font-bold text-primary">50M+</p>
+                <p class="font-mono text-[13px] text-text mt-1">Players</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="py-16 md:py-24 bg-surface">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12 md:mb-16">
+                <p class="font-mono text-[15px] text-primary mb-2 tracking-wider">// FEATURES</p>
+                <h2 class="text-[27px] md:text-[35px] font-bold">POWER-UP YOUR STACK</h2>
+                <p class="text-[17px] text-gray-600 mt-4 max-w-2xl mx-auto">
+                    Everything you need to build arcade-grade interfaces that feel like magic.
+                </p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+                <!-- Feature 1 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center border-2 border-text mb-4">
+                        <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-[21px] font-bold mb-2">Lightning Fast</h3>
+                    <p class="font-mono text-[13px] text-gray-600">
+                        Sub-100ms interactions with zero jank. Every animation is GPU-accelerated and frame-perfect.
+                    </p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center border-2 border-text mb-4">
+                        <i data-lucide="gamepad-2" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <h3 class="text-[21px] font-bold mb-2">Game-Ready</h3>
+                    <p class="font-mono text-[13px] text-gray-600">
+                        Built for game interfaces. HUDs, menus, and overlays that feel native to the arcade.
+                    </p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="w-12 h-12 bg-success flex items-center justify-center border-2 border-text mb-4">
+                        <i data-lucide="shield" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-[21px] font-bold mb-2">Accessible</h3>
+                    <p class="font-mono text-[13px] text-gray-600">
+                        WCAG 2.2 AA compliant. Keyboard-first, screen-reader friendly, and color-contrast safe.
+                    </p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="w-12 h-12 bg-warning flex items-center justify-center border-2 border-text mb-4">
+                        <i data-lucide="puzzle" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-[21px] font-bold mb-2">Modular</h3>
+                    <p class="font-mono text-[13px] text-gray-600">
+                        Drop-in components that compose beautifully. Mix, match, and extend without breaking.
+                    </p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="w-12 h-12 bg-danger flex items-center justify-center border-2 border-text mb-4">
+                        <i data-lucide="heart" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-[21px] font-bold mb-2">Loved</h3>
+                    <p class="font-mono text-[13px] text-gray-600">
+                        Trusted by 10,000+ teams. Join a community of developers who ship pixel-perfect daily.
+                    </p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center border-2 border-text mb-4">
+                        <i data-lucide="code" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-[21px] font-bold mb-2">Clean Code</h3>
+                    <p class="font-mono text-[13px] text-gray-600">
+                        Semantic tokens, consistent spacing, and zero ambiguity. Code reviews have never been easier.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="py-16 md:py-24 bg-gray-100 border-y-4 border-text">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12 md:mb-16">
+                <p class="font-mono text-[15px] text-primary mb-2 tracking-wider">// PROCESS</p>
+                <h2 class="text-[27px] md:text-[35px] font-bold">HOW IT WORKS</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+                <!-- Step 1 -->
+                <div class="bg-primary text-white p-6 md:p-8 border-2 border-text shadow-press">
+                    <span class="text-[35px] font-bold">01</span>
+                    <h3 class="text-[21px] font-bold mt-4">Design</h3>
+                    <p class="font-mono text-[13px] mt-2 opacity-80">
+                        Sketch your interface with pixel-perfect precision.
+                    </p>
+                </div>
+                <!-- Step 2 -->
+                <div class="bg-secondary text-text p-6 md:p-8 border-2 border-text shadow-press">
+                    <span class="text-[35px] font-bold">02</span>
+                    <h3 class="text-[21px] font-bold mt-4">Build</h3>
+                    <p class="font-mono text-[13px] mt-2 opacity-80">
+                        Compose components with semantic tokens.
+                    </p>
+                </div>
+                <!-- Step 3 -->
+                <div class="bg-success text-white p-6 md:p-8 border-2 border-text shadow-press">
+                    <span class="text-[35px] font-bold">03</span>
+                    <h3 class="text-[21px] font-bold mt-4">Test</h3>
+                    <p class="font-mono text-[13px] mt-2 opacity-80">
+                        Verify accessibility and responsive behavior.
+                    </p>
+                </div>
+                <!-- Step 4 -->
+                <div class="bg-warning text-white p-6 md:p-8 border-2 border-text shadow-press">
+                    <span class="text-[35px] font-bold">04</span>
+                    <h3 class="text-[21px] font-bold mt-4">Ship</h3>
+                    <p class="font-mono text-[13px] mt-2 opacity-80">
+                        Deploy with confidence and level up.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="py-16 md:py-24 bg-primary text-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12 md:mb-16">
+                <p class="font-mono text-[15px] text-secondary mb-2 tracking-wider">// BENEFITS</p>
+                <h2 class="text-[27px] md:text-[35px] font-bold">WHY SEGA?</h2>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 md:gap-12">
+                <div class="flex gap-4">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center border-2 border-text flex-shrink-0">
+                        <i data-lucide="check" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[21px] font-bold">Faster Shipping</h3>
+                        <p class="font-mono text-[13px] mt-2 opacity-80">
+                            Teams ship 3x faster with pre-built components and clear guidelines.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center border-2 border-text flex-shrink-0">
+                        <i data-lucide="check" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[21px] font-bold">Consistent UX</h3>
+                        <p class="font-mono text-[13px] mt-2 opacity-80">
+                            Every screen looks and feels like it belongs to the same game.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center border-2 border-text flex-shrink-0">
+                        <i data-lucide="check" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[21px] font-bold">Accessible by Default</h3>
+                        <p class="font-mono text-[13px] mt-2 opacity-80">
+                            WCAG 2.2 AA compliance baked into every component.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center border-2 border-text flex-shrink-0">
+                        <i data-lucide="check" class="w-6 h-6 text-text"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[21px] font-bold">Developer Joy</h3>
+                        <p class="font-mono text-[13px] mt-2 opacity-80">
+                            Semantic tokens and clear rules make code review a pleasure.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="py-16 md:py-24 bg-surface">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12 md:mb-16">
+                <p class="font-mono text-[15px] text-primary mb-2 tracking-wider">// TESTIMONIALS</p>
+                <h2 class="text-[27px] md:text-[35px] font-bold">PLAYER REVIEWS</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 md:gap-12">
+                <!-- Testimonial 1 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-mono text-[13px] text-gray-600 mb-6">
+                        "Sega transformed our game UI. The pixel-perfect components saved us months of work."
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center border-2 border-text">
+                            <span class="text-white font-bold text-[17px]">A</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-[17px]">Alex Chen</p>
+                            <p class="font-mono text-[13px] text-gray-500">Game Dev, PixelForge</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-mono text-[13px] text-gray-600 mb-6">
+                        "The rainbow-ringed cards and chunky buttons give our app a personality users love."
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary flex items-center justify-center border-2 border-text">
+                            <span class="text-text font-bold text-[17px]">M</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-[17px]">Maria Rodriguez</p>
+                            <p class="font-mono text-[13px] text-gray-500">Product Designer, ArcadeLabs</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-mono text-[13px] text-gray-600 mb-6">
+                        "Accessibility was effortless. The design system handles all the hard parts."
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-success flex items-center justify-center border-2 border-text">
+                            <span class="text-white font-bold text-[17px]">J</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-[17px]">James Park</p>
+                            <p class="font-mono text-[13px] text-gray-500">CTO, RetroSoft</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="py-16 md:py-24 bg-secondary border-y-4 border-text">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12 md:mb-16">
+                <p class="font-mono text-[15px] text-primary mb-2 tracking-wider">// PRICING</p>
+                <h2 class="text-[27px] md:text-[35px] font-bold">CHOOSE YOUR TIER</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 md:gap-12">
+                <!-- Starter -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <h3 class="text-[21px] font-bold">STARTER</h3>
+                    <p class="text-[35px] font-bold mt-4">$9<span class="text-[17px] text-gray-500">/mo</span></p>
+                    <ul class="mt-6 space-y-2 font-mono text-[13px]">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> 5 Projects</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Core Components</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Community Support</li>
+                    </ul>
+                    <button class="btn-press mt-8 w-full bg-primary text-white font-mono text-[15px] px-6 py-3 rounded-full shadow-press border-2 border-text">
+                        Get Started
+                    </button>
+                </div>
+                <!-- Pro -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text relative">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-danger text-white font-mono text-[13px] px-4 py-1 border-2 border-text whitespace-nowrap">
+                        ★ POPULAR
+                    </div>
+                    <h3 class="text-[21px] font-bold">PRO</h3>
+                    <p class="text-[35px] font-bold mt-4">$29<span class="text-[17px] text-gray-500">/mo</span></p>
+                    <ul class="mt-6 space-y-2 font-mono text-[13px]">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Unlimited Projects</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> All Components</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Priority Support</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom Themes</li>
+                    </ul>
+                    <button class="btn-press mt-8 w-full bg-primary text-white font-mono text-[15px] px-6 py-3 rounded-full shadow-press border-2 border-text">
+                        Go Pro
+                    </button>
+                </div>
+                <!-- Enterprise -->
+                <div class="shadow-rainbow bg-surface p-6 md:p-8 border-2 border-text">
+                    <h3 class="text-[21px] font-bold">ENTERPRISE</h3>
+                    <p class="text-[35px] font-bold mt-4">$99<span class="text-[17px] text-gray-500">/mo</span></p>
+                    <ul class="mt-6 space-y-2 font-mono text-[13px]">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Everything in Pro</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Dedicated Support</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> SLA Guarantee</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom Training</li>
+                    </ul>
+                    <button class="btn-press mt-8 w-full bg-primary text-white font-mono text-[15px] px-6 py-3 rounded-full shadow-press border-2 border-text">
+                        Contact Us
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="py-16 md:py-24 bg-surface">
+        <div class="max-w-3xl mx-auto px-4">
+            <div class="text-center mb-12 md:mb-16">
+                <p class="font-mono text-[15px] text-primary mb-2 tracking-wider">// FAQ</p>
+                <h2 class="text-[27px] md:text-[35px] font-bold">QUESTIONS?</h2>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <div class="faq-item border-2 border-text bg-surface">
+                    <button class="w-full flex items-center justify-between p-4 text-left">
+                        <span class="text-[21px] font-bold">What is Sega?</span>
+                        <i data-lucide="plus" class="faq-icon w-6 h-6 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-4 pb-4">
+                        <p class="font-mono text-[13px] text-gray-600">
+                            Sega is a design system for building arcade-inspired game interfaces. It includes components, tokens, and guidelines.
+                        </p>
+                    </div>
+                </div>
+                <!-- FAQ 2 -->
+                <div class="faq-item border-2 border-text bg-surface">
+                    <button class="w-full flex items-center justify-between p-4 text-left">
+                        <span class="text-[21px] font-bold">How do I install it?</span>
+                        <i data-lucide="plus" class="faq-icon w-6 h-6 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-4 pb-4">
+                        <p class="font-mono text-[13px] text-gray-600">
+                            Install via npm: <code class="bg-gray-100 px-1">npm install sega-ui</code>. Or use the CDN link for quick prototyping.
+                        </p>
+                    </div>
+                </div>
+                <!-- FAQ 3 -->
+                <div class="faq-item border-2 border-text bg-surface">
+                    <button class="w-full flex items-center justify-between p-4 text-left">
+                        <span class="text-[21px] font-bold">Is it accessible?</span>
+                        <i data-lucide="plus" class="faq-icon w-6 h-6 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-4 pb-4">
+                        <p class="font-mono text-[13px] text-gray-600">
+                            Yes! All components meet WCAG 2.2 AA standards, including keyboard navigation and screen reader support.
+                        </p>
+                    </div>
+                </div>
+                <!-- FAQ 4 -->
+                <div class="faq-item border-2 border-text bg-surface">
+                    <button class="w-full flex items-center justify-between p-4 text-left">
+                        <span class="text-[21px] font-bold">Can I customize it?</span>
+                        <i data-lucide="plus" class="faq-icon w-6 h-6 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-4 pb-4">
+                        <p class="font-mono text-[13px] text-gray-600">
+                            Absolutely. Use CSS custom properties to override tokens and create your own theme.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-text text-white py-12 md:py-16">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="col-span-2 md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-primary flex items-center justify-center border-2 border-white">
+                            <span class="text-secondary text-xl leading-none">S</span>
+                        </div>
+                        <span class="text-[27px] font-bold tracking-widest">SEGA</span>
+                    </div>
+                    <p class="font-mono text-[13px] text-gray-400">
+                        Arcade-grade design system for game interfaces.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-[21px] font-bold mb-4">Product</h4>
+                    <ul class="space-y-2 font-mono text-[13px] text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-[21px] font-bold mb-4">Resources</h4>
+                    <ul class="space-y-2 font-mono text-[13px] text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Docs</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Community</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-[21px] font-bold mb-4">Legal</h4>
+                    <ul class="space-y-2 font-mono text-[13px] text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">License</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 md:mt-12 pt-6 md:pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="font-mono text-[13px] text-gray-400">
+                    © 2024 Sega Design System. All rights reserved.
+                </p>
+                <div class="flex gap-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="GitHub">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="Discord">
+                        <i data-lucide="discord" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-item').forEach(item => {
+            const button = item.querySelector('button');
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.faq-item').forEach(other => {
+                    if (other !== item) {
+                        other.classList.remove('active');
+                    }
+                });
+                item.classList.toggle('active');
+            });
+        });
+    </script>
+</body>
+</html>

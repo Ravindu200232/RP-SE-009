@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terracotta — editorial design system</title>
+  <!-- Google Fonts: DM Serif Display + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* design system tokens — terracotta */
+    :root {
+      --color-primary: #C56A3C;
+      --color-secondary: #F3E9D8;
+      --color-surface: #FFFFFF;
+      --color-text: #111827;
+      --color-success: #16A34A;
+      --color-warning: #D97706;
+      --color-danger: #DC2626;
+      --font-display: 'DM Serif Display', serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    body {
+      font-family: var(--font-display);
+      background-color: var(--color-secondary);
+      color: var(--color-text);
+      letter-spacing: 0.01em;
+    }
+    /* sharp corners everywhere — no rounding */
+    * {
+      border-radius: 0 !important;
+    }
+    .mono-label {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .display-xl {
+      font-family: var(--font-display);
+      font-weight: 500;
+      line-height: 1.05;
+    }
+    /* colour-blocked sections */
+    .section-terracotta {
+      background-color: var(--color-primary);
+      color: #fff;
+    }
+    .section-cream {
+      background-color: var(--color-secondary);
+    }
+    .section-white {
+      background-color: var(--color-surface);
+    }
+    .section-ink {
+      background-color: var(--color-text);
+      color: var(--color-secondary);
+    }
+    /* focus visible — high contrast */
+    a:focus-visible, button:focus-visible {
+      outline: 3px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    /* custom underline for links */
+    .link-underline {
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 4px;
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="section-cream border-b-2 border-[#111827]">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2 group">
+        <span class="w-8 h-8 bg-[#C56A3C] inline-block"></span>
+        <span class="display-xl text-2xl">Terracotta</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 mono-label">
+        <a href="#features" class="hover:text-[#C56A3C] transition-colors">Features</a>
+        <a href="#process" class="hover:text-[#C56A3C] transition-colors">Process</a>
+        <a href="#testimonials" class="hover:text-[#C56A3C] transition-colors">Stories</a>
+        <a href="#pricing" class="hover:text-[#C56A3C] transition-colors">Pricing</a>
+        <a href="#faq" class="hover:text-[#C56A3C] transition-colors">FAQ</a>
+      </nav>
+      <a href="#pricing" class="bg-[#111827] text-[#F3E9D8] px-5 py-3 mono-label hover:bg-[#C56A3C] transition-colors">
+        Get started
+      </a>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="section-cream border-b-2 border-[#111827]">
+    <div class="max-w-7xl mx-auto px-6 py-20 md:py-28 grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <p class="mono-label text-[#C56A3C] mb-4">●  clay & code</p>
+        <h1 class="display-xl text-5xl md:text-7xl mb-6">Stories baked<br>in sunlight.</h1>
+        <p class="text-lg md:text-xl font-normal mb-8 max-w-md" style="font-family: var(--font-display);">
+          An editorial experience for long‑form reading — warm, tactile, and human.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="#pricing" class="bg-[#C56A3C] text-white px-8 py-4 mono-label hover:bg-[#111827] transition-colors">
+            Read the journal
+          </a>
+          <a href="#process" class="border-2 border-[#111827] px-8 py-4 mono-label hover:bg-[#111827] hover:text-[#F3E9D8] transition-colors">
+            Our process
+          </a>
+        </div>
+      </div>
+      <!-- abstract CSS shape — no photo -->
+      <div class="relative h-72 md:h-96 bg-[#C56A3C] flex items-center justify-center overflow-hidden">
+        <div class="absolute w-56 h-56 bg-[#F3E9D8] rotate-12"></div>
+        <div class="absolute w-40 h-40 bg-[#111827] -rotate-6"></div>
+        <div class="absolute w-24 h-24 bg-white/20 backdrop-blur-sm"></div>
+        <span class="relative mono-label text-white z-10 px-4 py-2 bg-[#111827]/70">sun‑fired</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STATS ========== -->
+  <section class="section-ink border-b-2 border-[#C56A3C]">
+    <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div>
+        <p class="display-xl text-4xl text-[#C56A3C]">120+</p>
+        <p class="mono-label text-[#F3E9D8] mt-2">long‑form essays</p>
+      </div>
+      <div>
+        <p class="display-xl text-4xl text-[#C56A3C]">18k</p>
+        <p class="mono-label text-[#F3E9D8] mt-2">daily readers</p>
+      </div>
+      <div>
+        <p class="display-xl text-4xl text-[#C56A3C]">4.9</p>
+        <p class="mono-label text-[#F3E9D8] mt-2">reader rating</p>
+      </div>
+      <div>
+        <p class="display-xl text-4xl text-[#C56A3C]">12</p>
+        <p class="mono-label text-[#F3E9D8] mt-2">design awards</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FEATURES ========== -->
+  <section id="features" class="section-white border-b-2 border-[#111827]">
+    <div class="max-w-7xl mx-auto px-6 py-20">
+      <p class="mono-label text-[#C56A3C] mb-3">✦ features</p>
+      <h2 class="display-xl text-4xl md:text-5xl mb-16">Everything feels<br>like warm clay.</h2>
+      <div class="grid md:grid-cols-3 gap-10">
+        <!-- feature 1 -->
+        <div class="border-t-4 border-[#C56A3C] pt-6">
+          <div class="w-12 h-12 bg-[#F3E9D8] flex items-center justify-center mb-6">
+            <i data-lucide="book-open" class="w-6 h-6 text-[#C56A3C]"></i>
+          </div>
+          <h3 class="display-xl text-2xl mb-3">Editorial rhythm</h3>
+          <p class="font-normal opacity-80" style="font-family: var(--font-display);">Generous spacing, serif display, and a 4‑pt baseline grid that guides the eye.</p>
+        </div>
+        <!-- feature 2 -->
+        <div class="border-t-4 border-[#C56A3C] pt-6">
+          <div class="w-12 h-12 bg-[#F3E9D8] flex items-center justify-center mb-6">
+            <i data-lucide="palette" class="w-6 h-6 text-[#C56A3C]"></i>
+          </div>
+          <h3 class="display-xl text-2xl mb-3">Clay palette</h3>
+          <p class="font-normal opacity-80" style="font-family: var(--font-display);">One terracotta accent, warm cream surfaces, and ink‑brown text — nothing else.</p>
+        </div>
+        <!-- feature 3 -->
+        <div class="border-t-4 border-[#C56A3C] pt-6">
+          <div class="w-12 h-12 bg-[#F3E9D8] flex items-center justify-center mb-6">
+            <i data-lucide="type" class="w-6 h-6 text-[#C56A3C]"></i>
+          </div>
+          <h3 class="display-xl text-2xl mb-3">Serif display</h3>
+          <p class="font-normal opacity-80" style="font-family: var(--font-display);">DM Serif Display at every headline — from 24 to 72px, always expressive.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROCESS (colour-blocked terracotta) ========== -->
+  <section id="process" class="section-terracotta border-b-2 border-[#111827]">
+    <div class="max-w-7xl mx-auto px-6 py-20">
+      <p class="mono-label text-[#F3E9D8] mb-3">⚒ process</p>
+      <h2 class="display-xl text-4xl md:text-5xl mb-16 text-white">From earth to page.</h2>
+      <div class="grid md:grid-cols-4 gap-8">
+        <div class="bg-white/10 p-6 border border-white/20">
+          <span class="display-xl text-6xl text-white/30">01</span>
+          <h3 class="display-xl text-xl mt-4 mb-2 text-white">Dig</h3>
+          <p class="font-normal text-white/80 text-sm" style="font-family: var(--font-display);">Research and raw material — interviews, archives, field notes.</p>
+        </div>
+        <div class="bg-white/10 p-6 border border-white/20">
+          <span class="display-xl text-6xl text-white/30">02</span>
+          <h3 class="display-xl text-xl mt-4 mb-2 text-white">Shape</h3>
+          <p class="font-normal text-white/80 text-sm" style="font-family: var(--font-display);">Draft on paper, test with readers, refine the narrative arc.</p>
+        </div>
+        <div class="bg-white/10 p-6 border border-white/20">
+          <span class="display-xl text-6xl text-white/30">03</span>
+          <h3 class="display-xl text-xl mt-4 mb-2 text-white">Fire</h3>
+          <p class="font-normal text-white/80 text-sm" style="font-family: var(--font-display);">Edit with heat — cut every word that doesn't carry weight.</p>
+        </div>
+        <div class="bg-white/10 p-6 border border-white/20">
+          <span class="display-xl text-6xl text-white/30">04</span>
+          <h3 class="display-xl text-xl mt-4 mb-2 text-white">Glaze</h3>
+          <p class="font-normal text-white/80 text-sm" style="font-family: var(--font-display);">Design, typeset, and publish with the terracotta finish.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== BENEFITS ========== -->
+  <section class="section-cream border-b-2 border-[#111827]">
+    <div class="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <p class="mono-label text-[#C56A3C] mb-3">◈ benefits</p>
+        <h2 class="display-xl text-4xl md:text-5xl mb-6">Why readers stay<br>for hours.</h2>
+      </div>
+      <div class="space-y-6">
+        <div class="flex gap-4">
+          <i data-lucide="check-circle" class="w-6 h-6 text-[#C56A3C] shrink-0 mt-1"></i>
+          <p class="font-normal text-lg" style="font-family: var(--font-display);"><span class="font-bold">Comfortable measure</span> — 60–70 characters per line, proven for deep reading.</p>
+        </div>
+        <div class="flex gap-4">
+          <i data-lucide="check-circle" class="w-6 h-6 text-[#C56A3C] shrink-0 mt-1"></i>
+          <p class="font-normal text-lg" style="font-family: var(--font-display);"><span class="font-bold">Low eye strain</span> — warm cream background, high‑contrast ink, no harsh blue light.</p>
+        </div>
+        <div class="flex gap-4">
+          <i data-lucide="check-circle" class="w-6 h-6 text-[#C56A3C] shrink-0 mt-1"></i>
+          <p class="font-normal text-lg" style="font-family: var(--font-display);"><span class="font-bold">Distraction‑free</span> — no popups, no autoplay, just content and whitespace.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TESTIMONIALS ========== -->
+  <section id="testimonials" class="section-white border-b-2 border-[#111827]">
+    <div class="max-w-7xl mx-auto px-6 py-20">
+      <p class="mono-label text-[#C56A3C] mb-3">❝ reader stories</p>
+      <h2 class="display-xl text-4xl md:text-5xl mb-16">Loved by slow readers.</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- testimonial 1 -->
+        <figure class="border-2 border-[#111827] p-6 bg-[#F3E9D8]">
+          <div class="flex gap-1 text-[#C56A3C] mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+          </div>
+          <blockquote class="font-normal text-lg mb-6" style="font-family: var(--font-display);">“The only site where I actually read the whole article. The clay tones feel like a printed book.”</blockquote>
+          <figcaption class="mono-label text-[#111827]">— Amara O., editor</figcaption>
+        </figure>
+        <!-- testimonial 2 -->
+        <figure class="border-2 border-[#111827] p-6 bg-[#F3E9D8]">
+          <div class="flex gap-1 text-[#C56A3C] mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+          </div>
+          <blockquote class="font-normal text-lg mb-6" style="font-family: var(--font-display);">“Typography that actually respects the reader. I’ve recommended it to every writer I know.”</blockquote>
+          <figcaption class="mono-label text-[#111827]">— Jonas P., journalist</figcaption>
+        </figure>
+        <!-- testimonial 3 -->
+        <figure class="border-2 border-[#111827] p-6 bg-[#F3E9D8]">
+          <div class="flex gap-1 text-[#C56A3C] mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+          </div>
+          <blockquote class="font-normal text-lg mb-6" style="font-family: var(--font-display);">“Finally a design system that feels like it was made for long‑form, not for dashboards.”</blockquote>
+          <figcaption class="mono-label text-[#111827]">— Mei L., author</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PRICING ========== -->
+  <section id="pricing" class="section-cream border-b-2 border-[#111827]">
+    <div class="max-w-7xl mx-auto px-6 py-20">
+      <p class="mono-label text-[#C56A3C] mb-3">◆ pricing</p>
+      <h2 class="display-xl text-4xl md:text-5xl mb-16">Simple, like clay.</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- basic -->
+        <div class="bg-white border-2 border-[#111827] p-8 flex flex-col">
+          <h3 class="display-xl text-2xl mb-2">Reader</h3>
+          <p class="mono-label text-[#C56A3C] mb-6">free forever</p>
+          <ul class="font-normal space-y-3 mb-8 flex-1" style="font-family: var(--font-display);">
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-[#C56A3C]"></i>All essays</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-[#C56A3C]"></i>Newsletter</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-[#C56A3C]"></i>Community</li>
+          </ul>
+          <a href="#" class="bg-[#111827] text-white text-center px-6 py-3 mono-label hover:bg-[#C56A3C] transition-colors">Start reading</a>
+        </div>
+        <!-- pro -->
+        <div class="bg-[#C56A3C] text-white border-2 border-[#111827] p-8 flex flex-col relative">
+          <p class="mono-label bg-[#111827] text-[#F3E9D8] px-3 py-1 inline-block self-start mb-4">MOST LOVED</p>
+          <h3 class="display-xl text-2xl mb-2">Writer</h3>
+          <p class="mono-label text-[#F3E9D8] mb-6">$9 / month</p>
+          <ul class="font-normal space-y-3 mb-8 flex-1" style="font-family: var(--font-display);">
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-white"></i>Everything in Reader</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-white"></i>Member essays</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-white"></i>Audio versions</li>
+          </ul>
+          <a href="#" class="bg-white text-[#111827] text-center px-6 py-3 mono-label hover:bg-[#111827] hover:text-white transition-colors">Become a writer</a>
+        </div>
+        <!-- studio -->
+        <div class="bg-white border-2 border-[#111827] p-8 flex flex-col">
+          <h3 class="display-xl text-2xl mb-2">Studio</h3>
+          <p class="mono-label text-[#C56A3C] mb-6">$29 / month</p>
+          <ul class="font-normal space-y-3 mb-8 flex-1" style="font-family: var(--font-display);">
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-[#C56A3C]"></i>Everything in Writer</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-[#C56A3C]"></i>Team reading</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-5 h-5 text-[#C56A3C]"></i>Custom typography</li>
+          </ul>
+          <a href="#" class="bg-[#111827] text-white text-center px-6 py-3 mono-label hover:bg-[#C56A3C] transition-colors">Contact us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section id="faq" class="section-white border-b-2 border-[#111827]">
+    <div class="max-w-4xl mx-auto px-6 py-20">
+      <p class="mono-label text-[#C56A3C] mb-3">? faq</p>
+      <h2 class="display-xl text-4xl md:text-5xl mb-12">Questions, answered.</h2>
+      <div class="space-y-6">
+        <details class="border-2 border-[#111827] bg-[#F3E9D8] p-6 group">
+          <summary class="display-xl text-xl cursor-pointer list-none flex justify-between items-center">
+            What makes Terracotta different?
+            <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="font-normal mt-4 opacity-80" style="font-family: var(--font-display);">We focus exclusively on long‑form reading. Every decision — from the serif to the clay palette — is made for deep focus.</p>
+        </details>
+        <details class="border-2 border-[#111827] bg-[#F3E9D8] p-6 group">
+          <summary class="display-xl text-xl cursor-pointer list-none flex justify-between items-center">
+            Can I use the system for my own publication?
+            <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="font-normal mt-4 opacity-80" style="font-family: var(--font-display);">Yes! The design system is open source. You can adapt the tokens and components for your own editorial project.</p>
+        </details>
+        <details class="border-2 border-[#111827] bg-[#F3E9D8] p-6 group">
+          <summary class="display-xl text-xl cursor-pointer list-none flex justify-between items-center">
+            Do you offer a print edition?
+            <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="font-normal mt-4 opacity-80" style="font-family: var(--font-display);">Every quarter we release a limited print anthology. Studio members get first access.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="section-ink">
+    <div class="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-4 gap-10">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-6 h-6 bg-[#C56A3C] inline-block"></span>
+          <span class="display-xl text-xl text-[#F3E9D8]">Terracotta</span>
+        </div>
+        <p class="font-normal text-sm text-[#F3E9D8]/60" style="font-family: var(--font-display);">Stories baked in sunlight.</p>
+      </div>
+      <div>
+        <p class="mono-label text-[#C56A3C] mb-4">Sitemap</p>
+        <ul class="space-y-2 font-normal text-sm text-[#F3E9D8]/80" style="font-family: var(--font-display);">
+          <li><a href="#features" class="hover:text-[#C56A3C]">Features</a></li>
+          <li><a href="#process" class="hover:text-[#C56A3C]">Process</a></li>
+          <li><a href="#pricing" class="hover:text-[#C56A3C]">Pricing</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="mono-label text-[#C56A3C] mb-4">Social</p>
+        <ul class="space-y-2 font-normal text-sm text-[#F3E9D8]/80" style="font-family: var(--font-display);">
+          <li><a href="#" class="hover:text-[#C56A3C]">Twitter</a></li>
+          <li><a href="#" class="hover:text-[#C56A3C]">Instagram</a></li>
+          <li><a href="#" class="hover:text-[#C56A3C]">RSS</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="mono-label text-[#C56A3C] mb-4">Legal</p>
+        <ul class="space-y-2 font-normal text-sm text-[#F3E9D8]/80" style="font-family: var(--font-display);">
+          <li><a href="#" class="hover:text-[#C56A3C]">Privacy</a></li>
+          <li><a href="#" class="hover:text-[#C56A3C]">Terms</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-white/10 py-6 text-center mono-label text-[#F3E9D8]/40 text-xs">
+      © 2025 Terracotta — clay & code
+    </div>
+  </footer>
+
+  <!-- lucide icons -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impeccable — Design System</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#CC8800',
+                        secondary: '#C55221',
+                        'burnt-orange': '#C55221',
+                        'burnt-orange-dark': '#A8441B',
+                        cream: '#FDF6EC',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                    },
+                    fontFamily: {
+                        sans: ['Chakra Petch', 'sans-serif'],
+                        display: ['Chakra Petch', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    borderRadius: {
+                        none: '0',
+                        DEFAULT: '0',
+                        sm: '0',
+                        md: '0',
+                        lg: '0',
+                        xl: '0',
+                        '2xl': '0',
+                        '3xl': '0',
+                        full: '0',
+                    },
+                    spacing: {
+                        '4': '4px',
+                        '8': '8px',
+                        '12': '12px',
+                        '16': '16px',
+                        '24': '24px',
+                        '32': '32px',
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Chakra Petch', sans-serif;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .focus-ring:focus-visible {
+            outline: 3px solid #CC8800;
+            outline-offset: 2px;
+        }
+        .focus-ring-dark:focus-visible {
+            outline: 3px solid #FDF6EC;
+            outline-offset: 2px;
+        }
+        .hero-grid-bg {
+            background-image:
+                linear-gradient(rgba(253, 246, 236, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(253, 246, 236, 0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .faq-item.open .faq-answer {
+            max-height: 300px;
+        }
+        .faq-item.open .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-cream text-ink antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <header class="sticky top-0 z-50 bg-cream border-b-2 border-ink/10">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16" aria-label="Main navigation">
+            <a href="#" class="flex items-center gap-2 focus-ring" aria-label="Impeccable home">
+                <span class="w-8 h-8 bg-primary flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="1" y="1" width="14" height="14" stroke="#111827" stroke-width="2"/>
+                        <rect x="4" y="4" width="8" height="8" fill="#111827"/>
+                    </svg>
+                </span>
+                <span class="font-display font-700 text-xl tracking-tight text-ink">Impeccable</span>
+            </a>
+
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="font-sans font-500 text-sm text-ink hover:text-primary transition-colors focus-ring">Features</a>
+                <a href="#process" class="font-sans font-500 text-sm text-ink hover:text-primary transition-colors focus-ring">Process</a>
+                <a href="#pricing" class="font-sans font-500 text-sm text-ink hover:text-primary transition-colors focus-ring">Pricing</a>
+                <a href="#faq" class="font-sans font-500 text-sm text-ink hover:text-primary transition-colors focus-ring">FAQ</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="#" class="hidden md:inline-flex bg-primary text-ink font-sans font-600 text-sm px-4 py-2 hover:bg-primary/90 transition-colors focus-ring">
+                    Get Started
+                </a>
+                <button class="md:hidden p-2 focus-ring" id="mobile-menu-btn" aria-label="Toggle menu" aria-expanded="false">
+                    <i data-lucide="menu" class="w-6 h-6 text-ink"></i>
+                </button>
+            </div>
+        </nav>
+        <!-- Mobile menu -->
+        <div class="md:hidden hidden bg-cream border-t-2 border-ink/10 px-4 py-4" id="mobile-menu">
+            <div class="flex flex-col gap-4">
+                <a href="#features" class="font-sans font-500 text-base text-ink hover:text-primary transition-colors">Features</a>
+                <a href="#process" class="font-sans font-500 text-base text-ink hover:text-primary transition-colors">Process</a>
+                <a href="#pricing" class="font-sans font-500 text-base text-ink hover:text-primary transition-colors">Pricing</a>
+                <a href="#faq" class="font-sans font-500 text-base text-ink hover:text-primary transition-colors">FAQ</a>
+                <a href="#" class="bg-primary text-ink font-sans font-600 text-sm px-4 py-2 text-center">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== HERO ===== -->
+    <section class="bg-burnt-orange-dark text-cream relative overflow-hidden">
+        <div class="hero-grid-bg absolute inset-0" aria-hidden="true"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24 relative">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-cream/10 border border-cream/20 px-3 py-1 mb-6">
+                        <span class="font-mono text-xs text-cream">v2.0</span>
+                        <span class="w-1 h-1 bg-primary rounded-full"></span>
+                        <span class="font-sans text-xs text-cream">Now with dark mode</span>
+                    </div>
+                    <h1 class="font-display font-700 text-4xl sm:text-5xl lg:text-6xl leading-tight tracking-tight text-cream">
+                        Design with<br>
+                        <span class="text-primary">Impeccable</span><br>
+                        precision.
+                    </h1>
+                    <p class="mt-6 font-sans text-base sm:text-lg text-cream/90 max-w-md leading-relaxed">
+                        A modern design system for teams that demand clarity, contrast, and craft. Built on tokens, driven by accessibility.
+                    </p>
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <a href="#pricing" class="bg-primary text-ink font-sans font-600 text-sm px-6 py-3 hover:bg-primary/90 transition-colors focus-ring">
+                            Get Started
+                        </a>
+                        <a href="#features" class="border-2 border-cream text-cream font-sans font-600 text-sm px-6 py-3 hover:bg-cream/10 transition-colors focus-ring-dark">
+                            View Features
+                        </a>
+                    </div>
+                    <p class="mt-4 font-mono text-xs text-cream/70">Free forever for open source</p>
+                </div>
+                <div class="hidden lg:flex justify-center items-center" aria-hidden="true">
+                    <svg width="480" height="400" viewBox="0 0 480 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="0" width="480" height="400" fill="none"/>
+                        <circle cx="240" cy="200" r="150" stroke="#FDF6EC" stroke-width="3"/>
+                        <circle cx="240" cy="200" r="90" fill="#CC8800"/>
+                        <rect x="40" y="40" width="100" height="100" fill="#FDF6EC" opacity="0.9"/>
+                        <rect x="340" y="260" width="100" height="100" fill="#CC8800"/>
+                        <line x1="0" y1="200" x2="480" y2="200" stroke="#FDF6EC" stroke-width="1" opacity="0.4"/>
+                        <line x1="240" y1="0" x2="240" y2="400" stroke="#FDF6EC" stroke-width="1" opacity="0.4"/>
+                        <circle cx="80" cy="320" r="10" fill="#FDF6EC"/>
+                        <circle cx="400" cy="80" r="8" fill="#FDF6EC"/>
+                        <rect x="300" y="60" width="40" height="40" stroke="#FDF6EC" stroke-width="2"/>
+                        <rect x="140" y="280" width="60" height="60" stroke="#CC8800" stroke-width="3"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="bg-cream py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-mono text-3xl sm:text-4xl font-600 text-ink">99.9%</p>
+                    <p class="mt-2 font-sans text-sm text-ink/70">Uptime</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-mono text-3xl sm:text-4xl font-600 text-ink">12k+</p>
+                    <p class="mt-2 font-sans text-sm text-ink/70">Users</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-mono text-3xl sm:text-4xl font-600 text-ink">4.9/5</p>
+                    <p class="mt-2 font-sans text-sm text-ink/70">Rating</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-mono text-3xl sm:text-4xl font-600 text-ink">50+</p>
+                    <p class="mt-2 font-sans text-sm text-ink/70">Integrations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="bg-burnt-orange-dark text-cream py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-xs text-primary uppercase tracking-widest mb-3">Features</p>
+                <h2 class="font-display font-700 text-3xl sm:text-4xl text-cream">Everything you need, nothing you don't.</h2>
+                <p class="mt-4 font-sans text-base text-cream/80 max-w-2xl mx-auto">Six core capabilities that make Impeccable the last design system you'll ever need.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-cream text-ink p-6 border-2 border-transparent hover:border-primary transition-colors">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-6 h-6 text-ink"></i>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Semantic Tokens</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">Every color, space, and type size is a named token. No more hard-coded values.</p>
+                </div>
+                <div class="bg-cream text-ink p-6 border-2 border-transparent hover:border-primary transition-colors">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="keyboard" class="w-6 h-6 text-ink"></i>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Keyboard-First</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">Full keyboard navigation with visible focus states. Every interaction is reachable.</p>
+                </div>
+                <div class="bg-cream text-ink p-6 border-2 border-transparent hover:border-primary transition-colors">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-ink"></i>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">WCAG 2.2 AA</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">Accessibility baked into every component. Tested and certified.</p>
+                </div>
+                <div class="bg-cream text-ink p-6 border-2 border-transparent hover:border-primary transition-colors">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="square" class="w-6 h-6 text-ink"></i>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Sharp Corners</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">A confident, editorial aesthetic with zero rounding. Clean and direct.</p>
+                </div>
+                <div class="bg-cream text-ink p-6 border-2 border-transparent hover:border-primary transition-colors">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="layout-grid" class="w-6 h-6 text-ink"></i>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Responsive Grid</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">Fluid layouts from 400px to 4K. One source of truth.</p>
+                </div>
+                <div class="bg-cream text-ink p-6 border-2 border-transparent hover:border-primary transition-colors">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="moon" class="w-6 h-6 text-ink"></i>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Dark Mode</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">Automatic dark mode with semantic contrast. Beautiful in any light.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="bg-cream py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-xs text-primary uppercase tracking-widest mb-3">Process</p>
+                <h2 class="font-display font-700 text-3xl sm:text-4xl text-ink">A proven path to launch.</h2>
+                <p class="mt-4 font-sans text-base text-ink/70 max-w-2xl mx-auto">Four steps from idea to production, refined over hundreds of projects.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="relative">
+                    <div class="w-16 h-16 bg-primary flex items-center justify-center mb-4">
+                        <span class="font-mono text-2xl font-600 text-ink">01</span>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Discover</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">We map your content, users, and flows to understand what matters.</p>
+                </div>
+                <div class="relative">
+                    <div class="w-16 h-16 bg-primary flex items-center justify-center mb-4">
+                        <span class="font-mono text-2xl font-600 text-ink">02</span>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Design</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">We build with tokens, not one-offs. Every decision is systematic.</p>
+                </div>
+                <div class="relative">
+                    <div class="w-16 h-16 bg-primary flex items-center justify-center mb-4">
+                        <span class="font-mono text-2xl font-600 text-ink">03</span>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Develop</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">We ship accessible, responsive code that works everywhere.</p>
+                </div>
+                <div class="relative">
+                    <div class="w-16 h-16 bg-primary flex items-center justify-center mb-4">
+                        <span class="font-mono text-2xl font-600 text-ink">04</span>
+                    </div>
+                    <h3 class="font-display font-600 text-lg text-ink">Refine</h3>
+                    <p class="mt-2 font-sans text-sm text-ink/70 leading-relaxed">We test, measure, and iterate. Continuous improvement by design.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="bg-burnt-orange-dark text-cream py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-xs text-primary uppercase tracking-widest mb-3">Benefits</p>
+                <h2 class="font-display font-700 text-3xl sm:text-4xl text-cream">Why teams choose Impeccable.</h2>
+                <p class="mt-4 font-sans text-base text-cream/80 max-w-2xl mx-auto">Real outcomes, measured in real metrics.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="flex gap-4 p-4 hover:bg-cream/5 transition-colors">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center shrink-0">
+                        <i data-lucide="zap" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-600 text-base text-cream">Faster delivery</h3>
+                        <p class="mt-1 font-sans text-sm text-cream/70">Ship 2x faster with pre-built components and tokens.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-4 hover:bg-cream/5 transition-colors">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center shrink-0">
+                        <i data-lucide="layers" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-600 text-base text-cream">Consistent UI</h3>
+                        <p class="mt-1 font-sans text-sm text-cream/70">One system, every screen. No more drift.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-4 hover:bg-cream/5 transition-colors">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center shrink-0">
+                        <i data-lucide="accessibility" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-600 text-base text-cream">Accessible by default</h3>
+                        <p class="mt-1 font-sans text-sm text-cream/70">WCAG 2.2 AA out of the box. No remediation needed.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-4 hover:bg-cream/5 transition-colors">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center shrink-0">
+                        <i data-lucide="paintbrush" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-600 text-base text-cream">Easy theming</h3>
+                        <p class="mt-1 font-sans text-sm text-cream/70">Change tokens, change everything. Instant rebranding.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-4 hover:bg-cream/5 transition-colors">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center shrink-0">
+                        <i data-lucide="users" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-600 text-base text-cream">Better collaboration</h3>
+                        <p class="mt-1 font-sans text-sm text-cream/70">Designers and engineers speak the same language.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-4 hover:bg-cream/5 transition-colors">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center shrink-0">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-600 text-base text-cream">Future-proof</h3>
+                        <p class="mt-1 font-sans text-sm text-cream/70">Built to scale with your product. No rewrites.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="bg-cream py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-xs text-primary uppercase tracking-widest mb-3">Testimonials</p>
+                <h2 class="font-display font-700 text-3xl sm:text-4xl text-ink">Loved by teams who ship.</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-surface border-2 border-ink/10 p-6 flex flex-col">
+                    <div class="mb-4">
+                        <i data-lucide="quote" class="w-8 h-8 text-primary"></i>
+                    </div>
+                    <p class="font-sans text-base text-ink/80 leading-relaxed flex-1">"Impeccable transformed our design workflow. We went from chaos to clarity in two weeks."</p>
+                    <div class="mt-6 pt-4 border-t-2 border-ink/10">
+                        <p class="font-display font-600 text-sm text-ink">Sarah Chen</p>
+                        <p class="font-mono text-xs text-ink/60">Design Lead, Acme</p>
+                    </div>
+                </div>
+                <div class="bg-surface border-2 border-ink/10 p-6 flex flex-col">
+                    <div class="mb-4">
+                        <i data-lucide="quote" class="w-8 h-8 text-primary"></i>
+                    </div>
+                    <p class="font-sans text-base text-ink/80 leading-relaxed flex-1">"The most accessible design system we've used. Our audit passed on the first try."</p>
+                    <div class="mt-6 pt-4 border-t-2 border-ink/10">
+                        <p class="font-display font-600 text-sm text-ink">Marcus Johnson</p>
+                        <p class="font-mono text-xs text-ink/60">Engineer, Globex</p>
+                    </div>
+                </div>
+                <div class="bg-surface border-2 border-ink/10 p-6 flex flex-col">
+                    <div class="mb-4">
+                        <i data-lucide="quote" class="w-8 h-8 text-primary"></i>
+                    </div>
+                    <p class="font-sans text-base text-ink/80 leading-relaxed flex-1">"Our conversion rate jumped 30% after redesigning with Impeccable."</p>
+                    <div class="mt-6 pt-4 border-t-2 border-ink/10">
+                        <p class="font-display font-600 text-sm text-ink">Elena Rodriguez</p>
+                        <p class="font-mono text-xs text-ink/60">PM, Initech</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="bg-burnt-orange-dark text-cream py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-xs text-primary uppercase tracking-widest mb-3">Pricing</p>
+                <h2 class="font-display font-700 text-3xl sm:text-4xl text-cream">Simple, transparent pricing.</h2>
+                <p class="mt-4 font-sans text-base text-cream/80 max-w-2xl mx-auto">Start free. Scale when you're ready.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Starter -->
+                <div class="bg-cream text-ink p-8 flex flex-col border-2 border-transparent hover:border-primary transition-colors">
+                    <h3 class="font-display font-600 text-lg text-ink">Starter</h3>
+                    <p class="mt-1 font-mono text-xs text-ink/60">For side projects</p>
+                    <p class="mt-4 font-mono text-4xl font-600 text-ink">$0</p>
+                    <p class="font-mono text-xs text-ink/60">forever</p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Basic components</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">1 project</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Community support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">5 team members</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 border-2 border-ink text-ink font-sans font-600 text-sm px-4 py-2 text-center hover:bg-ink hover:text-cream transition-colors focus-ring">Start Free</a>
+                </div>
+                <!-- Pro -->
+                <div class="bg-cream text-ink p-8 flex flex-col border-2 border-primary relative">
+                    <span class="absolute top-0 right-0 bg-primary text-ink font-mono text-xs font-600 px-3 py-1">POPULAR</span>
+                    <h3 class="font-display font-600 text-lg text-ink">Pro</h3>
+                    <p class="mt-1 font-mono text-xs text-ink/60">For growing teams</p>
+                    <p class="mt-4 font-mono text-4xl font-600 text-ink">$24</p>
+                    <p class="font-mono text-xs text-ink/60">per month</p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Full component library</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Unlimited projects</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Priority support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">25 team members</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Dark mode</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 bg-primary text-ink font-sans font-600 text-sm px-4 py-2 text-center hover:bg-primary/90 transition-colors focus-ring">Get Pro</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-cream text-ink p-8 flex flex-col border-2 border-transparent hover:border-primary transition-colors">
+                    <h3 class="font-display font-600 text-lg text-ink">Enterprise</h3>
+                    <p class="mt-1 font-mono text-xs text-ink/60">For organizations</p>
+                    <p class="mt-4 font-mono text-4xl font-600 text-ink">Custom</p>
+                    <p class="font-mono text-xs text-ink/60">tailored</p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Everything in Pro</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">SSO/SAML</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Dedicated support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Training</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            <span class="font-sans text-sm text-ink/80">Unlimited members</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 border-2 border-ink text-ink font-sans font-600 text-sm px-4 py-2 text-center hover:bg-ink hover:text-cream transition-colors focus-ring">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="bg-cream py-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-xs text-primary uppercase tracking-widest mb-3">FAQ</p>
+                <h2 class="font-display font-700 text-3xl sm:text-4xl text-ink">Frequently asked questions.</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="faq-item bg-surface border-2 border-ink/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+                        <span class="font-display font-600 text-base text-ink">What is Impeccable?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="font-sans text-sm text-ink/70 leading-relaxed">Impeccable is a design system built on semantic tokens, accessible components, and a confident editorial aesthetic. It gives your team everything needed to build consistent, beautiful products.</p>
+                    </div>
+                </div>
+                <div class="faq-item bg-surface border-2 border-ink/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+                        <span class="font-display font-600 text-base text-ink">How do I get started?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="font-sans text-sm text-ink/70 leading-relaxed">Install the package, import the tokens, and start building. Our docs walk you through it in under 10 minutes. No configuration required.</p>
+                    </div>
+                </div>
+                <div class="faq-item bg-surface border-2 border-ink/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+                        <span class="font-display font-600 text-base text-ink">Do you support dark mode?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="font-sans text-sm text-ink/70 leading-relaxed">Yes. Dark mode is automatic and uses the same semantic tokens with adjusted values. Toggle it with a single class or follow the user's system preference.</p>
+                    </div>
+                </div>
+                <div class="faq-item bg-surface border-2 border-ink/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+                        <span class="font-display font-600 text-base text-ink">Can I customize the tokens?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="font-sans text-sm text-ink/70 leading-relaxed">Absolutely. Every token is a CSS variable. Override them to match your brand. Change colors, spacing, or typography in one place.</p>
+                    </div>
+                </div>
+                <div class="faq-item bg-surface border-2 border-ink/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+                        <span class="font-display font-600 text-base text-ink">What about accessibility?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="font-sans text-sm text-ink/70 leading-relaxed">Every component is built to WCAG 2.2 AA standards and tested with screen readers. Keyboard navigation and visible focus states are guaranteed.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-ink text-cream py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-8 h-8 bg-primary flex items-center justify-center">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="1" y="1" width="14" height="14" stroke="#111827" stroke-width="2"/>
+                                <rect x="4" y="4" width="8" height="8" fill="#111827"/>
+                            </svg>
+                        </span>
+                        <span class="font-display font-700 text-xl text-cream">Impeccable</span>
+                    </div>
+                    <p class="font-sans text-sm text-cream/60 leading-relaxed">A modern design system for teams that demand clarity, contrast, and craft.</p>
+                </div>
+                <div>
+                    <h3 class="font-display font-600 text-sm text-cream mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="font-sans text-sm text-cream/60 hover:text-primary transition-colors focus-ring-dark">Features</a></li>
+                        <li><a href="#process" class="font-sans text-sm text-cream/60 hover:text-primary transition-colors focus-ring-dark">Process</a></li>
+                        <li><a href="#pricing" class="font-sans text-sm text-cream/60 hover:text-primary transition-colors focus-ring-dark">Pricing</a></li>
+                        <li><a href="#faq" class="font-sans text-sm text-cream/60 hover:text-primary transition-colors focus-ring-dark">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-display font-600 text-sm text-cream mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="font-sans text-sm text-cream/60 hover:text-primary transition-colors focus-ring-dark">Documentation</a></li>
+                        <li><a href="#" class="font-sans text-sm text-cream/60 hover:text-primary transition-colors focus-ring-dark">GitHub</a></li>
+                        <li><a href="#" class="font-sans text-sm text-cream/60 hover:text-primary transition-colors focus-ring-dark">Changelog</a></li>
+                        <li><a href="#" class="font-sans text-sm text-cream/60 hover:text-primary transition-colors focus-ring-dark">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-display font-600 text-sm text-cream mb-4">Connect</h3>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 border border-cream/20 flex items-center justify-center hover:bg-cream/10 transition-colors focus-ring-dark" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-5 h-5 text-cream"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 border border-cream/20 flex items-center justify-center hover:bg-cream/10 transition-colors focus-ring-dark" aria-label="GitHub">
+                            <i data-lucide="github" class="w-5 h-5 text-cream"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 border border-cream/20 flex items-center justify-center hover:bg-cream/10 transition-colors focus-ring-dark" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-5 h-5 text-cream"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-cream/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="font-mono text-xs text-cream/50">© 2024 Impeccable. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="font-sans text-xs text-cream/50 hover:text-primary transition-colors focus-ring-dark">Privacy</a>
+                    <a href="#" class="font-sans text-xs text-cream/50 hover:text-primary transition-colors focus-ring-dark">Terms</a>
+                    <a href="#" class="font-sans text-xs text-cream/50 hover:text-primary transition-colors focus-ring-dark">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuBtn.addEventListener('click', () => {
+            const isOpen = mobileMenu.classList.toggle('hidden');
+            menuBtn.setAttribute('aria-expanded', !isOpen);
+            const icon = menuBtn.querySelector('i');
+            if (isOpen) {
+                icon.setAttribute('data-lucide', 'menu');
+            } else {
+                icon.setAttribute('data-lucide', 'x');
+            }
+            lucide.createIcons();
+        });
+
+        // FAQ accordion
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            const button = item.querySelector('button');
+            button.addEventListener('click', () => {
+                const isOpen = item.classList.contains('open');
+                // Close all
+                faqItems.forEach(i => {
+                    i.classList.remove('open');
+                    i.querySelector('button').setAttribute('aria-expanded', 'false');
+                });
+                // Open clicked
+                if (!isOpen) {
+                    item.classList.add('open');
+                    button.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

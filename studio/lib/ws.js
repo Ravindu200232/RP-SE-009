@@ -1,6 +1,7 @@
 
 import { useStore, KEYS } from './store'
-import { API, HTTP_FALLBACK } from './api'
+import { api, API, HTTP_FALLBACK, getAuthToken } from './api'
+import { refreshQaReport } from './qa-results'
 
 
 const STEP_ALIAS = { plan: 'build', generate: 'build' }
@@ -8,16 +9,18 @@ const STEP_ALIAS = { plan: 'build', generate: 'build' }
 // What each outgoing message is, in the terms the overlay presents.
 const WORK_KIND = {
   agent_build: 'build',
-  agent_update: 'repair', agent_resume: 'build',
+  agent_update: 'edit', agent_resume: 'build',
   feature: 'feature',
   element_edit: 'select',
-  pencil_edit: 'pencil',
-  image_edit: 'image', image_swap: 'image',
 }
 
 let sock = null
 let retry = null
+let heartbeat = null
 let lastEdit = null
+
+// Send periodic heartbeat pings to keep WebSocket connections alive through proxies and tunnels.
+const HEARTBEAT_MS = 25000
 
 let streamPending = ''
 let streamTimer = null
@@ -46,19 +49,75 @@ function resetStreamQueue() {
 
 /** Resend the last edit with an answer or instruction. */
 export function answerQuestion(prompt) {
-  const base = lastEdit
+  const store = useStore.getState()
+  const base = lastEdit?.project === store.project && lastEdit?.agent === store.agentRole ? lastEdit : null
   useStore.setState({ question: null })
   if (!base) return false
   useStore.getState().addLog('INFO', `Edit: ${prompt}`)
   useStore.getState().setBusy(true)
-  send({ ...base, prompt })
+  send({ ...base, prompt: `${base.prompt}\n\nScope clarification: ${prompt}` })
+  return true
+}
+
+/** Sends the user's typed response to answer a pending agent question. */
+export function answerAsk(reply) {
+  const ask = useStore.getState().ask
+  if (!ask) return false
+  useStore.getState().setAsk(null)
+  api.decide({ id: ask.id, decision: 'answer', reply })
+     .catch(e => useStore.getState().addLog('WARN', `Could not send that answer — ${e.message}`))
+  return true
+}
+
+/** Hand the decision back to the agent, which then says what it assumed. */
+export function declineAsk() {
+  const ask = useStore.getState().ask
+  if (!ask) return false
+  useStore.getState().setAsk(null)
+  api.decide({ id: ask.id, decision: 'default' })
+     .catch(e => useStore.getState().addLog('WARN', `Could not send that — ${e.message}`))
+  return true
+}
+
+/** Sends feedback to request a revision for the current wireframe drawing. */
+export function reviseDrawing(feedback) {
+  const drawing = useStore.getState().drawing
+  if (!drawing) return false
+  useStore.getState().setDrawing(null)
+  api.decide({ id: drawing.id, decision: 'revise', feedback })
+     .catch(e => useStore.getState().addLog('WARN', `Could not send that back — ${e.message}`))
   return true
 }
 
 function wsUrl() {
-  const host = (typeof location !== 'undefined' && location.hostname) || 'localhost'
-  return `ws://${host}:7825`
+  if (typeof location === 'undefined') return 'ws://127.0.0.1:7825'
+  // Route WebSocket connections through the studio host address.
+  const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${scheme}://${location.host}/__agentforge/ws`
 }
+
+/** Dispatches incoming questions and decisions to their appropriate UI handlers. */
+function route(question) {
+  const store = useStore.getState()
+  if (question?.kind === 'prototype') store.setDrawing(question)
+  else if (question?.kind === 'question') store.setAsk(question)
+  else if (question?.kind === 'plan') {
+    api.decide({ id: question.id, decision: 'accept' }).catch(() => {})
+  }
+  else store.setApproval(question)
+}
+
+async function recoverPendingDecision() {
+  try {
+    const { pending } = await api.decisions()
+    const question = (pending || [])[0]
+    const store = useStore.getState()
+    if (question && question.project === store.project && (!question.agent || question.agent === store.agentRole) && !store.approval && !store.ask && !store.drawing) route(question)
+  } catch {
+    // An older backend has no such endpoint; the announcement is all there is.
+  }
+}
+
 
 export function connect() {
   if (typeof window === 'undefined') return
@@ -75,6 +134,7 @@ export function connect() {
     sock = null
   }
   clearTimeout(retry)
+  clearInterval(heartbeat)
 
   try {
     sock = new WebSocket(wsUrl())
@@ -85,10 +145,27 @@ export function connect() {
   const mine = sock
   // Every handler checks it is still the current socket before it speaks.
   sock.onopen = () => {
-    if (mine === sock) useStore.getState().setStatus('live', 'ready')
-  }
-  sock.onclose = () => {
     if (mine !== sock) return
+    useStore.getState().setStatus('live', 'ready')
+    clearInterval(heartbeat)
+    heartbeat = setInterval(() => {
+      if (mine !== sock || sock.readyState !== 1) return
+      try { sock.send(JSON.stringify({ type: 'ping' })) } catch { }
+    }, HEARTBEAT_MS)
+    const project = useStore.getState().project
+    if (project) api.workflow(project).then(snapshot => useStore.getState().restoreProject(snapshot)).catch(() => {})
+    recoverPendingDecision()
+  }
+  sock.onclose = (event) => {
+    if (mine !== sock) return
+    clearInterval(heartbeat)
+    // 4401: nobody is signed in on this socket. Reconnecting cannot fix that;
+    // signing in does, and that calls connect() again.
+    if (event?.code === 4401) {
+      sock = null
+      useStore.getState().setStatus('disconnected', 'sign in to continue')
+      return
+    }
     useStore.getState().setStatus('disconnected', 'reconnecting…')
     clearTimeout(retry)
     retry = setTimeout(connect, 3000)
@@ -104,11 +181,42 @@ export function connect() {
   }
 
   if (typeof window !== 'undefined') window.__studioFeed = handle
+  return disconnect
 }
 
+export function disconnect() {
+  clearTimeout(retry)
+  clearInterval(heartbeat)
+  retry = heartbeat = null
+  if (sock) {
+    sock.onopen = sock.onclose = sock.onerror = sock.onmessage = null
+    sock.close()
+    sock = null
+  }
+  flushStream()
+  resetStreamQueue()
+}
+
+/** Persists accumulated chat messages and execution logs to the server. */
+function keepStream(project) {
+  const s = useStore.getState()
+  const name = project || s.project
+  if (!name) return
+  api.saveStream(name, s.logs, s.chat).catch(() => {
+    // An older backend keeps no stream; the session still has it in memory.
+  })
+}
+
+
 export function send(obj) {
+  const current = useStore.getState()
+  const agent = obj.agent || current.agentRole || 'developer'
+  obj = { ...obj, agent }
+  if (obj.project) current.applyProjectEvent({ type: 'run_state', project: obj.project, agent, status: 'queued' })
   if (obj && obj.type) {
     useStore.getState().setWorkKind(WORK_KIND[obj.type] || 'build')
+    // Whose run this is. The project on screen can change while it works.
+    if (obj.project) useStore.getState().setBusyProject(obj.project)
   }
   if (obj && obj.prompt !== undefined) {
     lastEdit = obj
@@ -126,125 +234,39 @@ export function send(obj) {
   }
   fetch(API + ep, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}) },
     body: JSON.stringify(obj),
-  }).catch(err => useStore.getState().addLog('WARN', `send failed: ${err.message}`))
+  }).then(async response => { if (!response.ok) throw new Error((await response.json()).error || 'Request failed') }).catch(err => {
+    useStore.getState().applyProjectEvent({ type: 'error', project: obj.project, agent, text: `Send failed: ${err.message}` })
+  })
 }
+
+/** Determines whether an incoming WebSocket message belongs to the currently active project. */
+function meantForMe(m) {
+  const mine = useStore.getState().project
+  if (!m?.project || !mine) return true
+  if (m.type === 'project' || m.type === 'done' || m.type === 'cancelled') return true
+  return m.project === mine
+}
+
 
 function handle(m) {
   const s = useStore.getState()
-  switch (m.type) {
-    case 'log':          s.addLog(m.level, m.text); break
-
-    case 'project':      s.bumpProjects(); break
-
-    case 'step':         s.setStep(STEP_ALIAS[m.step] || m.step, m.status); break
-    case 'progress':     s.setProgress(m.step, m.pct); break
-    case 'phase':
-      s.upsertPhase(m)
-
-      s.setStage(m.status === 'active' ? (m.title || '') : '')
-      break
-    case 'file':         s.putFile(m.name, m.content || ''); break
-    case 'stream_start':
-      resetStreamQueue()
-      useStore.setState({ liveFile: m.file, liveBuf: '', follow: true })
-      break
-    case 'stream':
-      queueStream(m.token || '')
-      break
-    case 'stream_end':
-      flushStream()
-      resetStreamQueue()
-      s.putFile(m.file, m.content || '')
-      useStore.setState({ liveFile: null, liveBuf: '' })
-      break
-
-    case 'test_start':
-      e2eVersion += 1
-      s.setE2eLive(null)
-      s.testStart()
-      break
-    case 'test_run':     s.testRun(m.attempt); break
-    case 'test_result':  s.testResult(m); break
-    case 'test_fixing':  s.testFixing(m); break
-    case 'e2e_parallel':  s.e2eParallelEvent(m); break
-    case 'e2e_event': {
-      s.e2eEvent(m)
-      const prior = m.state === 'journey_start' ? {} : (s.e2eLive || {})
-      const at = Date.now()
-      s.setE2eLive({ ...prior, ...m,
-        frame: m.state === 'journey_start' ? '' : (m.frame ?? prior.frame ?? ''), at })
-      if (m.state === 'journey_done') {
-        const version = ++e2eVersion
-        setTimeout(() => {
-          const current = useStore.getState().e2eLive
-          if (version === e2eVersion && current?.at === at) {
-            useStore.getState().setE2eLive(null)
-          }
-        }, 1500)
-      }
-      break
+  // Contracts: approval?.id === m.id | browser_frame
+  if (m.type === 'runtime_state') { s.setRuntime(m); return }
+  if (m.type === 'project') {
+    // Only the unnamed new run can adopt its server-assigned project.
+    if (!s.project && s.busy) useStore.setState({ project: m.project, busyProject: m.project })
+    s.bumpProjects()
+    return
+  }
+  if (!m.project) return
+  s.applyProjectEvent(m)
+  if (['done', 'cancelled', 'error'].includes(m.type)) {
+    s.bumpProjects()
+    api.runtime(m.project).then(runtime => useStore.getState().setRuntime(runtime)).catch(() => {})
+    if (m.agent !== 'designer' && m.type === 'done') {
+      refreshQaReport(m.project).catch(() => {})
     }
-
-  // Close every stream when the run ends.
-    case 'done':
-      s.setBusy(false)
-      s.setWorkKind('')
-      s.testDone()
-      resetStreamQueue()
-      useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
-  // Invalidate the cached QA report after project changes.
-      s.setQaReport(null)
-      if (m.project) useStore.setState({ project: m.project })
-      s.bumpProjects()
-      break
-    // Cancelled is not an error and must not read like one.
-    case 'cancelled':
-      s.setBusy(false)
-      s.setWorkKind('')
-      s.testDone()
-      resetStreamQueue()
-      useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null, project: '' })
-      s.setQaReport(null)
-      s.addLog('WARN', m.project
-        ? `cancelled — ${m.project} and its specification were removed`
-        : 'cancelled')
-      s.bumpProjects()
-      break
-    case 'error':
-      s.setBusy(false)
-      s.setWorkKind('')
-      s.testDone()
-      resetStreamQueue()
-      useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
-      s.addLog('ERROR', m.text || 'failed')
-      break
-
-    // Question that paused the run.
-    case 'ask':
-      useStore.setState({ question: {
-        kind: m.kind || 'scope', file: m.file || '', route: m.route || '',
-        routes: m.routes || [], options: m.options || [],
-      } })
-      break
-
-    case 'detected':     s.addLog('INFO', `type: ${m.site_type} · ${m.strategy}`); break
-    case 'chat_intent':  s.addLog('INFO', `${m.intent || 'ask'} — ${m.summary || ''}`); break
-    case 'agent_msg':    s.addLog('INFO', m.text); break
-    case 'memory':       break
-    case 'mongo':        break
-    case 'command':      break
-    case 'demo_accounts': break
-    case 'feature_plan': break
-    case 'element_picked':
-      s.addLog('INFO', `   ${m.file}${m.line ? ':' + m.line : ''}`)
-      if (m.file) s.setActiveFile(m.file)
-      break
-    case 'undo_point':
-      s.setUndo({ id: m.id, files: m.files || [] })
-      s.addLog('INFO', `undo point saved (${(m.files || []).join(', ')})`)
-      break
-    default: break
   }
 }

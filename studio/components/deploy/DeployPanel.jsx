@@ -12,6 +12,7 @@ import { Button, Empty, SectionLabel, SubTab, SubTabs } from '../ui'
 import { cn } from '@/lib/utils'
 import DeployProgress from './DeployProgress'
 import DeployResult from './DeployResult'
+import DeployInterview from './DeployInterview'
 import { Infrastructure, Logs, Overview, StatusBar, ago } from './MonitorViews'
 import { Pipeline } from './MonitorPipeline'
 import { CiCd, Repository } from './MonitorRepo'
@@ -23,22 +24,24 @@ import { useRunData } from '@/lib/use-run-data'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
 
-export default function DeployPanel({ onSettings }) {
+export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   const project = useStore(s => s.project)
-  const models = useStore(s => s.models)
   const qa = useStore(s => s.qaReport)
   const setQa = useStore(s => s.setQaReport)
-  const addLog = useStore(s => s.addLog)
 
   const [data, setData] = useState(null)
   const [probe, setProbe] = useState(null)
   const [target, setTarget] = useState('vercel')
-  const [validateBuild, setValidateBuild] = useState(true)
+  const [answers, setAnswers] = useState({})
   const [override, setOverride] = useState(false)
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
   const [view, setView] = useState('deploy')
   const alive = useRef(true)
+  const currentProject = useRef(project)
+  currentProject.current = project
+  const currentAccountsRevision = useRef(accountsRevision)
+  currentAccountsRevision.current = accountsRevision
 
   const mine = data?.project === project ? data : null
   const live = mine?.live
@@ -54,21 +57,32 @@ export default function DeployPanel({ onSettings }) {
 
   const run = useRunData(runId)
 
+  // Publish it so the chat beside this panel can show the same run.
+  const setDeployRunId = useStore(s => s.setDeployRunId)
+  useEffect(() => { setDeployRunId(runId) }, [runId, setDeployRunId])
+
   const refresh = useCallback(async () => {
     if (!project) return
     try {
       const d = await api.deployResults(project)
-      if (alive.current) setData(d)
+      if (alive.current && currentProject.current === project && currentAccountsRevision.current === accountsRevision) setData(d)
     } catch (e) {
-      if (alive.current) setError(e.message)
+      if (alive.current && currentProject.current === project && currentAccountsRevision.current === accountsRevision) setError(e.message)
     }
-  }, [project])
+  }, [project, accountsRevision])
 
   useEffect(() => {
     alive.current = true
     refresh()
     return () => { alive.current = false }
   }, [refresh])
+
+  useEffect(() => {
+    setData(null); setAnswers({}); setError(''); setOverride(false); setView('deploy')
+  }, [project])
+  useEffect(() => {
+    if (mine) { setAnswers(mine.customization || {}); setTarget(mine.last?.target || mine.live?.target || 'vercel') }
+  }, [mine?.project])
 
       // Refresh the deployment state read on mount.
   const FINISHED = ['DESTROYED', 'CANCELLED', 'FAILED', 'ROLLED_BACK']
@@ -107,6 +121,7 @@ export default function DeployPanel({ onSettings }) {
 
   useEffect(() => {
     let ok = true
+    setProbe(null)
     Promise.all([
       api.deployRead('/onboarding/status').catch(() => ({ error: true })),
       api.deploy('/aws/vercel/status', { token: '' }).catch(() => ({})),
@@ -119,7 +134,17 @@ export default function DeployPanel({ onSettings }) {
       })
     })
     return () => { ok = false }
-  }, [])
+  }, [accountsRevision])
+
+  // Disable single-app deployment providers for multi-service architectures with explanatory tooltips.
+  const services = mine?.stack === 'mern-microservices'
+  const refusal = t => (services && !t.id.startsWith('aws_') && t.id !== 'azure'
+    ? `${t.label} runs one app, not a workspace of services.` : '')
+  const targets = TARGETS
+  useEffect(() => {
+    if (refusal(TARGETS.find(t => t.id === target) || {})) setTarget('aws_ec2')
+  }, [services, target])
+  const where = TARGETS.find(t => t.id === target)?.label || target
 
   const s = mine?.settings || {}
   const unit = projectUnitTestStatus(qa, project)
@@ -143,6 +168,10 @@ export default function DeployPanel({ onSettings }) {
               + (probe.vercel_source ? ` (${probe.vercel_source})` : '')
             : s.vercel_token_set ? `token saved (${s.vercel_token_hint})`
                                  : 'add a token in Settings' }
+      : target === 'netlify' || target === 'azure'
+        ? { id: target, label: target === 'netlify' ? 'Netlify' : 'Azure',
+            ok: Boolean(s[target === 'netlify' ? 'netlify_token_set' : 'azure_credentials_set']), unknown: false,
+            hint: s[target === 'netlify' ? 'netlify_token_set' : 'azure_credentials_set'] ? 'credentials saved' : 'add credentials in Settings' }
       : { id: 'aws', label:'AWS',
           ok: Boolean(probe?.aws_identities?.[s.aws_profile]),
           unknown: !probe,
@@ -151,25 +180,21 @@ export default function DeployPanel({ onSettings }) {
             : s.aws_profile
               ? `profile ${s.aws_profile} needs sign-in or has expired`
               : 'sign in to AWS from Settings' },
-    { id: 'mongo', label:'MongoDB',
+    ...(mine?.database_required ? [{ id: 'mongo', label:'MongoDB',
       ok: Boolean(s.mongodb_uri_set),
       unknown: false,
       hint: s.mongodb_uri_set ? `saved (${s.mongodb_uri_hint})`
                               : 'the deployed app needs a database it can reach'
-                                + 'from the internet — set one in Settings' },
+                                + 'from the internet — set one in Settings' }] : []),
   ]
   const ready = needs.every(n => n.ok) && (green || override)
+  const redeploy = Boolean(mine?.last?.run_id && !mine?.deleted && mine.last.target === target)
 
   async function deploy() {
     setStarting(true)
     setError('')
     try {
-
-      await api.saveSettings({ deploy_model: models.deploy || models.planner
-                                            || models.agent || '' })
-        .catch(() => { })
-      await api.deployStart({ project, target, validate_container: validateBuild })
-      addLog('INFO', `Deploying ${project} to ${target === 'vercel' ? 'Vercel' : 'AWS EC2'}`)
+      await api.deployStart({ project, target, validate_container: true, customization: answers })
       await refresh()
     } catch (e) {
       setError(e.message)
@@ -203,7 +228,7 @@ export default function DeployPanel({ onSettings }) {
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_top_right,rgba(93,106,251,.08),transparent_30%)]">
+    <div className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_top_right,rgba(24,119,242,.08),transparent_30%)]">
       <MonitorBar view={view} setView={setView} monitor={monitor}
                   hasSnapshot={Boolean(monitor.snap)}
                   runId={runId} running={running}
@@ -244,53 +269,60 @@ export default function DeployPanel({ onSettings }) {
       {running || live ? <DeployProgress run={live} /> : null}
 
       {!running && (
-        <div className="rounded-[22px] border border-line/80 bg-white/58 p-5 shadow-sm dark:bg-white/[.025]">
+        <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] p-6 shadow-[0_0_2px_0_rgba(145,158,171,0.2),0_12px_24px_-4px_rgba(0,0,0,0.16)] backdrop-blur-xl">
           <SectionLabel>Where should it go?</SectionLabel>
-          <p className="mt-1 text-[11px] text-muted">Choose the cloud destination for this reviewed build.</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {TARGETS.map(t => (
-              <button key={t.id} onClick={() => setTarget(t.id)}
-                      className={cn('rounded-[18px] border p-4 text-left shadow-sm transition-all',
-                        target === t.id
-                          ? 'border-accent/35 bg-accent/[.07] ring-2 ring-accent/10'
-                          : 'border-line/80 bg-white/55 hover:-translate-y-px hover:bg-white dark:bg-white/[.025]')}>
-                <span className="flex items-center gap-2 text-[12.5px] font-extrabold text-ink">
+          <p className="mt-1 text-[11.5px] text-[#919EAB]">Choose the cloud destination for this reviewed build.</p>
+          <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
+            {targets.map(t => {
+              const why = refusal(t)
+              return (
+              <button key={t.id} onClick={() => setTarget(t.id)} disabled={Boolean(why)}
+                      title={why || undefined}
+                      className={cn('rounded-xl border p-4 text-left shadow-sm transition-all',
+                        why
+                          ? 'cursor-not-allowed border-[rgba(145,158,171,0.12)] bg-[#28323D]/20 opacity-55'
+                          : target === t.id
+                          ? 'border-[#1877F2] bg-[#1877F2]/10 ring-1 ring-[#1877F2]/30'
+                          : 'border-[rgba(145,158,171,0.16)] bg-[#28323D]/50 hover:-translate-y-0.5 hover:border-[rgba(145,158,171,0.28)] hover:bg-[#333F4D]/50')}>
+                <span className="flex items-center gap-2.5 text-[13px] font-bold text-white">
                   <span className={cn('grid size-4 place-items-center rounded-full border',
-                    target === t.id ? 'border-accent bg-accent' : 'border-line2 bg-white/70 dark:bg-white/5')}>
-                    {target === t.id && <Check className="size-2.5 text-white" />}
+                    why ? 'border-[rgba(145,158,171,0.2)] bg-transparent'
+                        : target === t.id ? 'border-[#1877F2] bg-[#1877F2]' : 'border-[rgba(145,158,171,0.32)] bg-[#28323D]')}>
+                    {target === t.id && !why && <Check className="size-2.5 text-white" />}
                   </span>
                   {t.label}
+                  {why && <span className="ml-auto rounded-full bg-white/[.06] px-2 py-0.5 text-[9.5px] font-normal uppercase tracking-wide text-[#919EAB]">unavailable</span>}
                 </span>
-                <span className="mt-1 block text-[10.5px] leading-snug text-muted">
-                  {t.blurb}
+                <span className="mt-1.5 block text-[11px] leading-relaxed text-[#919EAB]">
+                  {why || t.blurb}
                 </span>
               </button>
-            ))}
+            )})}
           </div>
 
           <SectionLabel className="mt-6"
                         right={onSettings && (
-                          <Button variant="outline" size="sm" onClick={onSettings}>
+                          <Button variant="outline" size="sm" className="rounded-xl border-[rgba(145,158,171,0.2)] bg-[#28323D]/60 text-white/90 hover:bg-[#333F4D]" onClick={onSettings}>
                             <Settings2 className="size-3" /> Settings
                           </Button>
                         )}>
             Accounts
           </SectionLabel>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
             {needs.map(n => (
-              <li key={n.id} className={cn('flex items-start gap-2.5 rounded-2xl border px-3 py-3',
-                n.unknown ? 'border-line bg-white/45 dark:bg-white/[.02]'
-                  : n.ok ? 'border-ok/20 bg-ok/[.055]' : 'border-bad/20 bg-bad/[.045]')}>
+              <li key={n.id} className={cn('flex items-start gap-2.5 rounded-xl border px-3.5 py-3',
+                n.unknown ? 'border-[rgba(145,158,171,0.16)] bg-[#28323D]/30'
+                  : n.ok ? 'border-[#22C55E]/20 bg-[#22C55E]/10' : 'border-[#FF5630]/20 bg-[#FF5630]/10')}>
                 <span className="mt-[2px] grid size-3.5 shrink-0 place-items-center">
                   {n.unknown
-                    ? <Loader2 className="size-3 animate-spin text-muted2" />
-                    : n.ok ? <Check className="size-3.5 text-ok" />
-                           : <X className="size-3.5 text-bad" />}
+                    ? <Loader2 className="size-3 animate-spin text-[#919EAB]" />
+                    : n.ok ? <Check className="size-3.5 text-[#22C55E]" />
+                           : <X className="size-3.5 text-[#FF5630]" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="text-[12px] font-semibold text-ink">{n.label}</span>
-                  <span className={cn('ml-2 text-[10.5px]',
-                                      n.unknown || n.ok ? 'text-muted' : 'text-deep')}>
+                  <span className="text-[12px] font-semibold text-white">{n.label}</span>
+                  <span className={cn('ml-2 text-[11px]',
+                                      n.unknown || n.ok ? 'text-[#919EAB]' : 'text-[#FF5630]')}>
                     {n.hint}
                   </span>
                 </span>
@@ -299,10 +331,10 @@ export default function DeployPanel({ onSettings }) {
           </ul>
 
           {!green && (
-            <label className={cn('mt-4 flex cursor-pointer items-start gap-2.5 rounded-2xl border px-3 py-3 text-[11.5px]',
-              override ? 'border-accent/25 bg-accent/[.055] text-deep'
-                       : 'border-line bg-panel2/70 text-muted')}>
-              <input type="checkbox" checked={override} className="mt-0.5"
+            <label className={cn('mt-4 flex cursor-pointer items-start gap-2.5 rounded-xl border px-3.5 py-3 text-[12px]',
+              override ? 'border-accent/30 bg-accent/10 text-white'
+                       : 'border-[rgba(145,158,171,0.16)] bg-[#28323D]/30 text-[#919EAB]')}>
+              <input type="checkbox" checked={override} className="mt-0.5 accent-[#1877F2]"
                      onChange={e => setOverride(e.target.checked)} />
               <span>
                 {!tested
@@ -312,34 +344,24 @@ export default function DeployPanel({ onSettings }) {
             </label>
           )}
           {green && (
-            <p className="mt-4 flex items-center gap-2.5 rounded-2xl border border-ok/20 bg-ok/[.055] px-3 py-3 text-[11.5px] text-ok">
-              <Check className="size-3.5" />
+            <p className="mt-4 flex items-center gap-2.5 rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3.5 py-3 text-[12px] text-[#22C55E]">
+              <Check className="size-3.5 text-[#22C55E]" />
               Every unit test passes.
             </p>
           )}
 
-          <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-[11.5px] text-muted">
-            <input type="checkbox" checked={validateBuild} className="mt-0.5"
-                   onChange={e => setValidateBuild(e.target.checked)} />
-            <span>
-              Run a production build first.
-              <span className="ml-1 text-muted2">
-                Slower, and it catches what only fails in a real build.
-                {' '}Turning it off also stops the agent from ever scoring the
-                deployment as healthy.
-              </span>
-            </span>
-          </label>
+          <DeployInterview project={project} target={target} value={answers} onChange={setAnswers} redeploy={redeploy} />
+          <p className="mt-3 text-[11px] text-[#919EAB]">The agent validates the production build and repairs deployment failures before delivery.</p>
 
-          <footer className="mt-5 flex items-center gap-3 border-t border-line/70 pt-4">
-            <Button variant="solid" size="lg" disabled={!ready || starting}
+          <footer className="mt-6 flex items-center gap-3 border-t border-[rgba(145,158,171,0.16)] pt-4">
+            <Button variant="solid" size="lg" className="h-11 rounded-xl bg-[#1877F2] px-6 font-display text-[13px] font-bold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] hover:bg-[#0C44AE]" disabled={!ready || starting}
                     onClick={deploy}>
               {starting ? <Loader2 className="size-3.5 animate-spin" />
                         : <Rocket className="size-3.5" />}
-              Deploy to {target === 'vercel' ? 'Vercel' : 'AWS EC2'}
+              {redeploy ? 'Redeploy' : 'Deploy'} to {where}
             </Button>
             {!ready && !starting && (
-              <span className="text-[11px] text-muted2">
+              <span className="text-[11.5px] text-[#919EAB]">
                 {needs.find(n => !n.ok)
                   ? `${needs.find(n => !n.ok).label} is not connected yet`
                   : 'confirm you want to deploy a failing build'}
@@ -359,9 +381,12 @@ export default function DeployPanel({ onSettings }) {
       </>)}
       </div>
 
-      {run.events.length > 0 && (
-        <MonitorConsole events={run.events} snapErrors={monitor.snap?.errors} />
-      )}
+      {/* The deployment conversation lives in the chat panel with the other
+          two agents. Kept here as well it was the same stream twice on one
+          screen, and the answer box was in both. */}
+      <div className="sticky bottom-0 z-10 bg-panel">
+        <MonitorConsole key={`console-${runId}`} events={run.events} snapErrors={monitor.snap?.errors} />
+      </div>
     </div>
   )
 }
@@ -446,7 +471,8 @@ function MonitorPane({ view, monitor, runId, state, run }) {
       {view === 'logs' && <Logs snap={snap} />}
       {view === 'api' && <ApiValidation snap={snap} />}
       {view === 'evidence' && (
-        <Evidence evidence={run.evidence} runId={runId} busy={run.busy} />
+        <Evidence evidence={run.evidence} runId={runId} busy={run.busy}
+                  detail={run.detail} snap={snap} />
       )}
     </div>
   )

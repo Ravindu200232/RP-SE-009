@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storyline — Craft Your Brand's Narrative</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Abril+Fatface&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#8B5CF6',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Abril Fatface', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        };
+    </script>
+    <style>
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-12px) rotate(3deg);
+            }
+        }
+        @keyframes pulse-soft {
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        .animate-float-delay {
+            animation: float 5s ease-in-out 1s infinite;
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 3s ease-in-out infinite;
+        }
+        .dot-pattern {
+            background-image: radial-gradient(circle, rgba(59, 130, 246, 0.15) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+
+<body class="font-sans text-ink bg-surface antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <header class="fixed top-0 inset-x-0 z-50 bg-surface/90 backdrop-blur-md border-b border-gray-100">
+        <nav class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 flex items-center justify-between h-16" aria-label="Main navigation">
+            <a href="#" class="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg">
+                <span class="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
+                    <i data-lucide="book-open" class="w-5 h-5 text-white"></i>
+                </span>
+                <span class="font-display text-2xl text-ink">Storyline</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md px-2 py-1">Features</a>
+                <a href="#process" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md px-2 py-1">Process</a>
+                <a href="#pricing" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md px-2 py-1">Pricing</a>
+                <a href="#faq" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md px-2 py-1">FAQ</a>
+            </div>
+            <a href="#pricing" class="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                Get Started
+            </a>
+        </nav>
+    </header>
+
+    <main>
+
+        <!-- ===== HERO ===== -->
+        <section id="hero" class="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-40 left-10 w-24 h-24 bg-warning/10 rounded-full blur-2xl"></div>
+
+            <div class="relative max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+                <div class="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
+
+                    <div>
+                        <p class="font-mono text-primary text-sm mb-4 flex items-center gap-2">
+                            <span class="inline-block w-2 h-2 bg-primary rounded-full animate-pulse-soft"></span>
+                            Chapter One — The Beginning
+                        </p>
+                        <h1 class="font-display text-5xl md:text-6xl lg:text-7xl text-ink leading-tight">
+                            Every brand has a story. <span class="text-primary">Let's tell yours.</span>
+                        </h1>
+                        <p class="text-lg text-gray-600 mt-6 max-w-md leading-relaxed">
+                            Storyline helps you craft narrative-driven digital experiences that connect with your audience on an emotional level.
+                        </p>
+                        <div class="flex flex-wrap gap-4 mt-8">
+                            <a href="#pricing" class="bg-primary text-white px-6 py-3 rounded-full font-semibold hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 shadow-lg shadow-primary/25">
+                                Start your story
+                            </a>
+                            <a href="#process" class="border-2 border-gray-200 text-ink px-6 py-3 rounded-full font-semibold hover:border-primary hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                                See how it works
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Hero Visual -->
+                    <div class="relative hidden md:block">
+                        <div class="relative bg-gradient-to-br from-primary/15 via-secondary/10 to-primary/5 rounded-[2rem] p-12 lg:p-16 aspect-square flex items-center justify-center border border-primary/10">
+                            <!-- Book SVG -->
+                            <svg viewBox="0 0 240 180" class="w-56 h-40 lg:w-64 lg:h-48" role="img" aria-label="Open book illustration">
+                                <path d="M120 25 C 95 25, 65 35, 40 50 L 40 160 C 65 145, 95 135, 120 135 C 145 135, 175 145, 200 160 L 200 50 C 175 35, 145 25, 120 25 Z" fill="white" stroke="#3B82F6" stroke-width="2.5" stroke-linejoin="round"/>
+                                <path d="M120 25 L 120 135" stroke="#3B82F6" stroke-width="2"/>
+                                <line x1="60" y1="70" x2="100" y2="70" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="60" y1="88" x2="100" y2="88" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="60" y1="106" x2="100" y2="106" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="140" y1="70" x2="180" y2="70" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="140" y1="88" x2="180" y2="88" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="140" y1="106" x2="180" y2="106" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+                            </svg>
+
+                            <!-- Floating shapes -->
+                            <div class="absolute top-6 right-6 w-14 h-14 bg-warning rounded-2xl rotate-12 shadow-lg animate-float"></div>
+                            <div class="absolute bottom-8 left-6 w-10 h-10 bg-success rounded-full shadow-lg animate-float-delay"></div>
+                            <div class="absolute top-10 left-8 w-8 h-8 bg-secondary rounded-lg -rotate-12 shadow-lg animate-float"></div>
+                            <div class="absolute bottom-10 right-10 w-6 h-6 bg-primary rounded-full shadow-md animate-float-delay"></div>
+
+                            <!-- Sparkle SVG -->
+                            <svg class="absolute top-12 right-12 w-8 h-8 text-warning animate-pulse-soft" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/>
+                            </svg>
+                            <svg class="absolute bottom-16 left-16 w-6 h-6 text-secondary animate-pulse-soft" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== STATS ===== -->
+        <section id="stats" class="bg-gradient-to-r from-primary to-secondary py-16 md:py-20">
+            <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+                    <div class="text-center">
+                        <p class="font-display text-4xl md:text-5xl text-white">500+</p>
+                        <p class="font-mono text-sm text-white/80 mt-2">Stories told</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display text-4xl md:text-5xl text-white">98%</p>
+                        <p class="font-mono text-sm text-white/80 mt-2">Client satisfaction</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display text-4xl md:text-5xl text-white">12×</p>
+                        <p class="font-mono text-sm text-white/80 mt-2">Engagement lift</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display text-4xl md:text-5xl text-white">40+</p>
+                        <p class="font-mono text-sm text-white/80 mt-2">Countries served</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FEATURES ===== -->
+        <section id="features" class="py-20 md:py-28">
+            <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-primary text-sm mb-3">✦ Chapter Two — The Toolkit</p>
+                    <h2 class="font-display text-4xl md:text-5xl text-ink">Everything you need to tell your story</h2>
+                    <p class="text-gray-600 mt-4 text-lg">Powerful tools designed to help you craft narratives that captivate and convert.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    <!-- Feature 1 -->
+                    <div class="bg-surface border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary">
+                        <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-5">
+                            <i data-lucide="compass" class="w-6 h-6 text-primary"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-ink mb-2">Narrative Framework</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Structure your content with proven story arcs that keep audiences engaged from hook to resolution.</p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="bg-surface border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary">
+                        <div class="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-5">
+                            <i data-lucide="palette" class="w-6 h-6 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-ink mb-2">Visual Storytelling</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Bring tales to life with rich, playful visuals that reinforce your message and delight your audience.</p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="bg-surface border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary">
+                        <div class="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center mb-5">
+                            <i data-lucide="heart" class="w-6 h-6 text-warning"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-ink mb-2">Emotional Design</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Design that resonates on a human level, creating lasting connections between your brand and your users.</p>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="bg-surface border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary">
+                        <div class="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center mb-5">
+                            <i data-lucide="map" class="w-6 h-6 text-success"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-ink mb-2">Interactive Journeys</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Guide users through your narrative with interactive elements that make every visit an adventure.</p>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="bg-surface border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary">
+                        <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-5">
+                            <i data-lucide="bar-chart-3" class="w-6 h-6 text-primary"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-ink mb-2">Analytics &amp; Insights</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Measure the impact of your story with detailed analytics that show exactly what resonates.</p>
+                    </div>
+
+                    <!-- Feature 6 -->
+                    <div class="bg-surface border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary">
+                        <div class="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-5">
+                            <i data-lucide="message-circle" class="w-6 h-6 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-ink mb-2">Brand Voice</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Consistent tone across every touchpoint, from hero to footer, so your story always sounds like you.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PROCESS ===== -->
+        <section id="process" class="py-20 md:py-28 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-primary text-sm mb-3">✦ Chapter Three — The Journey</p>
+                    <h2 class="font-display text-4xl md:text-5xl text-ink">How we bring your story to life</h2>
+                    <p class="text-gray-600 mt-4 text-lg">A proven process that takes your brand from blank page to compelling narrative.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- Step 1 -->
+                    <div class="relative">
+                        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 h-full">
+                            <div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mb-5">
+                                <i data-lucide="search" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <p class="font-mono text-primary text-xs mb-2">Step 01</p>
+                            <h3 class="font-semibold text-lg text-ink mb-2">Discover</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">We listen to your brand's story, your goals, and your audience to find the narrative thread.</p>
+                        </div>
+                        <div class="hidden lg:block absolute top-1/2 -right-4 text-gray-300">
+                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="relative">
+                        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 h-full">
+                            <div class="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center mb-5">
+                                <i data-lucide="pen-tool" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <p class="font-mono text-secondary text-xs mb-2">Step 02</p>
+                            <h3 class="font-semibold text-lg text-ink mb-2">Define</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">We craft the narrative arc and identify key story beats that will guide your user experience.</p>
+                        </div>
+                        <div class="hidden lg:block absolute top-1/2 -right-4 text-gray-300">
+                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="relative">
+                        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 h-full">
+                            <div class="w-12 h-12 bg-warning rounded-xl flex items-center justify-center mb-5">
+                                <i data-lucide="layout" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <p class="font-mono text-warning text-xs mb-2">Step 03</p>
+                            <h3 class="font-semibold text-lg text-ink mb-2">Design</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">We bring the story to life with visuals, copy, and interaction that feel cohesive and magical.</p>
+                        </div>
+                        <div class="hidden lg:block absolute top-1/2 -right-4 text-gray-300">
+                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div>
+                        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 h-full">
+                            <div class="w-12 h-12 bg-success rounded-xl flex items-center justify-center mb-5">
+                                <i data-lucide="rocket" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <p class="font-mono text-success text-xs mb-2">Step 04</p>
+                            <h3 class="font-semibold text-lg text-ink mb-2">Deliver</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">We launch, measure, and iterate to keep the story evolving and your audience engaged.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== BENEFITS ===== -->
+        <section id="benefits" class="py-20 md:py-28">
+            <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-primary text-sm mb-3">✦ Chapter Four — The Why</p>
+                    <h2 class="font-display text-4xl md:text-5xl text-ink">Why storytelling matters</h2>
+                    <p class="text-gray-600 mt-4 text-lg">Stories aren't just nice to have — they're the most powerful tool in your marketing arsenal.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 md:gap-12">
+                    <!-- Benefit 1 -->
+                    <div class="flex gap-6 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+                        <div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="heart" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg text-ink mb-1">Deeper audience connection</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">Stories activate emotional centers in the brain, creating bonds that facts alone can't achieve.</p>
+                        </div>
+                    </div>
+
+                    <!-- Benefit 2 -->
+                    <div class="flex gap-6 p-6 bg-secondary/5 rounded-2xl border border-secondary/10">
+                        <div class="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg text-ink mb-1">Higher engagement rates</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">Narrative-driven content keeps users on your page longer and drives them to take action.</p>
+                        </div>
+                    </div>
+
+                    <!-- Benefit 3 -->
+                    <div class="flex gap-6 p-6 bg-warning/5 rounded-2xl border border-warning/10">
+                        <div class="w-12 h-12 bg-warning rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="star" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg text-ink mb-1">Memorable brand experiences</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">People remember stories long after they forget statistics. Make your brand unforgettable.</p>
+                        </div>
+                    </div>
+
+                    <!-- Benefit 4 -->
+                    <div class="flex gap-6 p-6 bg-success/5 rounded-2xl border border-success/10">
+                        <div class="w-12 h-12 bg-success rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="message-square" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg text-ink mb-1">Clearer message delivery</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">A well-structured narrative ensures your message is understood, remembered, and shared.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TESTIMONIALS ===== -->
+        <section id="testimonials" class="py-20 md:py-28 bg-secondary/5">
+            <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-secondary text-sm mb-3">✦ Chapter Five — The Voices</p>
+                    <h2 class="font-display text-4xl md:text-5xl text-ink">Loved by storytellers everywhere</h2>
+                    <p class="text-gray-600 mt-4 text-lg">See how brands around the world have transformed their digital presence with Storyline.</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 md:gap-8">
+                    <!-- Testimonial 1 -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col">
+                        <div class="flex gap-1 mb-4">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <p class="text-gray-700 text-sm leading-relaxed flex-grow">"Storyline transformed how we communicate with our customers. Our engagement is up 300% and our brand finally feels alive."</p>
+                        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+                            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-sm">SC</div>
+                            <div>
+                                <p class="font-semibold text-sm text-ink">Sarah Chen</p>
+                                <p class="text-xs text-gray-500">Marketing Director, Lumen</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 2 -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col">
+                        <div class="flex gap-1 mb-4">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <p class="text-gray-700 text-sm leading-relaxed flex-grow">"The narrative approach helped us find our voice. We went from generic to unforgettable in just a few weeks."</p>
+                        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+                            <div class="w-10 h-10 bg-secondary rounded-full flex items-center justify-center text-white font-semibold text-sm">MR</div>
+                            <div>
+                                <p class="font-semibold text-sm text-ink">Marcus Rivera</p>
+                                <p class="text-xs text-gray-500">Founder, Brightpath</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 3 -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col">
+                        <div class="flex gap-1 mb-4">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <p class="text-gray-700 text-sm leading-relaxed flex-grow">"Working with Storyline was like having a creative partner who truly understood our vision. The results speak for themselves."</p>
+                        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+                            <div class="w-10 h-10 bg-success rounded-full flex items-center justify-center text-white font-semibold text-sm">AO</div>
+                            <div>
+                                <p class="font-semibold text-sm text-ink">Amara Okafor</p>
+                                <p class="text-xs text-gray-500">CEO, Nia Collective</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PRICING ===== -->
+        <section id="pricing" class="py-20 md:py-28">
+            <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-primary text-sm mb-3">✦ Chapter Six — The Investment</p>
+                    <h2 class="font-display text-4xl md:text-5xl text-ink">Simple pricing for every chapter</h2>
+                    <p class="text-gray-600 mt-4 text-lg">Choose the plan that fits your brand's story. No hidden fees, cancel anytime.</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+                    <!-- Starter -->
+                    <div class="bg-surface border border-gray-200 rounded-2xl p-8 flex flex-col">
+                        <h3 class="font-semibold text-lg text-ink">Starter</h3>
+                        <p class="text-gray-500 text-sm mt-1">For small teams</p>
+                        <p class="mt-6 flex items-baseline gap-1">
+                            <span class="font-display text-4xl text-ink">$29</span>
+                            <span class="text-gray-500 text-sm">/mo</span>
+                        </p>
+                        <ul class="mt-8 space-y-3 flex-grow">
+                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                1 project
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Basic analytics
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Email support
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                5 pages
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 border-2 border-gray-200 text-ink text-center px-6 py-3 rounded-full font-semibold hover:border-primary hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                            Start free trial
+                        </a>
+                    </div>
+
+                    <!-- Growth (Highlighted) -->
+                    <div class="bg-primary rounded-2xl p-8 flex flex-col relative shadow-xl shadow-primary/25 transform md:-translate-y-4">
+                        <div class="absolute top-4 right-4 bg-warning text-white text-xs font-bold px-3 py-1 rounded-full">Popular</div>
+                        <h3 class="font-semibold text-lg text-white">Growth</h3>
+                        <p class="text-white/70 text-sm mt-1">For growing brands</p>
+                        <p class="mt-6 flex items-baseline gap-1">
+                            <span class="font-display text-4xl text-white">$79</span>
+                            <span class="text-white/70 text-sm">/mo</span>
+                        </p>
+                        <ul class="mt-8 space-y-3 flex-grow">
+                            <li class="flex items-center gap-2 text-sm text-white/90">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                5 projects
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-white/90">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                Advanced analytics
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-white/90">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                Priority support
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-white/90">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                20 pages
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-white/90">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                Custom domains
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 bg-white text-primary text-center px-6 py-3 rounded-full font-semibold hover:bg-white/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2">
+                            Get started
+                        </a>
+                    </div>
+
+                    <!-- Enterprise -->
+                    <div class="bg-surface border border-gray-200 rounded-2xl p-8 flex flex-col">
+                        <h3 class="font-semibold text-lg text-ink">Enterprise</h3>
+                        <p class="text-gray-500 text-sm mt-1">For large organizations</p>
+                        <p class="mt-6 flex items-baseline gap-1">
+                            <span class="font-display text-4xl text-ink">Custom</span>
+                        </p>
+                        <ul class="mt-8 space-y-3 flex-grow">
+                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Unlimited projects
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Dedicated support
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Custom integrations
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                SLA &amp; onboarding
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 border-2 border-gray-200 text-ink text-center px-6 py-3 rounded-full font-semibold hover:border-primary hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                            Contact sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section id="faq" class="py-20 md:py-28 bg-gray-50">
+            <div class="max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <p class="font-mono text-primary text-sm mb-3">✦ Chapter Seven — The Q&amp;A</p>
+                    <h2 class="font-display text-4xl md:text-5xl text-ink">Frequently asked questions</h2>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- FAQ 1 -->
+                    <details class="bg-white rounded-2xl border border-gray-100 shadow-sm group">
+                        <summary class="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl">
+                            <span class="font-semibold text-ink">What is Storyline?</span>
+                            <span class="faq-icon w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="plus" class="w-4 h-4 text-primary"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-gray-600 text-sm leading-relaxed">
+                            Storyline is a platform that helps brands craft narrative-driven digital experiences. We provide the tools, frameworks, and guidance to turn your website into a compelling story that connects with your audience.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 2 -->
+                    <details class="bg-white rounded-2xl border border-gray-100 shadow-sm group">
+                        <summary class="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl">
+                            <span class="font-semibold text-ink">How does the storytelling approach work?</span>
+                            <span class="faq-icon w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="plus" class="w-4 h-4 text-primary"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-gray-600 text-sm leading-relaxed">
+                            We use proven narrative frameworks — like the hero's journey and the three-act structure — to organize your content into a cohesive story. This makes your website feel more engaging and guides users naturally toward conversion.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 3 -->
+                    <details class="bg-white rounded-2xl border border-gray-100 shadow-sm group">
+                        <summary class="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl">
+                            <span class="font-semibold text-ink">Can I migrate from my current platform?</span>
+                            <span class="faq-icon w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="plus" class="w-4 h-4 text-primary"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-gray-600 text-sm leading-relaxed">
+                            Absolutely. We offer migration tools and dedicated support to help you move your existing content seamlessly. Most teams are fully migrated within a week.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 4 -->
+                    <details class="bg-white rounded-2xl border border-gray-100 shadow-sm group">
+                        <summary class="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl">
+                            <span class="font-semibold text-ink">Do you offer custom plans?</span>
+                            <span class="faq-icon w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="plus" class="w-4 h-4 text-primary"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-gray-600 text-sm leading-relaxed">
+                            Yes, our Enterprise tier is fully customizable. We'll work with you to design a plan that fits your specific needs, including custom integrations, dedicated support, and more.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 5 -->
+                    <details class="bg-white rounded-2xl border border-gray-100 shadow-sm group">
+                        <summary class="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl">
+                            <span class="font-semibold text-ink">What kind of support do you provide?</span>
+                            <span class="faq-icon w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="plus" class="w-4 h-4 text-primary"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-gray-600 text-sm leading-relaxed">
+                            All plans include email support. Growth and Enterprise plans include priority support with faster response times. Enterprise also includes a dedicated account manager.
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-ink text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-12">
+                <!-- Brand -->
+                <div class="md:col-span-1">
+                    <a href="#" class="flex items-center gap-2 mb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
+                        <span class="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
+                            <i data-lucide="book-open" class="w-5 h-5 text-white"></i>
+                        </span>
+                        <span class="font-display text-2xl">Storyline</span>
+                    </a>
+                    <p class="text-white/60 text-sm leading-relaxed">Crafting narrative-driven digital experiences that connect brands with their audiences.</p>
+                </div>
+
+                <!-- Product -->
+                <div>
+                    <h3 class="font-semibold text-sm text-white mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Features</a></li>
+                        <li><a href="#pricing" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Pricing</a></li>
+                        <li><a href="#process" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">How it works</a></li>
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Changelog</a></li>
+                    </ul>
+                </div>
+
+                <!-- Company -->
+                <div>
+                    <h3 class="font-semibold text-sm text-white mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">About us</a></li>
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Blog</a></li>
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Careers</a></li>
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Resources -->
+                <div>
+                    <h3 class="font-semibold text-sm text-white mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Documentation</a></li>
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">API reference</a></li>
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Community</a></li>
+                        <li><a href="#" class="text-white/60 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-white/40 text-sm">© 2025 Storyline. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" aria-label="Twitter" class="text-white/40 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md p-1">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" aria-label="LinkedIn" class="text-white/40 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md p-1">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" aria-label="GitHub" class="text-white/40 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md p-1">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

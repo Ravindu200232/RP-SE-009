@@ -1,32 +1,36 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
-  ArrowLeft, ArrowUp, Check, FileDown, History, ListTree, Loader2, RotateCcw,
-  Square,
+  ArrowLeft, Check, FileDown, ListTree, Loader2, RotateCcw, Square, Trash2,
 } from 'lucide-react'
 import { api, API } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { loadSrsView, srsViewFromVersion } from '@/lib/srs-view'
-import { Badge, Button, Empty, SubTab, SubTabs, Tag, TextArea } from '../ui'
+import { Badge, Button, Empty, SubTab, SubTabs, Tag } from '../ui'
 import { VIEWS, badgeFor } from './views'
+import { WireframeEditor } from './Wireframes'
+import { SrsRevisions } from './SrsRevisions'
 import { cn } from '@/lib/utils'
 
-export default function SrsReview({ projectId, onApproved, onBack }) {
+export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
   const addLog = useStore(s => s.addLog)
+  const [handoffs, setHandoffs] = useState({})
+  const [handoffOpen, setHandoffOpen] = useState('')
   const [srs, setSrs] = useState(null)
   const [state, setState] = useState('loading')
   const [error, setError] = useState('')
-  const [sub, setSub] = useState('document')
+  const [sub, setSub] = useState('overview')
   const [specOpen, setSpecOpen] = useState(false)
   const [asking, setAsking] = useState(false)
+  const [editingWireframe, setEditingWireframe] = useState(null)
 
-  const [prompt, setPrompt] = useState('')
-  const [thread, setThread] = useState([])
+
   const [busy, setBusy] = useState('')
-  const [waited, setWaited] = useState(0)
   const [viewing, setViewing] = useState(null)
-  const box = useRef(null)
+  // What the editor said it changed, kept for the summary panel on the right.
+  // The revision itself lives in `SrsRevisions`, which owns the composer.
+  const [lastChange, setLastChange] = useState('')
 
   /** Throw this specification away and leave. */
   async function discard() {
@@ -45,9 +49,19 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
   async function load() {
     setState('loading')
     try {
-      setSrs(await loadSrsView(projectId))
+      await api.resumeSrs(`/projects/${projectId}/customize`)
+      const [spec, handoff] = await Promise.all([loadSrsView(projectId), api.srs(`/projects/${projectId}/agent-handoff`)])
+      setSrs(spec)
+      setHandoffs(handoff.files || {})
       setState('ready')
     } catch (e) {
+      // Clear stale project ID and navigate back when the specification is not found on this machine.
+      if (e.status === 404 || /not found/i.test(e.message || '')) {
+        addLog('WARN', 'that specification is no longer on this machine')
+        useStore.getState().resetSrs()
+        onBack?.()
+        return
+      }
       setError(e.message)
       setState('error')
     }
@@ -55,48 +69,17 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
 
   useEffect(() => { load()  }, [projectId])
 
-  useEffect(() => {
-    if (!busy) return
-    setWaited(0)
-    const t = setInterval(() => setWaited(w => w + 1), 1000)
-    return () => clearInterval(t)
-  }, [busy])
 
-  async function revise() {
-    const text = prompt.trim()
-    if (!text || busy) return
-    setPrompt('')
-    setViewing(null)
-    setThread(t => [...t, { role: 'you', text }])
-    setBusy('revising')
-    setError('')
-    try {
-      const r = await api.srs(`/projects/${projectId}/customize`, { prompt: text })
-      const said = r?.diff_summary || []
-      setThread(t => [...t, {
-        role: 'srs',
-        text: said.length ? said.join('\n') : 'The specification was updated.',
-        version: r?.version,
-      }])
-      addLog('INFO', `SRS revised — v${r?.version || '?'}`)
-      await load()
-    } catch (e) {
-      setThread(t => [...t, { role: 'error', text: e.message }])
-    } finally {
-      setBusy('')
-    }
-  }
 
+  /** Approve the specification and proceed directly to build. */
   async function approve() {
     setBusy('approving')
     setError('')
     try {
       await api.srs(`/projects/${projectId}/approve`, {})
-      const handoff = await api.srs(`/projects/${projectId}/builder-handoff`)
-      const text = (handoff?.prompt || '').trim()
-      if (!text) throw new Error('the SRS produced no builder prompt')
-      addLog('INFO', `SRS approved — ${(handoff.requirements || []).length} requirements`)
-      onApproved?.(text, projectId)
+      addLog('INFO', 'SRS and agent handoffs approved - customize the design next')
+      setBusy('')
+      onApproved?.('Use the approved SRS handoff files.', projectId)
     } catch (e) {
       setError(e.message)
       setBusy('')
@@ -115,187 +98,152 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
   const View = (VIEWS.find(v => v.id === sub) || VIEWS[0]).C
 
   const counts = viewing ? countOf(viewing.document) : (srs?.summary || {})
-  const versions = srs?.versions || []
 
   const approved = srs?.status === 'approved'
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_top_right,rgba(93,106,251,.07),transparent_30%)]">
-      <div className="flex shrink-0 items-center gap-3 px-6 py-4">
+    <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_top_right,rgba(24,119,242,.1),transparent_35%)] text-ink">
+
+      <div className="flex shrink-0 items-center gap-3 border-b border-line px-6 py-3.5 backdrop-blur-md">
         <button onClick={onBack}
-                className="flex items-center gap-1 text-[11px] text-muted2 hover:text-ink">
+                className="flex items-center gap-1.5 rounded-lg border border-line bg-panel2/60 px-2.5 py-1 text-[11.5px] font-medium text-muted hover:bg-raised hover:text-ink transition cursor-pointer">
           <ArrowLeft className="size-3" /> Plan
         </button>
         <div className="min-w-0">
-          <p className="truncate font-display text-[13px] font-bold text-ink">
+          <p className="truncate font-display text-[14px] font-bold text-ink">
             {srs?.document?.project_name || srs?.document?.document_title || 'Specification'}
           </p>
         </div>
-        {srs?.version && <Tag>v{srs.version}</Tag>}
+        {srs?.version && <Tag tone="accent">v{srs.version}</Tag>}
         {approved && <Tag tone="solid">approved</Tag>}
         <span className="flex-1" />
         {viewing ? (
           <span title="The PDF is only produced for the current version"
-                className="flex h-[30px] cursor-not-allowed items-center gap-1.5
-                           border border-line2 px-3 font-display text-[12px]
-                           font-extrabold text-muted2 opacity-50">
-            <FileDown className="size-3" /> PDF
+                className="flex h-[32px] cursor-not-allowed items-center gap-1.5
+                           rounded-xl border border-line px-3 font-display text-[11.5px]
+                           font-semibold text-muted2 opacity-50">
+            <FileDown className="size-3.5" /> PDF
           </span>
         ) : (
           <a href={`${API}/srs/projects/${encodeURIComponent(projectId)}/download/pdf`}
              target="_blank" rel="noreferrer"
-             className="flex h-9 items-center gap-1.5 rounded-full bg-white/70 px-3.5
-                        text-[11px] font-semibold text-ink shadow-sm ring-1 ring-line/70
-                        transition hover:bg-white dark:bg-white/[.05]">
-            <FileDown className="size-3" /> PDF
+             className="flex h-[32px] items-center gap-1.5 rounded-xl border border-line bg-panel2/60 px-3.5
+                        text-[11.5px] font-semibold text-ink shadow-sm
+                        transition hover:bg-raised">
+            <FileDown className="size-3.5 text-accent" /> PDF
           </a>
         )}
 
-        <Button variant="solid" className="h-9 rounded-full px-4"
+        <Button variant="solid" className="h-[32px] rounded-xl bg-accent px-4 text-[12px] font-semibold text-white shadow-sm hover:bg-press cursor-pointer"
                 disabled={Boolean(busy) || Boolean(viewing)}
                 title={viewing ? 'Go back to the latest revision to approve it.'
-                               : 'Nothing is written until you press this.'}
+                               : 'Approve specification and customize the design.'}
                 onClick={approve}>
           {busy === 'approving'
-            ? <><Loader2 className="size-3.5 animate-spin" /> Starting…</>
-            : <><Check className="size-3.5" /> Approve and build</>}
+            ? <><Loader2 className="size-3.5 animate-spin" /> Approving…</>
+            : <><Check className="size-3.5" /> Approve</>}
         </Button>
 
         {asking ? (
           <span className="flex items-center gap-1.5">
-            <span className="text-[10.5px] text-muted">Discard it?</span>
-            <Button variant="solid" className="h-9 rounded-full bg-bad px-3.5 hover:brightness-110"
+            <span className="text-[11px] text-muted">Discard it?</span>
+            <Button variant="solid" className="h-[32px] rounded-xl bg-bad px-3.5 hover:brightness-110"
                     disabled={busy === 'discarding'} onClick={discard}>
               {busy === 'discarding'
                 ? <><Loader2 className="size-3.5 animate-spin" /> Discarding…</>
                 : 'Yes'}
             </Button>
-            <Button variant="outline" className="h-9 rounded-full px-3.5"
+            <Button variant="outline" className="h-[32px] rounded-xl border-line bg-panel2/60 px-3 text-ink hover:bg-raised"
                     disabled={busy === 'discarding'} onClick={() => setAsking(false)}>
               Keep it
             </Button>
           </span>
         ) : (
-          <Button variant="outline" className="h-9 rounded-full px-3.5"
-                  disabled={Boolean(busy)} onClick={() => setAsking(true)}
-                  title="Throw this specification away and start over">
-            <Square className="size-3" /> Cancel
-          </Button>
+          <button onClick={() => setAsking(true)}
+                  title="Throw this specification away and start fresh"
+                  className="grid size-[32px] place-items-center rounded-xl border border-line text-muted2 transition hover:bg-bad/10 hover:border-bad/30 hover:text-bad cursor-pointer">
+            <Trash2 className="size-3.5" />
+          </button>
         )}
 
         <button onClick={() => setSpecOpen(v => !v)}
                 title="The specification at a glance"
-                className={cn('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[11px] font-semibold shadow-sm ring-1 transition',
-                  specOpen ? 'bg-accent text-white ring-accent'
-                           : 'bg-white/70 text-ink ring-line/70 hover:bg-white dark:bg-white/[.05]')}>
-          <ListTree className="size-3" /> Specification
+                className={cn('flex h-[32px] items-center gap-1.5 rounded-xl px-3.5 text-[11.5px] font-semibold transition cursor-pointer',
+                  specOpen ? 'bg-accent text-white shadow-sm'
+                           : 'border border-line bg-panel2/60 text-ink hover:bg-raised')}>
+          <ListTree className="size-3.5" /> Specification
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 gap-4 px-5 pb-5">
-        <aside className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[24px] bg-white/62 shadow-[0_16px_42px_rgba(15,23,42,.06)] ring-1 ring-line/70 backdrop-blur-xl dark:bg-white/[.035]">
-          <div className="flex items-center gap-2 px-4 py-3.5">
-            <History className="size-3 text-label" />
-            <span className="label-xs text-ink">Revisions</span>
-            <span className="flex-1" />
-            <span className="font-mono text-[10px] text-muted2">{versions.length}</span>
-          </div>
+      <div className="border-b border-line px-6 py-3">
+        <p className="mb-2 text-xs text-muted">Generated by the SRS agent - review the handoffs before approval</p>
+        <div className="flex flex-wrap gap-2">{Object.keys(handoffs).map(name => <button key={name} onClick={() => setHandoffOpen(handoffOpen === name ? '' : name)} className="rounded-lg border border-line bg-panel2/60 px-3 py-1 text-xs text-ink hover:bg-raised cursor-pointer">{name}</button>)}</div>
+        {handoffOpen && <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-panel2/80 p-4 text-xs text-ink border border-line">{handoffs[handoffOpen]}</pre>}
+      </div>
+      <div className="flex min-h-0 flex-1 gap-4 p-5">
+        {sub === 'wireframe' && editingWireframe ? (
+          <WireframeEditor
+            owner={projectId}
+            page={editingWireframe}
+            onClose={() => setEditingWireframe(null)}
+            onSaved={() => {
+              setEditingWireframe(null)
+              load()
+            }}
+          />
+        ) : (
+          <>
+            {/* The same panel the workspace shows. Nothing here is specific to
+                reviewing: it is the specification's history either way. */}
+            <SrsRevisions srsId={projectId}
+              className="w-[270px] shrink-0 rounded-2xl border border-line bg-panel shadow-xl backdrop-blur-xl"
+              current={viewing?.version || srs?.version}
+              onPickVersion={v => setViewing(v ? srsViewFromVersion(v, projectId) : null)}
+              onRevised={answer => {
+                const said = answer?.diff_summary || []
+                setLastChange(said.length ? said.join('\n') : 'The specification was updated.')
+                return load()
+              }} />
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {versions.map((v, i) => (
-              <button key={v.id || i}
-                      onClick={() => setViewing(
-                        i === versions.length - 1 ? null
-                          : srsViewFromVersion(v, projectId))}
-                      className={cn('mx-2 mb-1 w-[calc(100%-16px)] rounded-[14px] px-3 py-2 text-left transition-all',
-                        (viewing?.version || srs?.version) === v.version
-                          ? 'bg-accent/[.09] ring-1 ring-accent/15'
-                          : 'hover:bg-black/[.035] dark:hover:bg-white/[.045]')}>
-                <span className="font-mono text-[10px] text-accent">v{v.version}</span>
-                <span className="mt-0.5 block text-[11px] leading-snug text-muted">
-                  {v.label || 'Revision'}
-                </span>
-              </button>
-            ))}
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/90 shadow-2xl backdrop-blur-xl">
+              <SubTabs>
+                {VIEWS.map(v => {
+                  const badge = badgeFor(v.id, shown)
+                  return (
+                    <SubTab key={v.id} on={sub === v.id} onClick={() => { setSub(v.id); setEditingWireframe(null); }}>
+                      {v.label}
+                      {badge && <Badge tone={badge.bad ? 'bad' : 'mute'}>{badge.n}</Badge>}
+                    </SubTab>
+                  )
+                })}
+              </SubTabs>
 
-            {thread.map((m, i) => (
-              <div key={`t${i}`}
-                   className={cn('mx-2 mb-2 rounded-[16px] px-3 py-2.5 text-[11px] leading-relaxed',
-                     m.role === 'you' ? 'ml-8 bg-accent text-white'
-                       : m.role === 'error'
-                         ? 'bg-warn-tint text-warn'
-                         : 'bg-black/[.025] text-muted dark:bg-white/[.035]')}>
-                {m.role === 'you' && <span className="text-muted2">you — </span>}
-                {m.text}
+              {viewing && (
+                <div className="mx-4 mt-3 flex shrink-0 items-center gap-2 rounded-[16px] bg-accent/[.08] px-4 py-2">
+                  <span className="text-[11px] text-deep">
+                    Showing v{viewing.version} — an earlier revision, read only.
+                  </span>
+                  <span className="flex-1" />
+                  <Button variant="outline" onClick={() => setViewing(null)}>
+                    <RotateCcw className="size-3" /> Back to the latest
+                  </Button>
+                </div>
+              )}
+
+              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                {shown?.have && Object.values(shown.have).some(Boolean)
+                  ? <View srs={shown} onSelectView={setSub} onEditPage={setEditingWireframe} />
+                  : <Empty>Nothing was written for this version.</Empty>}
               </div>
-            ))}
-
-            {busy === 'revising' && (
-              <div className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-muted">
-                <Loader2 className="size-3 animate-spin" />
-                Rewriting the specification… {waited}s
-              </div>
-            )}
-          </div>
-
-          <div className="m-2 rounded-[18px] bg-white/70 p-2 shadow-sm ring-1 ring-line/70 dark:bg-white/[.035]">
-            <TextArea value={prompt} rows={3} ref={box} disabled={Boolean(busy)}
-                      placeholder="Describe a change — “add a refunds page only the manager can open”…"
-                      onChange={e => setPrompt(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) revise()
-                      }}
-                      className="w-full resize-none bg-transparent p-2 text-[12px]
-                                 leading-relaxed text-ink outline-none
-                                 placeholder:text-muted2 disabled:opacity-50" />
-            <div className="flex items-center gap-2 px-1">
-              <span className="flex-1 font-mono text-[9.5px] text-muted2">
-                the diagrams update too
-              </span>
-              <Button variant="solid" size="icon"
-                      disabled={!prompt.trim() || Boolean(busy)} onClick={revise}>
-                <ArrowUp className="size-3.5" />
-              </Button>
             </div>
-          </div>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[26px] bg-white/58 shadow-[0_18px_48px_rgba(15,23,42,.06)] ring-1 ring-line/70 backdrop-blur-xl dark:bg-white/[.028]">
-          <SubTabs>
-            {VIEWS.map(v => {
-              const badge = badgeFor(v.id, shown)
-              return (
-                <SubTab key={v.id} on={sub === v.id} onClick={() => setSub(v.id)}>
-                  {v.label}
-                  {badge && <Badge tone={badge.bad ? 'bad' : 'mute'}>{badge.n}</Badge>}
-                </SubTab>
-              )
-            })}
-          </SubTabs>
-
-          {viewing && (
-            <div className="mx-4 mt-3 flex shrink-0 items-center gap-2 rounded-[16px] bg-accent/[.08] px-4 py-2">
-              <span className="text-[11px] text-deep">
-                Showing v{viewing.version} — an earlier revision, read only.
-              </span>
-              <span className="flex-1" />
-              <Button variant="outline" onClick={() => setViewing(null)}>
-                <RotateCcw className="size-3" /> Back to the latest
-              </Button>
-            </div>
-          )}
-
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
-            {shown?.have && Object.values(shown.have).some(Boolean)
-              ? <View srs={shown} />
-              : <Empty>Nothing was written for this version.</Empty>}
-          </div>
-        </div>
+          </>
+        )}
 
         <aside className={cn('flex shrink-0 flex-col overflow-hidden rounded-[24px]',
           'bg-white/62 shadow-[0_16px_42px_rgba(15,23,42,.06)] ring-1 ring-line/70',
           'backdrop-blur-xl transition-[width,opacity] duration-300 dark:bg-white/[.035]',
-          specOpen ? 'w-[280px] opacity-100' : 'pointer-events-none w-0 opacity-0 ring-0')}>
+          specOpen && !(sub === 'wireframe' && editingWireframe) ? 'w-[280px] opacity-100' : 'pointer-events-none w-0 opacity-0 ring-0')}>
+
           <div className="min-h-0 w-[280px] flex-1 overflow-y-auto p-3">
             <p className="label-xs mb-3 text-ink">
               The specification
@@ -327,16 +275,16 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
               )}
             </div>
 
-            {thread.filter(m => m.role === 'srs').slice(-1).map((m, i) => (
-              <div key={i} className="mt-5">
+            {lastChange && (
+              <div className="mt-5">
                 <p className="label-xs mb-2 text-ink">
                   What changed, as the editor described it
                 </p>
                 <p className="whitespace-pre-wrap text-[11.5px] leading-relaxed text-muted">
-                  {m.text}
+                  {lastChange}
                 </p>
               </div>
-            ))}
+            )}
 
             <p className="mt-4 text-[10.5px] leading-relaxed text-muted2">
               The “Approved Plan” pane shows the plan you signed off. It stays

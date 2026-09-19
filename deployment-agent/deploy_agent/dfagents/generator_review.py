@@ -78,6 +78,10 @@ class GeneratorReviewMixin:
         target: DeploymentTarget = DeploymentTarget.AWS_EC2,
     ) -> str:
         service = spec.services[0]
+        framework = (
+            f"Next.js `{service.version}`" if service.framework == "nextjs"
+            else f"{service.framework.title()} `{service.version}`, {len(spec.services)} services from one workspace"
+        )
         env_names = ", ".join(item.name for item in service.environment) or "None detected"
         risks = "\n".join(f"- {item}" for item in plan.risks) or "- No model risks reported."
         recommendations = "\n".join(f"- {item}" for item in plan.recommendations) or "- Use the generated review checks."
@@ -87,8 +91,19 @@ class GeneratorReviewMixin:
                 "- No cloud access keys or provider tokens are written to GitHub; "
                 "Actions authenticates through OIDC.\n"
                 "- Provider credentials are kept only in the in-memory credential vault.\n"
-                "- The instance security group exposes port 80 only; the Next.js process listens on loopback."
+                "- The instance security group exposes port 80 only; the application listens on loopback."
             )
+        elif target in {DeploymentTarget.NETLIFY, DeploymentTarget.AZURE}:
+            provider = profile_for(target).label
+            database_note = f"Runtime database settings written directly to {provider}"
+            security_notes = (
+                f"- Provider credentials are encrypted in the owner's account and stored as GitHub Actions secrets for {provider}.\n"
+                "- Application environment values stay on the selected cloud application; generated artifacts contain names only.\n"
+                "- Repairs operate in an isolated copy and preserve the recorded project resources."
+            )
+        elif target == DeploymentTarget.AWS_ECS:
+            database_note = "MongoDB Atlas URI written directly to AWS Secrets Manager"
+            security_notes = "- GitHub Actions uses OIDC; application secrets come from Secrets Manager.\n- Fargate runs the project's services in its recorded task."
         else:
             database_note = "MongoDB Atlas URI set as a Vercel production environment variable"
             security_notes = (
@@ -106,8 +121,8 @@ class GeneratorReviewMixin:
             - Project: `{spec.name}`
             - Primary service: `{service.name}`
             - Detected root: `{service.root or '.'}`
-            - Framework: Next.js `{service.version}`
-            - Target: {f"AWS EC2 ({(plan.aws_sizing or {}).get('instance_type', 't3.micro')}) behind nginx, released from S3 via SSM" if target == DeploymentTarget.AWS_EC2 else "Vercel production deployment"}
+            - Framework: {framework}
+            - Target: {profile_for(target).label} production deployment
             - Database: {database_note}
             - Readiness: **{readiness['score']}/100** (review phase)
             - Required environment variables: {env_names}

@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "name": "html-prototype",
+      "match": [
+        "prototype",
+        "drawing",
+        "mockup",
+        "wireframe",
+        "html prototype"
+      ],
+      "verificationPhases": []
+    },
+    {
+      "name": "stack-nextjs",
+      "match": [
+        "next.js",
+        "nextjs",
+        "app router",
+        "mongodb",
+        "mongoose"
+      ],
+      "stacks": [
+        "nextjs-mongo"
+      ],
+      "verificationPhases": [
+        "runtime"
+      ]
+    },
+    {
+      "name": "stack-mern",
+      "match": [
+        "mern",
+        "express",
+        "microservice",
+        "microservices",
+        "api gateway"
+      ],
+      "stacks": [
+        "mern-microservices"
+      ],
+      "verificationPhases": [
+        "runtime"
+      ]
+    },
+    {
+      "name": "stack-remix",
+      "match": [
+        "remix",
+        "remix.run",
+        "loader",
+        "action",
+        "useLoaderData",
+        "route module",
+        "nested routes"
+      ],
+      "stacks": [
+        "remix-mongo"
+      ]
+    },
+    {
+      "name": "stack-testing",
+      "match": [
+        "test",
+        "tests",
+        "testing",
+        "vitest",
+        "playwright",
+        "e2e",
+        "coverage"
+      ],
+      "verificationPhases": [
+        "unit",
+        "e2e"
+      ]
+    },
+    {
+      "name": "stack-debug",
+      "match": [
+        "build error",
+        "fix",
+        "failing",
+        "debug",
+        "error",
+        "stack trace"
+      ],
+      "verificationPhases": []
+    },
+    {
+      "name": "stack-security",
+      "match": [
+        "security",
+        "hardening",
+        "owasp",
+        "audit",
+        "authentication",
+        "authorisation"
+      ],
+      "verificationPhases": []
+    },
+    {
+      "name": "payments",
+      "match": [
+        "payment",
+        "payments",
+        "pay",
+        "paying",
+        "checkout",
+        "card",
+        "stripe",
+        "payhere",
+        "billing",
+        "invoice",
+        "subscription",
+        "subscriptions",
+        "donation",
+        "deposit",
+        "refund",
+        "refunds",
+        "payment gateway",
+        "online payment",
+        "gewuma",
+        "gevima"
+      ],
+      "verificationPhases": []
+    },
+    {
+      "name": "image-uploads",
+      "match": [
+        "image upload",
+        "image uploads",
+        "upload image",
+        "upload images",
+        "photo upload",
+        "upload photo",
+        "upload photos",
+        "picture upload",
+        "file upload",
+        "uploads",
+        "cloudinary",
+        "gallery",
+        "profile photo",
+        "avatar",
+        "attachment",
+        "attachments"
+      ],
+      "verificationPhases": []
+    },
+    {
+      "name": "social-signin",
+      "match": [
+        "google sign in",
+        "google signin",
+        "sign in with google",
+        "github sign in",
+        "sign in with github",
+        "facebook login",
+        "sign in with facebook",
+        "microsoft sign in",
+        "entra",
+        "social login",
+        "oauth",
+        "single sign on",
+        "sso"
+      ]
+    },
+    {
+      "name": "notifications",
+      "match": [
+        "email",
+        "emails",
+        "e mail",
+        "mail",
+        "notification",
+        "notifications",
+        "notify",
+        "sms",
+        "text message",
+        "otp",
+        "resend",
+        "twilio",
+        "reminder",
+        "reminders",
+        "confirmation email",
+        "alert",
+        "alerts"
+      ],
+      "verificationPhases": []
+    },
+    {
+      "name": "scoped-change-tests",
+      "match": [
+        "add this to the existing application",
+        "next request in this project conversation",
+        "apply this change to your own artifact",
+        "apply that revision to your own artifact"
+      ],
+      "verificationPhases": [
+        "unit",
+        "e2e"
+      ]
+    },
+    {
+      "name": "maps",
+      "match": [
+        "map",
+        "maps",
+        "google map",
+        "google maps",
+        "mapbox",
+        "location",
+        "locations",
+        "geocode",
+        "geocoding",
+        "directions",
+        "nearby",
+        "address search",
+        "pin on a map",
+        "branch locator",
+        "store locator"
+      ]
+    },
+    {
+      "name": "analytics",
+      "match": [
+        "analytics",
+        "google analytics",
+        "posthog",
+        "plausible",
+        "tracking",
+        "page views",
+        "funnel",
+        "conversion tracking",
+        "usage statistics",
+        "measure usage"
+      ]
+    }
+  ]
+}

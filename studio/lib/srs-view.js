@@ -1,9 +1,10 @@
 import { api } from '@/lib/api'
 import { guideForDiagram } from '@/lib/diagram-guide'
 
-function diagramRows(rows) {
+// Normalize diagram artifacts across sidecar outputs and on-disk server representations.
+export function diagramRows(rows) {
   return (rows || [])
-    .filter(d => d && (d.source || d.svg))
+    .filter(d => d && (d.source || d.mermaid || d.svg))
     .map(d => {
       const name = d.kind || d.name || 'diagram'
       const guide = guideForDiagram(name)
@@ -12,17 +13,20 @@ function diagramRows(rows) {
       title: d.title || name.replaceAll('_', ' '),
       question: d.question || guide.question,
       definition: d.definition || guide.definition,
+      businessSummary: d.business_summary || d.businessSummary || guide.businessSummary || guide.definition,
+      flowExplanation: d.flow_explanation || d.flowExplanation || guide.flowExplanation || [],
+      keyTakeaways: d.key_takeaways || d.keyTakeaways || guide.keyTakeaways || [],
       drawingRules: d.drawing_rules || d.drawingRules || guide.drawingRules,
       notation: d.notation || guide.notation,
       standard: d.standard || '',
       applicable: d.applicable !== false,
-      applicabilityNote: d.applicability_note || '',
+      applicabilityNote: d.applicability_note || d.applicabilityNote || '',
       mermaid: d.source || d.mermaid || '',
 
       svg: d.svg || '',
-      png: Boolean(d.png_path),
+      png: Boolean(d.png_path || d.png),
 
-      rendered: Boolean(d.svg || d.svg_path || d.png_path),
+      rendered: Boolean(d.svg || d.svg_path || d.png_path || d.png),
     }})
 }
 

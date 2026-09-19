@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful — Design System in Action</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .gradient-primary {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+        }
+        .gradient-hero {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #D97706 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .shadow-glow {
+            box-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
+        }
+        .focus-ring:focus-visible {
+            outline: 3px solid #3B82F6;
+            outline-offset: 2px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; animation: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-white text-[#111827] antialiased">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
+                        <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <span class="font-bold text-lg">Colorful</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium hover:text-[#3B82F6] focus-ring rounded px-2 py-1">Features</a>
+                    <a href="#process" class="text-sm font-medium hover:text-[#3B82F6] focus-ring rounded px-2 py-1">Process</a>
+                    <a href="#benefits" class="text-sm font-medium hover:text-[#3B82F6] focus-ring rounded px-2 py-1">Benefits</a>
+                    <a href="#pricing" class="text-sm font-medium hover:text-[#3B82F6] focus-ring rounded px-2 py-1">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium hover:text-[#3B82F6] focus-ring rounded px-2 py-1">FAQ</a>
+                </div>
+                <button class="gradient-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 focus-ring transition">
+                    Get Started
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="gradient-hero text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur rounded-full px-4 py-2 mb-6">
+                        <span class="w-2 h-2 bg-[#D97706] rounded-full"></span>
+                        <span class="text-sm font-medium">v2.0 Now Available</span>
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
+                        Design with<br>
+                        <span class="text-[#D97706]">Vibrant</span> Confidence
+                    </h1>
+                    <p class="text-lg text-white/90 mb-8 max-w-lg">
+                        Build unforgettable digital experiences with our high-contrast, playful design system. Perfect for modern products that want to stand out.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button class="bg-white text-[#111827] px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 focus-ring transition">
+                            Start Building Free
+                        </button>
+                        <button class="border-2 border-white/30 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/10 focus-ring transition">
+                            View Documentation
+                        </button>
+                    </div>
+                </div>
+                <div class="relative hidden lg:block">
+                    <div class="absolute inset-0 bg-white/10 rounded-2xl transform rotate-3"></div>
+                    <div class="relative bg-white/10 backdrop-blur rounded-2xl p-8 shadow-glow">
+                        <div class="flex items-center gap-2 mb-6">
+                            <div class="w-3 h-3 bg-[#DC2626] rounded-full"></div>
+                            <div class="w-3 h-3 bg-[#D97706] rounded-full"></div>
+                            <div class="w-3 h-3 bg-[#16A34A] rounded-full"></div>
+                            <span class="ml-4 text-sm font-mono text-white/70">design-system.css</span>
+                        </div>
+                        <div class="space-y-4 font-mono text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[#D97706]">$</span>
+                                <span class="text-white/80">color-primary: #3B82F6;</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[#D97706]">$</span>
+                                <span class="text-white/80">color-secondary: #8B5CF6;</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[#D97706]">$</span>
+                                <span class="text-white/80">spacing-unit: 8px;</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[#D97706]">$</span>
+                                <span class="text-white/80">font-primary: Inter;</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[#D97706]">$</span>
+                                <span class="text-white/80">font-mono: JetBrains Mono;</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="bg-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-4xl font-extrabold text-[#3B82F6] mb-2">10K+</div>
+                    <div class="text-sm text-gray-600 font-medium">Active Users</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-extrabold text-[#8B5CF6] mb-2">500+</div>
+                    <div class="text-sm text-gray-600 font-medium">Components</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-extrabold text-[#16A34A] mb-2">99.9%</div>
+                    <div class="text-sm text-gray-600 font-medium">Uptime</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-extrabold text-[#D97706] mb-2">4.9/5</div>
+                    <div class="text-sm text-gray-600 font-medium">User Rating</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="bg-gray-50 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-extrabold mb-4">Powerful Features</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Everything you need to create stunning, accessible interfaces with confidence.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <div class="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Vibrant Tokens</h3>
+                    <p class="text-gray-600">Semantic color tokens with high contrast ratios, tested against WCAG 2.2 AA standards.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <div class="w-12 h-12 bg-[#8B5CF6] rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="type" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Flexible Typography</h3>
+                    <p class="text-gray-600">Inter and JetBrains Mono with 9 weights each, perfectly tuned for readability.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <div class="w-12 h-12 bg-[#16A34A] rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="accessibility" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Accessible First</h3>
+                    <p class="text-gray-600">Keyboard-first interactions, visible focus states, and reduced-motion support built-in.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <div class="w-12 h-12 bg-[#D97706] rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="grid" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">8pt Grid</h3>
+                    <p class="text-gray-600">Consistent 8pt baseline grid for perfect spacing across all breakpoints.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <div class="w-12 h-12 bg-[#DC2626] rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Lightning Fast</h3>
+                    <p class="text-gray-600">Optimized CSS with zero runtime dependencies. Load in under 10KB gzipped.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <div class="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="smartphone" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Fully Responsive</h3>
+                    <p class="text-gray-600">From 400px mobile to 4K displays, every component adapts flawlessly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="bg-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-extrabold mb-4">Our Process</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">A proven methodology that delivers exceptional results every time.</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="relative">
+                    <div class="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-2xl font-extrabold text-white">01</span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Discover</h3>
+                    <p class="text-gray-600">Deep dive into your needs, users, and goals to define clear objectives.</p>
+                </div>
+                <div class="relative">
+                    <div class="w-16 h-16 bg-[#8B5CF6] rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-2xl font-extrabold text-white">02</span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Design</h3>
+                    <p class="text-gray-600">Create wireframes and prototypes with our vibrant design system.</p>
+                </div>
+                <div class="relative">
+                    <div class="w-16 h-16 bg-[#16A34A] rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-2xl font-extrabold text-white">03</span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Develop</h3>
+                    <p class="text-gray-600">Build with clean, semantic code following accessibility standards.</p>
+                </div>
+                <div class="relative">
+                    <div class="w-16 h-16 bg-[#D97706] rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-2xl font-extrabold text-white">04</span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Launch</h3>
+                    <p class="text-gray-600">Deploy with confidence, backed by thorough testing and QA.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section id="benefits" class="gradient-primary text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl lg:text-4xl font-extrabold mb-6">Why Choose Colorful?</h2>
+                    <p class="text-lg text-white/90 mb-8">Join thousands of teams who've transformed their digital presence with our design system.</p>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-[#D97706] mt-1"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">Faster Development</h3>
+                                <p class="text-white/80">Reduce UI development time by 60% with ready-to-use components.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-[#D97706] mt-1"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">Consistent Branding</h3>
+                                <p class="text-white/80">Maintain visual consistency across all your products and platforms.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-[#D97706] mt-1"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">Accessibility Guaranteed</h3>
+                                <p class="text-white/80">Every component meets WCAG 2.2 AA standards out of the box.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-2xl p-8">
+                    <div class="text-center mb-6">
+                        <div class="text-5xl font-extrabold mb-2">98%</div>
+                        <div class="text-white/80">Customer Satisfaction</div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-white/10 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="flex text-[#D97706]">
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                </div>
+                                <span class="text-sm font-medium">5.0</span>
+                            </div>
+                            <p class="text-sm text-white/80">"Colorful transformed our product. The vibrant design system made us stand out instantly."</p>
+                        </div>
+                        <div class="bg-white/10 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="flex text-[#D97706]">
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                </div>
+                                <span class="text-sm font-medium">5.0</span>
+                            </div>
+                            <p class="text-sm text-white/80">"The accessibility features are incredible. Our audit scores improved dramatically."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="bg-gray-50 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-extrabold mb-4">Loved by Teams</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">See what our community says about Colorful.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-2xl border border-gray-100">
+                    <div class="flex text-[#D97706] mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"The gradient system is genius. Our product finally looks as modern as we feel."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 gradient-primary rounded-full flex items-center justify-center text-white font-bold">SM</div>
+                        <div>
+                            <div class="font-semibold">Sarah Mitchell</div>
+                            <div class="text-sm text-gray-500">Product Designer</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-2xl border border-gray-100">
+                    <div class="flex text-[#D97706] mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"Implementation was seamless. The tokens and components are incredibly well documented."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#8B5CF6] rounded-full flex items-center justify-center text-white font-bold">JK</div>
+                        <div>
+                            <div class="font-semibold">James Kim</div>
+                            <div class="text-sm text-gray-500">Frontend Engineer</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-2xl border border-gray-100">
+                    <div class="flex text-[#D97706] mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"Our conversion rate jumped 40% after redesigning with Colorful. The vibrant palette works."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#16A34A] rounded-full flex items-center justify-center text-white font-bold">EL</div>
+                        <div>
+                            <div class="font-semibold">Emily Lopez</div>
+                            <div class="text-sm text-gray-500">Growth Lead</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="bg-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-extrabold mb-4">Simple Pricing</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Choose the plan that fits your team's needs. No hidden fees, cancel anytime.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Starter -->
+                <div class="border-2 border-gray-100 rounded-2xl p-8 hover:border-[#3B82F6] transition">
+                    <h3 class="text-xl font-bold mb-2">Starter</h3>
+                    <p class="text-gray-600 mb-6">For individual developers</p>
+                    <div class="text-4xl font-extrabold mb-6">$0<span class="text-lg text-gray-500 font-normal">/mo</span></div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#16A34A]"></i>
+                            <span>Core components</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#16A34A]"></i>
+                            <span>Community support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#16A34A]"></i>
+                            <span>Basic tokens</span>
+                        </li>
+                    </ul>
+                    <button class="w-full border-2 border-[#3B82F6] text-[#3B82F6] px-6 py-3 rounded-lg font-semibold hover:bg-[#3B82F6] hover:text-white focus-ring transition">
+                        Get Started
+                    </button>
+                </div>
+                <!-- Pro -->
+                <div class="gradient-primary text-white rounded-2xl p-8 shadow-glow relative">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-[#D97706] text-white px-4 py-1 rounded-full text-sm font-semibold">
+                        Most Popular
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Pro</h3>
+                    <p class="text-white/80 mb-6">For growing teams</p>
+                    <div class="text-4xl font-extrabold mb-6">$29<span class="text-lg text-white/80 font-normal">/mo</span></div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#D97706]"></i>
+                            <span>All components</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#D97706]"></i>
+                            <span>Priority support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#D97706]"></i>
+                            <span>Custom tokens</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#D97706]"></i>
+                            <span>Figma library</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-white text-[#111827] px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 focus-ring transition">
+                        Start Pro Trial
+                    </button>
+                </div>
+                <!-- Enterprise -->
+                <div class="border-2 border-gray-100 rounded-2xl p-8 hover:border-[#8B5CF6] transition">
+                    <h3 class="text-xl font-bold mb-2">Enterprise</h3>
+                    <p class="text-gray-600 mb-6">For large organizations</p>
+                    <div class="text-4xl font-extrabold mb-6">Custom</div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#16A34A]"></i>
+                            <span>Dedicated support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#16A34A]"></i>
+                            <span>SLA guarantee</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-[#16A34A]"></i>
+                            <span>Custom integrations</span>
+                        </li>
+                    </ul>
+                    <button class="w-full border-2 border-[#8B5CF6] text-[#8B5CF6] px-6 py-3 rounded-lg font-semibold hover:bg-[#8B5CF6] hover:text-white focus-ring transition">
+                        Contact Sales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="bg-gray-50 py-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-extrabold mb-4">Frequently Asked Questions</h2>
+                <p class="text-lg text-gray-600">Everything you need to know about Colorful.</p>
+            </div>
+            <div class="space-y-4">
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold">
+                        What is Colorful?
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Colorful is a comprehensive design system featuring vibrant, high-contrast palettes and gradients for creating engaging, memorable, and modern user experiences.</p>
+                </details>
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold">
+                        How do I get started?
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Simply sign up for a free account and access our comprehensive documentation, component library, and Figma files to start building immediately.</p>
+                </details>
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold">
+                        Is Colorful accessible?
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Absolutely! Every component is built to meet WCAG 2.2 AA standards, with keyboard-first interactions, visible focus states, and reduced-motion support.</p>
+                </details>
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold">
+                        Can I customize the design system?
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Yes! Our token-based architecture makes customization easy. Override colors, typography, spacing, and more to match your brand perfectly.</p>
+                </details>
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold">
+                        What support do you offer?
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">All plans include access to our documentation and community. Pro and Enterprise plans include priority support with guaranteed response times.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#111827] text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
+                            <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="font-bold text-lg">Colorful</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">Vibrant design system for modern web experiences.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Features</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">About</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Blog</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Careers</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Privacy</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Terms</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Security</a></li>
+                        <li><a href="#" class="hover:text-white focus-ring rounded px-1">Cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-gray-400">© 2024 Colorful. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-gray-400 hover:text-white focus-ring rounded p-1" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white focus-ring rounded p-1" aria-label="GitHub">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white focus-ring rounded p-1" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

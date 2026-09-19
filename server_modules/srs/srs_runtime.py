@@ -26,10 +26,13 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
     interview, and the PDF. Doing it here rather than inside the SRS keeps that
     package free of any knowledge of AgentForge.
 
-    Never fatal. A missing SRS tab is not worth failing a build over.
+    Required handoffs must be available before an agent starts.
     """
     from datetime import datetime, timezone
     try:
+        parent = _srs_get(f"/projects/{srs_id}")
+        if parent is None or (parent.json().get("project") or {}).get("status") != "approved":
+            raise ValueError("Approve the generated SRS before starting the design or build")
         staging = PROD_DIR / ".srs" / srs_id
         dest = proj_dir / ".agentforge" / "srs"
         dest.mkdir(parents=True, exist_ok=True)
@@ -37,12 +40,32 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
         copied = 0
         if staging.is_dir():
             for src in staging.rglob("*"):
-                if not src.is_file():
+                parts = src.relative_to(staging).parts if src.is_file() else ()
+                # Adopt customer images directly into .agentforge/images/.
+                if (not src.is_file() or src.name.endswith("-checkpoint.json") or
+                        any(part.startswith(".") for part in parts)
+                        or "changes" in parts or "site-images" in parts
+                        or "wireframes" in parts):
+                    continue
+                if src.name.startswith(".env") and src.name != ".env.example":
                     continue
                 target = dest / src.relative_to(staging)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, target)
                 copied += 1
+        staged_env = staging / ".env.local"
+        if staged_env.is_file():
+            from builder_agent.setup import merge_env
+            credentials = {}
+            for line in staged_env.read_text(encoding="utf-8").splitlines():
+                key, sep, value = line.partition("=")
+                if sep and re.fullmatch(r"[A-Z][A-Z0-9_]{1,63}", key):
+                    credentials[key] = value
+            merge_env(proj_dir / ".env.local", credentials)
+            ignore = proj_dir / ".gitignore"
+            existing = ignore.read_text(encoding="utf-8") if ignore.exists() else ""
+            if ".env*" not in existing:
+                ignore.write_text(existing + "\n.env*\n!.env.example\n", encoding="utf-8")
 
         base = f"/projects/{srs_id}"
 
@@ -62,18 +85,31 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
                                                encoding="utf-8")
             (dest / "handoff.txt").write_text(body.get("prompt") or "",
                                               encoding="utf-8")
+        agent_files = _srs_get(f"{base}/agent-handoff")
+        if agent_files is None:
+            raise RuntimeError("The SRS agent handoffs are unavailable")
+        if agent_files is not None:
+            target = proj_dir / ".agentforge" / "handoff"
+            target.mkdir(parents=True, exist_ok=True)
+            for filename, content in agent_files.json().get("files", {}).items():
+                if filename in ("app.md", "sitemap.md", "prototype.md", "builder.md"):
+                    (target / filename).write_text(content, encoding="utf-8")
 
         interview = _srs_get(f"{base}/interview")
         if interview is not None:
             (dest / "interview.json").write_text(
                 json.dumps(interview.json(), indent=2), encoding="utf-8")
 
-        if not (dest / "srs_latest.json").exists():
-            document = _srs_get(f"{base}/srs-json")
-            if document is not None:
-                (dest / "srs_latest.json").write_text(
-                    json.dumps(document.json(), indent=2), encoding="utf-8")
-                elog("INFO", "   📄 SRS document fetched (staging had none)")
+        document = _srs_get(f"{base}/srs-json")
+        if document is not None:
+            (dest / "srs_latest.json").write_text(
+                json.dumps(document.json(), indent=2), encoding="utf-8")
+
+        # Adopt wireframes into .agentforge/wireframes/ so both agents and the SRS tab can access them.
+        try:
+            adopt_wireframes(srs_id, proj_dir)
+        except Exception as exc:                                     # noqa: BLE001
+            elog("WARN", f"   wireframes were not adopted: {exc}")
 
         d_dir = dest / "diagrams"
         have_diagrams = d_dir.is_dir() and any(d_dir.glob("*.mmd"))
@@ -112,6 +148,31 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
     except Exception as e:
         elog("WARN", f"   ⚠️  Could not adopt the SRS: {type(e).__name__}: {e}")
         return False
+
+
+_NOT_A_NAME = {
+    "yes", "y", "no", "n", "ok", "okay", "sure", "yep", "yeah", "none", "n/a",
+    "na", "true", "false", "skip", "default", "any", "anything", "whatever",
+    "app", "application", "project", "test", "untitled", "tbd", "todo",
+}
+
+
+def _is_a_name(name: str, limit: int = 60) -> bool:
+    """Did the customer type a name, or agree to a question?
+
+    The interview asks what to call the app, and an answer of "yes" is an
+    answer to a different question. Taken as a name it reaches the header, the
+    title bar, the sign-in screen and `package.json` - measured, exactly that
+    happened - so a word that cannot be a product's name is treated as no
+    answer at all, and the build names the app from the idea instead.
+    """
+    text = " ".join(str(name or "").split())
+    if not text or len(text) > int(limit):
+        return False
+    if text.lower() in _NOT_A_NAME:
+        return False
+    # A name has something to say. Punctuation and digits alone do not.
+    return any(char.isalpha() for char in text)
 
 
 def _srs_app_name(srs_id: str) -> str:
@@ -179,7 +240,7 @@ def _srs_name_line(proj_dir: Path) -> str:
             f"`package.json`. Do not invent another one.\n\n")
 
 
-def _srs_brief(proj_dir: Path, model: str) -> str:
+def _srs_brief(proj_dir: Path, model: str = "") -> str:
     """
     What the SRS knows that its handoff prompt had to leave out.
 
@@ -198,6 +259,23 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
 
     Sized against the model's real context window, and says what it dropped.
     """
+    if not model:
+        try:
+            from server_modules.services.project_state import ProjectState
+            state = ProjectState(proj_dir).read()
+            agents = state.get("agents", {})
+            for role in ("developer", "designer", "qa"):
+                req = agents.get(role, {}).get("request", {})
+                if req.get("model"):
+                    model = str(req["model"]).strip()
+                    break
+            if not model:
+                from builder_agent.llm import load_settings
+                s = load_settings()
+                model = str(s.get("agent_model") or s.get("default_agent_model", "")).strip()
+        except Exception:
+            pass
+
     srs_dir = proj_dir / ".agentforge" / "srs"
     try:
         doc = json.loads((srs_dir / "srs_latest.json").read_text(encoding="utf-8"))
@@ -545,8 +623,10 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
 
     text = "\n".join(parts)
 
-    from agents.planner.architecture import CHARS_PER_TOKEN, HISTORY_BUDGET
-    budget = int(max_context(model) * HISTORY_BUDGET * CHARS_PER_TOKEN / 6)
+    # Proportional token budget allocated for specification context.
+    SPEC_SHARE, CHARS_PER_TOKEN = 0.35, 3
+    ctx = max_context(model)
+    budget = int(ctx * SPEC_SHARE * CHARS_PER_TOKEN)
     if len(text) > budget:
         cut = text.rfind("\n", 0, budget)
         dropped = text[cut:].count("\n- ") if cut > 0 else text.count("\n- ")
@@ -571,7 +651,8 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
             kept = bullets(text, t)
             if kept < full.get(t, kept):
                 partial.append(f"{t} ({kept} of {full[t]})")
-        elog("WARN", f"   ✂ SRS brief trimmed to {budget:,} chars for {model} — "
+        model_label = model or "the selected model"
+        elog("WARN", f"   ✂ SRS brief trimmed to {budget:,} chars for {model_label} — "
                      f"{dropped} line(s) left out (they are all in the SRS tab)"
                      + (f"; sections lost: {', '.join(lost)}" if lost else "")
                      + (f"; cut short: {', '.join(partial)}" if partial else ""))
@@ -608,6 +689,8 @@ def read_srs_results(proj_name: str) -> dict:
             return default
 
     out = {"project": proj_name, "have": {}}
+    # Determine valid target phases that can receive changes from this specification.
+    out["targets"] = {role: artifact_exists(proj_dir, role) for role in ("designer", "developer")}
     if not srs_dir.is_dir():
 
         out["have"] = {k: False for k in
@@ -630,20 +713,55 @@ def read_srs_results(proj_name: str) -> dict:
     out["interview"] = load(srs_dir / "interview.json", {}) or {}
     out["have"]["interview"] = bool(out["interview"].get("transcript"))
 
+    # Merge diagram files on disk with descriptive narrative text from the SRS document.
+    narrative = {}
+    for artifact in (out["document"].get("diagrams") or []):
+        if isinstance(artifact, dict):
+            key = str(artifact.get("kind") or artifact.get("id") or "").strip()
+            if key:
+                narrative[key] = artifact
+                narrative.setdefault(key.replace("dia_", ""), artifact)
+
     diagrams = []
     d_dir = srs_dir / "diagrams"
     if d_dir.is_dir():
         for mmd in sorted(d_dir.glob("*.mmd")):
             svg = mmd.with_suffix(".svg")
             body = text(svg) if svg.is_file() else ""
+            artifact = narrative.get(mmd.stem, {})
             diagrams.append({
                 "name": mmd.stem,
                 "mermaid": text(mmd),
                 "svg": body if 0 < len(body) <= 400_000 else "",
                 "png": (mmd.with_suffix(".png")).is_file(),
+                "title": artifact.get("title") or "",
+                "question": artifact.get("question") or "",
+                "definition": artifact.get("definition") or "",
+                "businessSummary": artifact.get("business_summary") or "",
+                "flowExplanation": artifact.get("flow_explanation") or [],
+                "keyTakeaways": artifact.get("key_takeaways") or [],
+                "drawingRules": artifact.get("drawing_rules") or [],
+                "notation": artifact.get("notation") or [],
+                "standard": artifact.get("standard") or "",
+                "applicable": artifact.get("applicable", True),
+                "applicabilityNote": artifact.get("applicability_note") or "",
             })
     out["diagrams"] = diagrams
     out["have"]["diagrams"] = bool(diagrams)
+
+    # Inspect on-disk wireframe files to reflect actual existing page layouts.
+    pages = []
+    proto_dir = proj_dir / ".agentforge" / "prototype"
+    if proto_dir.is_dir():
+        for page in sorted(proto_dir.glob("*.html")):
+            pages.append({
+                "file": page.name,
+                "screen_name": page.stem.replace("-", " ").replace("_", " ").strip().title(),
+                "bytes": page.stat().st_size,
+            })
+    shot = srs_dir / "prototype_shots" / "screen_desktop.png"
+    out["prototype"] = {"pages": pages, "screenshot": shot.is_file()}
+    out["have"]["prototype"] = bool(pages)
 
     out["have"]["pdf"] = (srs_dir / "SRS_latest.pdf").is_file()
     return out

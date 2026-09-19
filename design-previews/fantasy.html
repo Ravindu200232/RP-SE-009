@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eldoria — Forge Your Legend</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=New+Rocker&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0250CC',
+                        secondary: '#FDC800',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        display: ['"New Rocker"', 'cursive'],
+                        body: ['"IBM Plex Mono"', 'monospace'],
+                    },
+                    fontSize: {
+                        'xs': ['12px', { lineHeight: '16px' }],
+                        'sm': ['14px', { lineHeight: '20px' }],
+                        'base': ['16px', { lineHeight: '24px' }],
+                        'xl': ['20px', { lineHeight: '28px' }],
+                        '2xl': ['24px', { lineHeight: '32px' }],
+                        '3xl': ['32px', { lineHeight: '40px' }],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        .hero-scene {
+            pointer-events: none;
+        }
+        .hero-scene svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+        .faq-item summary {
+            list-style: none;
+            cursor: pointer;
+        }
+        .faq-item[open] .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s ease;
+        }
+        .pricing-featured {
+            box-shadow: 0 0 0 4px #FDC800, 0 8px 32px rgba(2, 80, 204, 0.15);
+        }
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(2, 80, 204, 0.12);
+        }
+    </style>
+</head>
+<body class="font-body bg-surface text-text antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="bg-surface border-b-2 border-primary sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    <span class="font-display text-2xl text-primary tracking-wide">ELDORIA</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium text-text hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium text-text hover:text-primary transition-colors">Process</a>
+                    <a href="#pricing" class="text-sm font-medium text-text hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-text hover:text-primary transition-colors">FAQ</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="#" class="hidden sm:inline-flex text-sm font-semibold text-text hover:text-primary transition-colors">Sign In</a>
+                    <a href="#" class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 text-sm font-semibold hover:bg-[#0140a0] transition-colors">
+                        <i data-lucide="sword" class="w-4 h-4"></i>
+                        Play Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="relative bg-primary overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-[#0a0e27] via-primary to-primary"></div>
+        <!-- Stars -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute top-8 left-[10%] w-1 h-1 bg-white opacity-80"></div>
+            <div class="absolute top-16 left-[25%] w-0.5 h-0.5 bg-white opacity-60"></div>
+            <div class="absolute top-4 left-[40%] w-1 h-1 bg-white opacity-70"></div>
+            <div class="absolute top-12 left-[55%] w-0.5 h-0.5 bg-white opacity-50"></div>
+            <div class="absolute top-6 left-[70%] w-1 h-1 bg-white opacity-80"></div>
+            <div class="absolute top-20 left-[85%] w-0.5 h-0.5 bg-white opacity-60"></div>
+            <div class="absolute top-10 left-[90%] w-1 h-1 bg-white opacity-70"></div>
+            <div class="absolute top-24 left-[15%] w-0.5 h-0.5 bg-white opacity-40"></div>
+        </div>
+        <!-- Moon -->
+        <div class="absolute top-10 right-[10%] w-16 h-16 bg-secondary rounded-full shadow-[0_0_40px_rgba(253,200,0,0.4)]"></div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-40 text-center">
+            <div class="inline-flex items-center gap-2 bg-white/10 border border-secondary/50 px-4 py-2 mb-8">
+                <i data-lucide="crown" class="w-4 h-4 text-secondary"></i>
+                <span class="text-xs font-semibold text-secondary uppercase tracking-widest">The Best Game in the World</span>
+            </div>
+            <h1 class="font-display text-3xl sm:text-3xl md:text-3xl text-white leading-tight max-w-3xl mx-auto">
+                FORGE YOUR LEGEND IN ELDORIA
+            </h1>
+            <p class="mt-6 text-base text-white/80 max-w-xl mx-auto">
+                Enter a realm of ancient magic, epic battles, and untold treasures. Your destiny awaits.
+            </p>
+            <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#" class="inline-flex items-center gap-2 bg-secondary text-[#0a0e27] px-8 py-4 text-base font-bold hover:bg-[#e5b400] transition-colors">
+                    <i data-lucide="play" class="w-5 h-5"></i>
+                    Start Playing
+                </a>
+                <a href="#" class="inline-flex items-center gap-2 bg-white/10 text-white border border-white/30 px-8 py-4 text-base font-semibold hover:bg-white/20 transition-colors">
+                    <i data-lucide="info" class="w-5 h-5"></i>
+                    Learn More
+                </a>
+            </div>
+        </div>
+
+        <!-- Hero SVG Scene -->
+        <div class="hero-scene absolute bottom-0 left-0 w-full">
+            <svg viewBox="0 0 1440 320" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+                <!-- Mountains -->
+                <path d="M0 320L150 140L300 320Z" fill="#0d1b2a"/>
+                <path d="M200 320L450 90L700 320Z" fill="#0d1b2a"/>
+                <path d="M550 320L850 170L1150 320Z" fill="#0d1b2a"/>
+                <path d="M950 320L1250 110L1440 320Z" fill="#0d1b2a"/>
+                <!-- Castle -->
+                <rect x="620" y="190" width="120" height="130" fill="#0d1b2a"/>
+                <rect x="630" y="170" width="22" height="20" fill="#0d1b2a"/>
+                <rect x="708" y="170" width="22" height="20" fill="#0d1b2a"/>
+                <rect x="600" y="210" width="28" height="110" fill="#0d1b2a"/>
+                <rect x="732" y="210" width="28" height="110" fill="#0d1b2a"/>
+                <rect x="655" y="230" width="30" height="40" fill="#FDC800"/>
+                <rect x="695" y="230" width="30" height="40" fill="#FDC800"/>
+                <rect x="675" y="280" width="20" height="40" fill="#FDC800"/>
+                <!-- Flag -->
+                <line x1="680" y1="170" x2="680" y2="140" stroke="#0d1b2a" stroke-width="3"/>
+                <path d="M680 140L710 148L680 156Z" fill="#DC2626"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="bg-surface py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-display text-3xl text-primary">2M+</p>
+                    <p class="mt-2 text-sm text-text/60 uppercase tracking-wider">Active Players</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-3xl text-primary">500+</p>
+                    <p class="mt-2 text-sm text-text/60 uppercase tracking-wider">Epic Quests</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-3xl text-primary">4.9/5</p>
+                    <p class="mt-2 text-sm text-text/60 uppercase tracking-wider">Player Rating</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-3xl text-primary">120+</p>
+                    <p class="mt-2 text-sm text-text/60 uppercase tracking-wider">Hours of Content</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="bg-gray-50 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display text-2xl md:text-3xl text-text">EPIC FEATURES</h2>
+                <p class="mt-4 text-sm text-text/60 max-w-lg mx-auto">Everything you need to forge your legend</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-surface border-2 border-gray-200 p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                        <i data-lucide="scroll" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Epic Storyline</h3>
+                    <p class="mt-3 text-sm text-text/70">Immerse yourself in a rich narrative with branching paths and unforgettable characters.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-surface border-2 border-gray-200 p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                        <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Multiplayer Battles</h3>
+                    <p class="mt-3 text-sm text-text/70">Fight alongside your guild in massive PvP battles and cooperative raids.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-surface border-2 border-gray-200 p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                        <i data-lucide="hammer" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Crafting System</h3>
+                    <p class="mt-3 text-sm text-text/70">Forge legendary weapons and armor with a deep, rewarding crafting system.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="bg-surface border-2 border-gray-200 p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                        <i data-lucide="map" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Open World</h3>
+                    <p class="mt-3 text-sm text-text/70">Explore vast landscapes from dense forests to towering mountain peaks.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="bg-surface border-2 border-gray-200 p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                        <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Magic System</h3>
+                    <p class="mt-3 text-sm text-text/70">Master ancient spells and arcane arts with a flexible magic system.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="bg-surface border-2 border-gray-200 p-8 hover-lift">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                        <i data-lucide="refresh-cw" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Regular Updates</h3>
+                    <p class="mt-3 text-sm text-text/70">New content every month with seasonal events and fresh challenges.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="bg-surface py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display text-2xl md:text-3xl text-text">YOUR JOURNEY BEGINS</h2>
+                <p class="mt-4 text-sm text-text/60 max-w-lg mx-auto">Four steps to glory</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="relative text-center p-8 border-2 border-gray-200">
+                    <div class="w-16 h-16 bg-primary flex items-center justify-center mx-auto mb-6">
+                        <span class="font-display text-2xl text-white">1</span>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Create Your Hero</h3>
+                    <p class="mt-3 text-sm text-text/70">Choose your race, class, and appearance to craft your unique identity.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative text-center p-8 border-2 border-gray-200">
+                    <div class="w-16 h-16 bg-primary flex items-center justify-center mx-auto mb-6">
+                        <span class="font-display text-2xl text-white">2</span>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Choose Your Path</h3>
+                    <p class="mt-3 text-sm text-text/70">Select your quest line and alignment. Every choice shapes your story.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="relative text-center p-8 border-2 border-gray-200">
+                    <div class="w-16 h-16 bg-primary flex items-center justify-center mx-auto mb-6">
+                        <span class="font-display text-2xl text-white">3</span>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Forge Alliances</h3>
+                    <p class="mt-3 text-sm text-text/70">Join a guild or recruit companions to stand together in battle.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="relative text-center p-8 border-2 border-gray-200">
+                    <div class="w-16 h-16 bg-primary flex items-center justify-center mx-auto mb-6">
+                        <span class="font-display text-2xl text-white">4</span>
+                    </div>
+                    <h3 class="font-display text-xl text-text">Conquer the Realm</h3>
+                    <p class="mt-3 text-sm text-text/70">Battle enemies, claim territory, and become a legend.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="bg-primary py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display text-2xl md:text-3xl text-white">WHY ELDORIA</h2>
+                <p class="mt-4 text-sm text-white/70 max-w-lg mx-auto">The ultimate fantasy experience</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Benefit 1 -->
+                <div class="bg-white/10 border border-white/20 p-8 text-center">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="shield" class="w-6 h-6 text-[#0a0e27]"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-white">Immersive World</h3>
+                    <p class="mt-3 text-sm text-white/70">A living, breathing realm with dynamic weather and day-night cycles.</p>
+                </div>
+                <!-- Benefit 2 -->
+                <div class="bg-white/10 border border-white/20 p-8 text-center">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="heart" class="w-6 h-6 text-[#0a0e27]"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-white">Thriving Community</h3>
+                    <p class="mt-3 text-sm text-white/70">Join millions of players worldwide. Forge friendships that last.</p>
+                </div>
+                <!-- Benefit 3 -->
+                <div class="bg-white/10 border border-white/20 p-8 text-center">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="trending-up" class="w-6 h-6 text-[#0a0e27]"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-white">Constant Evolution</h3>
+                    <p class="mt-3 text-sm text-white/70">New content, features, and quality-of-life improvements every month.</p>
+                </div>
+                <!-- Benefit 4 -->
+                <div class="bg-white/10 border border-white/20 p-8 text-center">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="monitor" class="w-6 h-6 text-[#0a0e27]"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-white">Cross-Platform</h3>
+                    <p class="mt-3 text-sm text-white/70">Play on PC, console, or mobile. Your progress syncs everywhere.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="bg-gray-50 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display text-2xl md:text-3xl text-text">PLAYER STORIES</h2>
+                <p class="mt-4 text-sm text-text/60 max-w-lg mx-auto">Hear from the legends</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-surface border-2 border-gray-200 p-8">
+                    <div class="flex gap-1 mb-6">
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                    </div>
+                    <p class="text-sm text-text/80 leading-relaxed">"The best RPG I've ever played. The world feels alive, and every quest matters. I've spent 2,000+ hours and still find new things."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center">
+                            <span class="font-display text-sm text-white">A</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-text">Alex Dragonheart</p>
+                            <p class="text-xs text-text/60">2,000+ hours played</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="bg-surface border-2 border-gray-200 p-8">
+                    <div class="flex gap-1 mb-6">
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                    </div>
+                    <p class="text-sm text-text/80 leading-relaxed">"A masterpiece of game design. The combat system is deep, the visuals are stunning, and the story is genuinely moving."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center">
+                            <span class="font-display text-sm text-white">S</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-text">Sarah Nightfall</p>
+                            <p class="text-xs text-text/60">Game Critic</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="bg-surface border-2 border-gray-200 p-8">
+                    <div class="flex gap-1 mb-6">
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-secondary fill-secondary"></i>
+                    </div>
+                    <p class="text-sm text-text/80 leading-relaxed">"I've never felt so immersed in a game. The community is incredible, and the world feels truly alive. Eldoria is special."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center">
+                            <span class="font-display text-sm text-white">M</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-text">Mike Stormborn</p>
+                            <p class="text-xs text-text/60">Guild Leader</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="bg-surface py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display text-2xl md:text-3xl text-text">CHOOSE YOUR PATH</h2>
+                <p class="mt-4 text-sm text-text/60 max-w-lg mx-auto">Start free. Upgrade when you're ready.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Pricing 1 -->
+                <div class="border-2 border-gray-200 p-8 flex flex-col">
+                    <h3 class="font-display text-xl text-text">Adventurer</h3>
+                    <p class="mt-2 text-sm text-text/60">Free forever</p>
+                    <p class="mt-6 font-display text-3xl text-primary">$0</p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Full base game
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Access to starter zones
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Basic cosmetics
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/40">
+                            <i data-lucide="x" class="w-4 h-4 text-text/40"></i>
+                            Premium quests
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center border-2 border-primary text-primary px-6 py-3 text-sm font-semibold hover:bg-primary hover:text-white transition-colors">
+                        Start Free
+                    </a>
+                </div>
+                <!-- Pricing 2 (Featured) -->
+                <div class="border-2 border-secondary p-8 flex flex-col pricing-featured relative">
+                    <div class="absolute top-0 right-0 bg-secondary text-[#0a0e27] px-4 py-1 text-xs font-bold uppercase tracking-wider">
+                        Most Popular
+                    </div>
+                    <h3 class="font-display text-xl text-text">Hero</h3>
+                    <p class="mt-2 text-sm text-text/60">For dedicated players</p>
+                    <p class="mt-6 font-display text-3xl text-primary">$9.99<span class="text-sm text-text/60 font-body">/mo</span></p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Everything in Adventurer
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            All premium quests
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Exclusive cosmetics
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Monthly bonus items
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center bg-primary text-white px-6 py-3 text-sm font-semibold hover:bg-[#0140a0] transition-colors">
+                        Become a Hero
+                    </a>
+                </div>
+                <!-- Pricing 3 -->
+                <div class="border-2 border-gray-200 p-8 flex flex-col">
+                    <h3 class="font-display text-xl text-text">Legend</h3>
+                    <p class="mt-2 text-sm text-text/60">The ultimate experience</p>
+                    <p class="mt-6 font-display text-3xl text-primary">$19.99<span class="text-sm text-text/60 font-body">/mo</span></p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Everything in Hero
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Exclusive legendary gear
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Early access to updates
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            VIP support
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center border-2 border-primary text-primary px-6 py-3 text-sm font-semibold hover:bg-primary hover:text-white transition-colors">
+                        Become a Legend
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="bg-gray-50 py-16">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display text-2xl md:text-3xl text-text">FREQUENTLY ASKED</h2>
+                <p class="mt-4 text-sm text-text/60">Everything you need to know</p>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <details class="faq-item bg-surface border-2 border-gray-200">
+                    <summary class="flex items-center justify-between p-6">
+                        <span class="text-sm font-semibold text-text">What platforms is Eldoria available on?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary"></i>
+                    </summary>
+                    <div class="px-6 pb-6">
+                        <p class="text-sm text-text/70">Eldoria is available on PC (Windows, macOS, Linux), PlayStation 5, Xbox Series X|S, and mobile devices (iOS and Android) with full cross-platform play.</p>
+                    </div>
+                </details>
+                <!-- FAQ 2 -->
+                <details class="faq-item bg-surface border-2 border-gray-200">
+                    <summary class="flex items-center justify-between p-6">
+                        <span class="text-sm font-semibold text-text">Is Eldoria free to play?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary"></i>
+                    </summary>
+                    <div class="px-6 pb-6">
+                        <p class="text-sm text-text/70">Yes! Eldoria is free to play with optional subscription tiers that unlock premium content, cosmetics, and quality-of-life features. The base game is completely free.</p>
+                    </div>
+                </details>
+                <!-- FAQ 3 -->
+                <details class="faq-item bg-surface border-2 border-gray-200">
+                    <summary class="flex items-center justify-between p-6">
+                        <span class="text-sm font-semibold text-text">Can I play with friends?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary"></i>
+                    </summary>
+                    <div class="px-6 pb-6">
+                        <p class="text-sm text-text/70">Absolutely! Eldoria supports parties, guilds, and cross-platform multiplayer. You can team up with friends regardless of their platform.</p>
+                    </div>
+                </details>
+                <!-- FAQ 4 -->
+                <details class="faq-item bg-surface border-2 border-gray-200">
+                    <summary class="flex items-center justify-between p-6">
+                        <span class="text-sm font-semibold text-text">How often are updates released?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary"></i>
+                    </summary>
+                    <div class="px-6 pb-6">
+                        <p class="text-sm text-text/70">We release major content updates every month, with seasonal events and balance patches in between. Our roadmap is public and community-driven.</p>
+                    </div>
+                </details>
+                <!-- FAQ 5 -->
+                <details class="faq-item bg-surface border-2 border-gray-200">
+                    <summary class="flex items-center justify-between p-6">
+                        <span class="text-sm font-semibold text-text">Is there cross-platform progression?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary"></i>
+                    </summary>
+                    <div class="px-6 pb-6">
+                        <p class="text-sm text-text/70">Yes! Your character, progress, and purchases sync seamlessly across all platforms. Play on PC, then continue on your phone during your commute.</p>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-[#0a0e27] text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Brand -->
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-8 h-8 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        <span class="font-display text-2xl text-secondary tracking-wide">ELDORIA</span>
+                    </div>
+                    <p class="mt-4 text-sm text-white/60 max-w-sm">The best game in the world. Forge your legend in a realm of ancient magic and epic adventure.</p>
+                    <div class="mt-6 flex gap-4">
+                        <a href="#" class="text-white/60 hover:text-secondary transition-colors">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/60 hover:text-secondary transition-colors">
+                            <i data-lucide="discord" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/60 hover:text-secondary transition-colors">
+                            <i data-lucide="youtube" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/60 hover:text-secondary transition-colors">
+                            <i data-lucide="twitch" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+                <!-- Links -->
+                <div>
+                    <h4 class="font-display text-base text-white mb-4">Game</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-sm text-white/60 hover:text-secondary transition-colors">Features</a></li>
+                        <li><a href="#process" class="text-sm text-white/60 hover:text-secondary transition-colors">Process</a></li>
+                        <li><a href="#pricing" class="text-sm text-white/60 hover:text-secondary transition-colors">Pricing</a></li>
+                        <li><a href="#faq" class="text-sm text-white/60 hover:text-secondary transition-colors">FAQ</a></li>
+                    </ul>
+                </div>
+                <!-- Support -->
+                <div>
+                    <h4 class="font-display text-base text-white mb-4">Support</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-white/60 hover:text-secondary transition-colors">Help Center</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-secondary transition-colors">Community</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-secondary transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-secondary transition-colors">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-white/40">&copy; 2024 Eldoria Studios. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-xs text-white/40 hover:text-secondary transition-colors">Terms of Service</a>
+                    <a href="#" class="text-xs text-white/40 hover:text-secondary transition-colors">Privacy Policy</a>
+                    <a href="#" class="text-xs text-white/40 hover:text-secondary transition-colors">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

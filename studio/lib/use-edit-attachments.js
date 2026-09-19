@@ -37,12 +37,10 @@ export function useEditAttachments() {
       for (const it of queue) {
         try {
           const r = await api.attach(it.file, { project })
-          setItems(l => l.map(x => x.key === it.key
-            ? { ...x, state: 'done', read: r.text || '', url: r.url || '',
-                kind: r.kind || '', note: r.note || '' }
-            : x))
-          it.read = r.text || ''; it.url = r.url || ''
-          it.kind = r.kind || ''; it.note = r.note || ''
+          const got = { read: r.text || '', url: r.url || '', kind: r.kind || '',
+                        note: r.note || '', path: r.path || '', truncated: !!r.truncated }
+          setItems(l => l.map(x => x.key === it.key ? { ...x, state: 'done', ...got } : x))
+          Object.assign(it, got)
         } catch (e) {
           setItems(l => l.map(x => x.key === it.key
             ? { ...x, state: 'failed', note: e.message } : x))
@@ -63,9 +61,26 @@ export function useEditAttachments() {
            busy: items.some(i => i.state === 'reading') }
 }
 
-/** The text appended to the instruction. */
+/** What each kind of attachment is, said once, in the prompt. */
+const KIND_SAID = {
+  audio: 'a recording, transcribed',
+  pdf: 'a document',
+  document: 'a document',
+  archive: 'an archive, listed and read',
+  text: 'a file',
+}
+
+/**
+ * The text appended to the instruction.
+ *
+ * Every attached file is written into the project before this runs, so the
+ * agent can open it with the same tools it uses on the rest of the code. What
+ * travels in the prompt is what only the studio could work out — what a picture
+ * shows, what a recording says — plus the path, so the agent reads the file
+ * itself instead of answering from a truncated excerpt of it.
+ */
 function blockFor(items) {
-  const usable = (items || []).filter(i => i.read || i.url)
+  const usable = (items || []).filter(i => i.read || i.url || i.path)
   if (!usable.length) return ''
 
   const parts = usable.map(i => {
@@ -75,9 +90,12 @@ function blockFor(items) {
         + `an <img>; it exists on disk, so do not invent another and do not `
         + `leave a placeholder. What it shows:\n${i.read || '(could not be read)'}`
     }
-    const what = i.kind === 'audio' ? 'a recording, transcribed'
-      : i.kind === 'pdf' ? 'a document' : 'a file'
-    return `### ${i.name} — ${what}\n${i.read}`
+    const what = KIND_SAID[i.kind] || 'a file'
+    const head = [`### ${i.name} — ${what}`]
+    if (i.path) head.push(`Saved in this project at \`${i.path}\` — open it there for the whole file.`)
+    if (i.read) head.push(i.truncated ? `The opening of it:\n${i.read}\n…` : i.read)
+    else if (i.path) head.push('Nothing could be extracted from it here; read it from that path.')
+    return head.join('\n')
   })
 
   return `\n\n## What they attached\n\n${parts.join('\n\n')}`

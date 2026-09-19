@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doodle — Sketchy SaaS for Playful Teams</title>
+    <!-- Google Fonts: Delius Swash Caps (primary/display), JetBrains Mono (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Delius+Swash+Caps&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Doodle design system tokens */
+        :root {
+            --color-primary: #49B6E5;
+            --color-secondary: #263D5B;
+            --color-success: #16A34A;
+            --color-warning: #D97706;
+            --color-danger: #DC2626;
+            --color-surface: #FFFFFF;
+            --color-text: #111827;
+            --font-primary: 'Delius Swash Caps', cursive;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        body {
+            font-family: var(--font-primary);
+            color: var(--color-text);
+            background-color: var(--color-surface);
+        }
+        /* Hand-drawn underline effect */
+        .doodle-underline {
+            position: relative;
+            display: inline-block;
+        }
+        .doodle-underline::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -4px;
+            height: 3px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M0,5 Q25,0 50,5 T100,5' stroke='%2349B6E5' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x;
+            background-size: 100px 10px;
+        }
+        /* Hand-drawn border effect */
+        .doodle-border {
+            border: 2px solid var(--color-secondary);
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            position: relative;
+        }
+        .doodle-border:hover {
+            border-radius: 15px 225px 15px 255px/255px 15px 225px 15px;
+        }
+        /* Sketchy blob shape */
+        .blob {
+            border-radius: 40% 60% 60% 40% / 60% 40% 60% 40%;
+            animation: blob-morph 8s ease-in-out infinite;
+        }
+        @keyframes blob-morph {
+            0%, 100% { border-radius: 40% 60% 60% 40% / 60% 40% 60% 40%; }
+            50% { border-radius: 60% 40% 40% 60% / 40% 60% 40% 60%; }
+        }
+        /* Hand-drawn squiggle divider */
+        .squiggle {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 10' preserveAspectRatio='none'%3E%3Cpath d='M0,5 Q25,0 50,5 T100,5 T150,5 T200,5' stroke='%23263D5B' stroke-width='2' fill='none' stroke-linecap='round' opacity='0.3'/%3E%3C/svg%3E");
+            background-repeat: repeat-x;
+            background-size: 200px 10px;
+            height: 10px;
+        }
+        /* Hand-drawn card */
+        .card-sketch {
+            border: 2px solid var(--color-secondary);
+            border-radius: 15px 255px 15px 255px/255px 15px 255px 15px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-sketch:hover {
+            transform: rotate(-1deg) scale(1.02);
+            box-shadow: 4px 4px 0 var(--color-primary);
+        }
+        /* Focus visible state */
+        a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+            outline: 3px dashed var(--color-primary);
+            outline-offset: 4px;
+            border-radius: 4px;
+        }
+        /* Button styles */
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: var(--color-surface);
+            border: 2px solid var(--color-secondary);
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            padding: 12px 24px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            background-color: var(--color-secondary);
+            transform: translateY(-2px);
+            box-shadow: 4px 4px 0 var(--color-primary);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 2px 2px 0 var(--color-primary);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--color-secondary);
+            border: 2px solid var(--color-secondary);
+            border-radius: 15px 225px 15px 255px/255px 15px 225px 15px;
+            padding: 12px 24px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background-color: var(--color-secondary);
+            color: var(--color-surface);
+            transform: translateY(-2px);
+            box-shadow: 4px 4px 0 var(--color-primary);
+        }
+        .btn-secondary:active {
+            transform: translateY(0);
+            box-shadow: 2px 2px 0 var(--color-primary);
+        }
+        /* Input styles */
+        .input-doodle {
+            border: 2px solid var(--color-secondary);
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            padding: 12px 16px;
+            font-family: var(--font-primary);
+            background-color: var(--color-surface);
+            transition: border-color 0.2s ease;
+        }
+        .input-doodle:focus {
+            border-color: var(--color-primary);
+            outline: none;
+        }
+        /* Navigation link */
+        .nav-link {
+            position: relative;
+            text-decoration: none;
+            color: var(--color-secondary);
+            font-weight: 500;
+            padding: 4px 0;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--color-primary);
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        /* Mobile menu */
+        .mobile-menu {
+            display: none;
+        }
+        .mobile-menu.open {
+            display: block;
+        }
+        /* Table styles for pricing */
+        .pricing-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        .pricing-table th, .pricing-table td {
+            border: 2px solid var(--color-secondary);
+            padding: 12px;
+            text-align: left;
+        }
+        .pricing-table th {
+            background-color: var(--color-primary);
+            color: var(--color-surface);
+            font-weight: 700;
+        }
+        .pricing-table tr:nth-child(even) {
+            background-color: #f0f9ff;
+        }
+        /* FAQ accordion */
+        .faq-item {
+            border: 2px solid var(--color-secondary);
+            border-radius: 15px 255px 15px 255px/255px 15px 255px 15px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .faq-question {
+            cursor: pointer;
+            padding: 16px;
+            background-color: var(--color-surface);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+        }
+        .faq-question:hover {
+            background-color: #f0f9ff;
+        }
+        .faq-answer {
+            padding: 0 16px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+        .faq-item.open .faq-answer {
+            max-height: 200px;
+            padding: 0 16px 16px;
+        }
+        .faq-item.open .faq-question .faq-icon {
+            transform: rotate(180deg);
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        /* Testimonial card */
+        .testimonial-card {
+            border: 2px solid var(--color-secondary);
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            padding: 24px;
+            background-color: var(--color-surface);
+            position: relative;
+        }
+        .testimonial-card::before {
+            content: '"';
+            font-size: 64px;
+            color: var(--color-primary);
+            position: absolute;
+            top: -20px;
+            left: 16px;
+            font-family: var(--font-primary);
+        }
+        /* Stat card */
+        .stat-card {
+            border: 2px solid var(--color-secondary);
+            border-radius: 15px 225px 15px 255px/255px 15px 225px 15px;
+            padding: 24px;
+            text-align: center;
+            background-color: var(--color-surface);
+        }
+        /* Feature icon */
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border: 2px solid var(--color-secondary);
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--color-primary);
+            color: var(--color-surface);
+            margin-bottom: 16px;
+        }
+        /* Process step */
+        .process-step {
+            border: 2px dashed var(--color-primary);
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 24px;
+            color: var(--color-secondary);
+            background-color: var(--color-surface);
+            margin: 0 auto 16px;
+        }
+        /* Benefit checkmark */
+        .benefit-check {
+            color: var(--color-success);
+            margin-right: 8px;
+        }
+        /* Footer */
+        .footer {
+            background-color: var(--color-secondary);
+            color: var(--color-surface);
+        }
+        .footer a {
+            color: var(--color-surface);
+            text-decoration: none;
+        }
+        .footer a:hover {
+            color: var(--color-primary);
+            text-decoration: underline;
+        }
+        /* Color-blocked sections */
+        .section-primary {
+            background-color: var(--color-primary);
+            color: var(--color-surface);
+        }
+        .section-secondary {
+            background-color: var(--color-secondary);
+            color: var(--color-surface);
+        }
+        .section-warning {
+            background-color: var(--color-warning);
+            color: var(--color-surface);
+        }
+        .section-success {
+            background-color: var(--color-success);
+            color: var(--color-surface);
+        }
+        .section-danger {
+            background-color: var(--color-danger);
+            color: var(--color-surface);
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            .mobile-menu-button {
+                display: block;
+            }
+            .hero-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .process-grid {
+                grid-template-columns: 1fr;
+            }
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 400px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        /* Hide mobile menu button on desktop */
+        .mobile-menu-button {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .mobile-menu-button {
+                display: block;
+            }
+        }
+        /* Hero doodle illustration */
+        .hero-doodle {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        .hero-doodle .circle {
+            position: absolute;
+            border: 3px solid var(--color-secondary);
+            border-radius: 50%;
+        }
+        .hero-doodle .circle-1 {
+            width: 120px;
+            height: 120px;
+            top: 20px;
+            left: 20px;
+            background-color: var(--color-primary);
+            opacity: 0.3;
+        }
+        .hero-doodle .circle-2 {
+            width: 80px;
+            height: 80px;
+            top: 80px;
+            right: 30px;
+            background-color: var(--color-warning);
+            opacity: 0.4;
+        }
+        .hero-doodle .circle-3 {
+            width: 60px;
+            height: 60px;
+            bottom: 20px;
+            left: 60px;
+            background-color: var(--color-success);
+            opacity: 0.5;
+        }
+        .hero-doodle .line {
+            position: absolute;
+            border-top: 3px dashed var(--color-secondary);
+            width: 200px;
+            transform: rotate(-15deg);
+            top: 150px;
+            left: 80px;
+        }
+        .hero-doodle .star {
+            position: absolute;
+            font-size: 48px;
+            color: var(--color-warning);
+            top: 10px;
+            right: 60px;
+            transform: rotate(15deg);
+        }
+        .hero-doodle .arrow {
+            position: absolute;
+            font-size: 48px;
+            color: var(--color-primary);
+            bottom: 40px;
+            right: 40px;
+            transform: rotate(-30deg);
+        }
+        /* Marquee for testimonials */
+        .marquee {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 30s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b-2 border-secondary sticky top-0 z-50" style="border-color: var(--color-secondary);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="#" class="flex items-center space-x-2">
+                        <span class="text-2xl font-bold" style="color: var(--color-primary);">✏️</span>
+                        <span class="text-xl font-bold" style="color: var(--color-secondary);">Doodle</span>
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-8 nav-links">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#process" class="nav-link">Process</a>
+                    <a href="#benefits" class="nav-link">Benefits</a>
+                    <a href="#testimonials" class="nav-link">Testimonials</a>
+                    <a href="#pricing" class="nav-link">Pricing</a>
+                    <a href="#faq" class="nav-link">FAQ</a>
+                </div>
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="#" class="btn-secondary text-sm">Log in</a>
+                    <a href="#" class="btn-primary text-sm">Get Started</a>
+                </div>
+                <button class="mobile-menu-button text-2xl" aria-label="Open menu" onclick="toggleMobileMenu()">
+                    <i data-lucide="menu"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div class="mobile-menu md:hidden bg-white border-t-2" style="border-color: var(--color-secondary);">
+            <div class="px-4 py-4 space-y-4">
+                <a href="#features" class="block nav-link">Features</a>
+                <a href="#process" class="block nav-link">Process</a>
+                <a href="#benefits" class="block nav-link">Benefits</a>
+                <a href="#testimonials" class="block nav-link">Testimonials</a>
+                <a href="#pricing" class="block nav-link">Pricing</a>
+                <a href="#faq" class="block nav-link">FAQ</a>
+                <div class="flex space-x-4 pt-4">
+                    <a href="#" class="btn-secondary text-sm flex-1 text-center">Log in</a>
+                    <a href="#" class="btn-primary text-sm flex-1 text-center">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="py-16 md:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="hero-grid grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h1 class="text-4xl md:text-5xl font-bold leading-tight mb-6" style="color: var(--color-secondary);">
+                        Sketchy Ideas,<br>
+                        <span class="doodle-underline" style="color: var(--color-primary);">Serious Results</span>
+                    </h1>
+                    <p class="text-lg md:text-xl mb-8" style="color: var(--color-text);">
+                        Doodle is the playful project management tool for teams who love to think outside the lines. Plan, collaborate, and ship with a smile.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#" class="btn-primary text-center">Start Doodling</a>
+                        <a href="#" class="btn-secondary text-center">See How It Works</a>
+                    </div>
+                    <div class="mt-8 flex items-center space-x-4">
+                        <div class="flex -space-x-2">
+                            <div class="w-10 h-10 rounded-full border-2 border-white bg-primary flex items-center justify-center text-white font-bold" style="background-color: var(--color-primary);">A</div>
+                            <div class="w-10 h-10 rounded-full border-2 border-white bg-secondary flex items-center justify-center text-white font-bold" style="background-color: var(--color-secondary);">B</div>
+                            <div class="w-10 h-10 rounded-full border-2 border-white bg-warning flex items-center justify-center text-white font-bold" style="background-color: var(--color-warning);">C</div>
+                        </div>
+                        <p class="text-sm" style="color: var(--color-text);">Trusted by <span class="font-bold">2,000+</span> creative teams</p>
+                    </div>
+                </div>
+                <div class="hero-doodle">
+                    <div class="circle circle-1"></div>
+                    <div class="circle circle-2"></div>
+                    <div class="circle circle-3"></div>
+                    <div class="line"></div>
+                    <div class="star">✦</div>
+                    <div class="arrow">➜</div>
+                    <!-- Hand-drawn doodle elements -->
+                    <div class="absolute top-40 left-40 w-24 h-24 border-2 border-secondary rounded-full flex items-center justify-center" style="border-color: var(--color-secondary);">
+                        <span class="text-4xl">🎨</span>
+                    </div>
+                    <div class="absolute top-20 right-10 w-16 h-16 border-2 border-primary rounded-full flex items-center justify-center" style="border-color: var(--color-primary);">
+                        <span class="text-2xl">✏️</span>
+                    </div>
+                    <div class="absolute bottom-10 left-20 w-20 h-20 border-2 border-warning rounded-full flex items-center justify-center" style="border-color: var(--color-warning);">
+                        <span class="text-3xl">📝</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-12 section-secondary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="stats-grid grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="stat-card bg-white">
+                    <p class="text-4xl font-bold" style="color: var(--color-primary);">2K+</p>
+                    <p class="mt-2" style="color: var(--color-secondary);">Active Teams</p>
+                </div>
+                <div class="stat-card bg-white">
+                    <p class="text-4xl font-bold" style="color: var(--color-primary);">98%</p>
+                    <p class="mt-2" style="color: var(--color-secondary);">Satisfaction</p>
+                </div>
+                <div class="stat-card bg-white">
+                    <p class="text-4xl font-bold" style="color: var(--color-primary);">50K+</p>
+                    <p class="mt-2" style="color: var(--color-secondary);">Doodles Created</p>
+                </div>
+                <div class="stat-card bg-white">
+                    <p class="text-4xl font-bold" style="color: var(--color-primary);">24/7</p>
+                    <p class="mt-2" style="color: var(--color-secondary);">Support</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16 md:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--color-secondary);">
+                    Everything You Need to <span class="doodle-underline" style="color: var(--color-primary);">Create</span>
+                </h2>
+                <p class="text-lg max-w-2xl mx-auto" style="color: var(--color-text);">
+                    Powerful tools wrapped in a playful interface. Doodle makes project management feel like recess.
+                </p>
+            </div>
+            <div class="features-grid grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="card-sketch p-6">
+                    <div class="feature-icon">
+                        <i data-lucide="pencil"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Sketch Boards</h3>
+                    <p style="color: var(--color-text);">Visualize ideas with infinite canvas. Drag, drop, and doodle your way to clarity.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="card-sketch p-6">
+                    <div class="feature-icon">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Team Collaboration</h3>
+                    <p style="color: var(--color-text);">Real-time co-editing with playful avatars. Comment, react, and celebrate together.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="card-sketch p-6">
+                    <div class="feature-icon">
+                        <i data-lucide="calendar"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Timeline View</h3>
+                    <p style="color: var(--color-text);">Plan sprints with a visual timeline that adapts to your team's rhythm.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="card-sketch p-6">
+                    <div class="feature-icon">
+                        <i data-lucide="bell"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Smart Notifications</h3>
+                    <p style="color: var(--color-text);">Stay in the loop without the noise. Customizable alerts that respect your focus.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="card-sketch p-6">
+                    <div class="feature-icon">
+                        <i data-lucide="chart-bar"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Analytics</h3>
+                    <p style="color: var(--color-text);">Track progress with colorful charts that make data fun to explore.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="card-sketch p-6">
+                    <div class="feature-icon">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Enterprise Security</h3>
+                    <p style="color: var(--color-text);">Bank-level encryption and compliance. Your ideas are safe with us.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section id="process" class="py-16 md:py-24 section-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--color-secondary);">
+                    How Doodle <span class="doodle-underline" style="color: var(--color-surface);">Works</span>
+                </h2>
+                <p class="text-lg max-w-2xl mx-auto" style="color: var(--color-secondary);">
+                    Four simple steps from chaos to clarity.
+                </p>
+            </div>
+            <div class="process-grid grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="process-step">1</div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Doodle</h3>
+                    <p style="color: var(--color-secondary);">Sketch out your ideas on a blank canvas. No rules, just creativity.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="process-step">2</div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Share</h3>
+                    <p style="color: var(--color-secondary);">Invite your team and start collaborating in real-time.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="process-step">3</div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Refine</h3>
+                    <p style="color: var(--color-secondary);">Iterate with feedback and turn sketches into polished plans.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="text-center">
+                    <div class="process-step">4</div>
+                    <h3 class="text-xl font-bold mb-2" style="color: var(--color-secondary);">Ship</h3>
+                    <p style="color: var(--color-secondary);">Launch with confidence. Celebrate your wins together.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section id="benefits" class="py-16 md:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="benefits-grid grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-bold mb-6" style="color: var(--color-secondary);">
+                        Why Teams <span class="doodle-underline" style="color: var(--color-primary);">Love</span> Doodle
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <span class="benefit-check"><i data-lucide="check-circle"></i></span>
+                            <div>
+                                <h3 class="font-bold" style="color: var(--color-secondary);">Boost Creativity</h3>
+                                <p style="color: var(--color-text);">Playful tools unlock new ways of thinking. Teams report 40% more ideas.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="benefit-check"><i data-lucide="check-circle"></i></span>
+                            <div>
+                                <h3 class="font-bold" style="color: var(--color-secondary);">Save Time</h3>
+                                <p style="color: var(--color-text);">Streamlined workflows cut meeting time by 2 hours per week on average.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="benefit-check"><i data-lucide="check-circle"></i></span>
+                            <div>
+                                <h3 class="font-bold" style="color: var(--color-secondary);">Improve Morale</h3>
+                                <p style="color: var(--color-text);">Happy teams are productive teams. Our users smile 3x more at work.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="benefit-check"><i data-lucide="check-circle"></i></span>
+                            <div>
+                                <h3 class="font-bold" style="color: var(--color-secondary);">Scale Seamlessly</h3>
+                                <p style="color: var(--color-text);">From 2-person startups to 500-person enterprises, Doodle grows with you.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="blob bg-primary opacity-20 w-64 h-64 mx-auto"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="text-center">
+                            <p class="text-6xl mb-4">🚀</p>
+                            <p class="font-bold text-2xl" style="color: var(--color-secondary);">2x Faster</p>
+                            <p style="color: var(--color-text);">Project delivery</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-16 md:py-24 section-warning">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--color-secondary);">
+                    What Our <span class="doodle-underline" style="color: var(--color-surface);">Users Say</span>
+                </h2>
+                <p class="text-lg max-w-2xl mx-auto" style="color: var(--color-secondary);">
+                    Real stories from real teams who found their groove with Doodle.
+                </p>
+            </div>
+            <div class="testimonials-grid grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="testimonial-card">
+                    <p class="mb-4" style="color: var(--color-text);">"Doodle transformed our chaotic brainstorming into structured fun. We've never been more aligned as a team."</p>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold mr-4" style="background-color: var(--color-primary);">S</div>
+                        <div>
+                            <p class="font-bold" style="color: var(--color-secondary);">Sarah Chen</p>
+                            <p class="text-sm" style="color: var(--color-text);">Product Manager, Sketchy Co.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="testimonial-card">
+                    <p class="mb-4" style="color: var(--color-text);">"The playful interface makes work feel less like work. Our team's productivity has never been higher."</p>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-white font-bold mr-4" style="background-color: var(--color-secondary);">M</div>
+                        <div>
+                            <p class="font-bold" style="color: var(--color-secondary);">Marcus Johnson</p>
+                            <p class="text-sm" style="color: var(--color-text);">CTO, Doodle Labs</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="testimonial-card">
+                    <p class="mb-4" style="color: var(--color-text);">"We switched from three tools to just Doodle. It's the Swiss Army knife of project management."</p>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 rounded-full bg-success flex items-center justify-center text-white font-bold mr-4" style="background-color: var(--color-success);">E</div>
+                        <div>
+                            <p class="font-bold" style="color: var(--color-secondary);">Elena Rodriguez</p>
+                            <p class="text-sm" style="color: var(--color-text);">Design Lead, Pixel Perfect</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-16 md:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--color-secondary);">
+                    Simple <span class="doodle-underline" style="color: var(--color-primary);">Pricing</span>
+                </h2>
+                <p class="text-lg max-w-2xl mx-auto" style="color: var(--color-text);">
+                    Start free, upgrade when you're ready. No hidden fees, no surprises.
+                </p>
+            </div>
+            <div class="pricing-grid grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Basic Plan -->
+                <div class="card-sketch p-6 flex flex-col">
+                    <h3 class="text-2xl font-bold mb-2" style="color: var(--color-secondary);">Doodler</h3>
+                    <p class="text-4xl font-bold mb-4" style="color: var(--color-primary);">$0<span class="text-lg text-gray-500">/mo</span></p>
+                    <ul class="space-y-2 mb-8 flex-grow">
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> 3 projects</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> 5 team members</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> Basic boards</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> Community support</li>
+                    </ul>
+                    <a href="#" class="btn-secondary text-center">Start Free</a>
+                </div>
+                <!-- Pro Plan -->
+                <div class="card-sketch p-6 flex flex-col border-4" style="border-color: var(--color-primary);">
+                    <h3 class="text-2xl font-bold mb-2" style="color: var(--color-secondary);">Pro</h3>
+                    <p class="text-4xl font-bold mb-4" style="color: var(--color-primary);">$12<span class="text-lg text-gray-500">/mo</span></p>
+                    <ul class="space-y-2 mb-8 flex-grow">
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> Unlimited projects</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> 20 team members</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> Advanced analytics</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> Priority support</li>
+                    </ul>
+                    <a href="#" class="btn-primary text-center">Get Pro</a>
+                </div>
+                <!-- Enterprise Plan -->
+                <div class="card-sketch p-6 flex flex-col">
+                    <h3 class="text-2xl font-bold mb-2" style="color: var(--color-secondary);">Enterprise</h3>
+                    <p class="text-4xl font-bold mb-4" style="color: var(--color-primary);">Custom</p>
+                    <ul class="space-y-2 mb-8 flex-grow">
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> Unlimited everything</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> SSO & SAML</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> Dedicated manager</li>
+                        <li class="flex items-center"><i data-lucide="check" class="benefit-check"></i> 99.9% uptime SLA</li>
+                    </ul>
+                    <a href="#" class="btn-secondary text-center">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-16 md:py-24 section-secondary">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--color-surface);">
+                    Frequently Asked <span class="doodle-underline" style="color: var(--color-primary);">Questions</span>
+                </h2>
+                <p class="text-lg" style="color: var(--color-surface);">
+                    Everything you need to know before you start doodling.
+                </p>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <div class="faq-item bg-white">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Is Doodle really free to start?</span>
+                        <i data-lucide="chevron-down" class="faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p style="color: var(--color-text);">Yes! Our Doodler plan is free forever. No credit card required. You can upgrade anytime when you're ready for more features.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 2 -->
+                <div class="faq-item bg-white">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Can I migrate from other tools?</span>
+                        <i data-lucide="chevron-down" class="faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p style="color: var(--color-text);">Absolutely! We offer one-click importers for Trello, Asana, and Jira. Your data will be migrated in minutes, not hours.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 3 -->
+                <div class="faq-item bg-white">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How secure is my data?</span>
+                        <i data-lucide="chevron-down" class="faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p style="color: var(--color-text);">We use 256-bit encryption at rest and in transit. Our infrastructure is SOC 2 Type II certified and GDPR compliant.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 4 -->
+                <div class="faq-item bg-white">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Do you offer discounts for startups?</span>
+                        <i data-lucide="chevron-down" class="faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p style="color: var(--color-text);">We love startups! Eligible early-stage companies get 50% off Pro for the first year. Just email us at hello@doodle.app.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 5 -->
+                <div class="faq-item bg-white">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>What happens if I exceed my plan limits?</span>
+                        <i data-lucide="chevron-down" class="faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p style="color: var(--color-text);">We'll notify you before you hit any limits. You can upgrade instantly or we'll help you find a plan that fits your needs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 md:py-24 section-primary">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-5xl font-bold mb-6" style="color: var(--color-secondary);">
+                Ready to Start <span class="doodle-underline" style="color: var(--color-surface);">Doodling?</span>
+            </h2>
+            <p class="text-xl mb-8" style="color: var(--color-secondary);">
+                Join thousands of teams who turned their ideas into reality with Doodle.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#" class="btn-primary text-center">Get Started Free</a>
+                <a href="#" class="btn-secondary text-center">Book a Demo</a>
+            </div>
+            <p class="mt-6 text-sm" style="color: var(--color-secondary);">
+                No credit card required · Free forever plan · Cancel anytime
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <span class="text-2xl">✏️</span>
+                        <span class="text-xl font-bold">Doodle</span>
+                    </div>
+                    <p class="text-sm mb-4">
+                        Making project management playful since 2024.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" aria-label="Twitter"><i data-lucide="twitter"></i></a>
+                        <a href="#" aria-label="LinkedIn"><i data-lucide="linkedin"></i></a>
+                        <a href="#" aria-label="GitHub"><i data-lucide="github"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#">Features</a></li>
+                        <li><a href="#">Pricing</a></li>
+                        <li><a href="#">Integrations</a></li>
+                        <li><a href="#">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#">Privacy</a></li>
+                        <li><a href="#">Terms</a></li>
+                        <li><a href="#">Security</a></li>
+                        <li><a href="#">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/20 mt-8 pt-8 text-center text-sm">
+                <p>© 2024 Doodle Inc. All rights reserved. Made with ❤️ and doodles.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for interactions -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.querySelector('.mobile-menu');
+            menu.classList.toggle('open');
+        }
+
+        // FAQ accordion
+        function toggleFaq(element) {
+            const item = element.parentElement;
+            item.classList.toggle('open');
+            // Close other items
+            document.querySelectorAll('.faq-item').forEach(other => {
+                if (other !== item && other.classList.contains('open')) {
+                    other.classList.remove('open');
+                }
+            });
+        }
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    // Close mobile menu if open
+                    const menu = document.querySelector('.mobile-menu');
+                    if (menu.classList.contains('open')) {
+                        menu.classList.remove('open');
+                    }
+                }
+            });
+        });
+
+        // Add active state to nav links on scroll
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (window.pageYOffset >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-primary');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.style.color = 'var(--color-primary)';
+                } else {
+                    link.style.color = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

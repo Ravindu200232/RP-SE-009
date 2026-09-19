@@ -10,7 +10,7 @@ COVERAGE_AREAS = [
     "app_surfaces", "features_modules", "data_entities", "payments_billing",
     "reports", "notifications", "file_uploads", "integrations",
     "security_privacy", "performance", "devices_mobile", "languages",
-    "deployment_stack", "special_rules",
+    "special_rules",
 ]
 
 CRITICAL_AREAS = {

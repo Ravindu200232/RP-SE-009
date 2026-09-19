@@ -29,6 +29,7 @@ _PERSISTED_ACTIVE_STATES = {
     RunState.CI_RUNNING.value,
     RunState.DEPLOYING.value,
     RunState.VALIDATING.value,
+    RunState.REPAIRING.value,
 }
 
 
@@ -40,9 +41,14 @@ _CANCELLABLE_STATES = _PERSISTED_ACTIVE_STATES | {
 
 def github_credential_args() -> list[str]:
     """Use gh credentials for non-interactive git commands."""
+    from deployment_agent import owner_credentials
+
     executable = resolve_command("gh")
     command = Path(executable).as_posix() if executable else "gh"
-    return [
+    # Deploying for someone, no other helper may answer for github.com: one
+    # would sign in as whoever set this machine up (owner_credentials.py).
+    reset = ["-c", "credential.helper="] if owner_credentials.active() else []
+    return reset + [
         "-c", "credential.https://github.com.helper=",
         "-c", f"credential.https://github.com.helper=!'{command}' auth git-credential",
     ]

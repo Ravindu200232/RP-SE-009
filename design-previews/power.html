@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power — dark premium system</title>
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Oswald + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* design system tokens – Power */
+        :root {
+            --primary: #FAFAFA;
+            --secondary: #FAFAFA;
+            --success: #16A34A;
+            --warning: #D97706;
+            --danger: #DC2626;
+            --surface: #000000;
+            --text: #ffffff;
+            --font-display: 'Oswald', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --spacing-base: 8px;
+        }
+        body {
+            background-color: var(--surface);
+            color: var(--text);
+            font-family: var(--font-display);
+            letter-spacing: 0.01em;
+        }
+        /* sharp edges everywhere – no rounded corners */
+        * {
+            border-radius: 0 !important;
+        }
+        /* high-contrast focus states */
+        :focus-visible {
+            outline: 2px solid #FAFAFA;
+            outline-offset: 4px;
+        }
+        /* consistent 8px rhythm */
+        .space-y-8 > * + * { margin-top: 2rem; } /* 32px */
+        .section-pad { padding: 5rem 1.5rem; } /* 80px vertical */
+        /* typography scale – bold display */
+        .display-xl { font-size: clamp(3.5rem, 12vw, 7rem); line-height: 0.95; font-weight: 700; letter-spacing: -0.02em; }
+        .display-lg { font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 600; line-height: 1; }
+        .heading-md { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 500; }
+        .title-sm { font-size: 1.5rem; font-weight: 500; }
+        /* mono labels */
+        .mono-label { font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; color: #a3a3a3; }
+        /* buttons – sharp, bold */
+        .btn { display: inline-block; padding: 0.9rem 2.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.9rem; border: 2px solid var(--primary); transition: all 0.2s; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-primary:hover { background: transparent; color: var(--primary); }
+        .btn-outline { border-color: var(--primary); color: var(--primary); background: transparent; }
+        .btn-outline:hover { background: var(--primary); color: #000; }
+        /* card – sharp, minimal */
+        .card { background: #0a0a0a; border: 1px solid #2a2a2a; padding: 2rem; }
+        /* stat block */
+        .stat-number { font-size: 4rem; font-weight: 700; line-height: 1; }
+        /* pricing highlight */
+        .pricing-highlight { background: #111; border: 2px solid #FAFAFA; }
+        /* feature icon */
+        .feature-icon { width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; border: 1px solid #333; }
+        /* testimonial quote */
+        .quote-mark { font-size: 5rem; line-height: 0.5; color: #333; font-family: var(--font-mono); }
+        /* faq border */
+        .faq-item { border-bottom: 1px solid #2a2a2a; }
+        /* process step */
+        .step-number { font-family: var(--font-mono); font-size: 1.2rem; color: #FAFAFA; border: 1px solid #FAFAFA; width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; }
+        /* gradient shape – hero background */
+        .hero-bg { background: radial-gradient(circle at 20% 20%, #1f1f1f 0%, #000 60%); }
+        /* benefit check */
+        .benefit-check { color: #16A34A; }
+        /* responsive adjustments */
+        @media (max-width: 640px) {
+            .section-pad { padding: 3rem 1rem; }
+            .stat-number { font-size: 2.8rem; }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- ========== NAVIGATION ========== -->
+    <header class="sticky top-0 z-50 bg-black/90 backdrop-blur-sm border-b border-neutral-800">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-[#FAFAFA]"></span>
+                <span class="text-2xl font-bold tracking-tight">POWER</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-wider">
+                <a href="#features" class="hover:text-neutral-300 transition">Features</a>
+                <a href="#process" class="hover:text-neutral-300 transition">Process</a>
+                <a href="#pricing" class="hover:text-neutral-300 transition">Pricing</a>
+                <a href="#faq" class="hover:text-neutral-300 transition">FAQ</a>
+            </div>
+            <a href="#contact" class="btn btn-outline !py-2 !px-5 text-sm">Get Started</a>
+        </nav>
+    </header>
+
+    <!-- ========== HERO ========== -->
+    <section class="hero-bg section-pad">
+        <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+                <p class="mono-label mb-6">// POWER SYSTEM 2025</p>
+                <h1 class="display-xl mb-8">BUILT FOR<br>THE BOLD.</h1>
+                <p class="text-lg text-neutral-400 mb-10 max-w-md leading-relaxed">Monochrome. Sharp. Uncompromising. A design language for brands that refuse to blend in.</p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#pricing" class="btn btn-primary">Start free</a>
+                    <a href="#process" class="btn btn-outline">See how it works</a>
+                </div>
+            </div>
+            <!-- abstract CSS shape – no photos -->
+            <div class="relative h-72 md:h-96 w-full">
+                <div class="absolute inset-0 bg-gradient-to-tr from-neutral-900 to-neutral-800 border border-neutral-700"></div>
+                <div class="absolute top-8 left-8 w-24 h-24 bg-[#FAFAFA] opacity-20"></div>
+                <div class="absolute bottom-8 right-8 w-40 h-40 border-4 border-[#FAFAFA] opacity-30"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#FAFAFA] rotate-45"></div>
+                <div class="absolute top-4 right-12 w-16 h-16 bg-[#16A34A] opacity-40"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== STATS ========== -->
+    <section class="border-y border-neutral-800 bg-[#0a0a0a]">
+        <div class="max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div>
+                <p class="stat-number">99<span class="text-2xl align-top">%</span></p>
+                <p class="mono-label mt-2">Uptime</p>
+            </div>
+            <div>
+                <p class="stat-number">120<span class="text-2xl align-top">+</span></p>
+                <p class="mono-label mt-2">Components</p>
+            </div>
+            <div>
+                <p class="stat-number">50K</p>
+                <p class="mono-label mt-2">Users</p>
+            </div>
+            <div>
+                <p class="stat-number">4.9</p>
+                <p class="mono-label mt-2">Rating</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FEATURES ========== -->
+    <section id="features" class="section-pad">
+        <div class="max-w-7xl mx-auto">
+            <p class="mono-label mb-4">// FEATURES</p>
+            <h2 class="heading-md mb-16">EVERYTHING YOU NEED.<br>NOTHING YOU DON'T.</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- feature 1 -->
+                <div class="card">
+                    <div class="feature-icon mb-6"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                    <h3 class="title-sm mb-3">Lightning performance</h3>
+                    <p class="text-neutral-400 leading-relaxed">Sub-second loads, zero bloat. Optimized for Core Web Vitals out of the box.</p>
+                </div>
+                <!-- feature 2 -->
+                <div class="card">
+                    <div class="feature-icon mb-6"><i data-lucide="shield" class="w-5 h-5"></i></div>
+                    <h3 class="title-sm mb-3">Enterprise security</h3>
+                    <p class="text-neutral-400 leading-relaxed">SOC2, GDPR, and end-to-end encryption. Your data stays yours.</p>
+                </div>
+                <!-- feature 3 -->
+                <div class="card">
+                    <div class="feature-icon mb-6"><i data-lucide="layers" class="w-5 h-5"></i></div>
+                    <h3 class="title-sm mb-3">Modular by design</h3>
+                    <p class="text-neutral-400 leading-relaxed">Use only what you need. Every component is independent and composable.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PROCESS ========== -->
+    <section id="process" class="section-pad bg-[#0a0a0a] border-y border-neutral-800">
+        <div class="max-w-7xl mx-auto">
+            <p class="mono-label mb-4">// PROCESS</p>
+            <h2 class="heading-md mb-16">FROM IDEA TO LAUNCH IN 4 STEPS</h2>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="step-number mb-6">01</div>
+                    <h3 class="title-sm mb-2">Discover</h3>
+                    <p class="text-neutral-400">Deep-dive into your brand, users, and goals.</p>
+                </div>
+                <div>
+                    <div class="step-number mb-6">02</div>
+                    <h3 class="title-sm mb-2">Design</h3>
+                    <p class="text-neutral-400">High-fidelity mockups with the Power system.</p>
+                </div>
+                <div>
+                    <div class="step-number mb-6">03</div>
+                    <h3 class="title-sm mb-2">Build</h3>
+                    <p class="text-neutral-400">Clean, accessible, production-ready code.</p>
+                </div>
+                <div>
+                    <div class="step-number mb-6">04</div>
+                    <h3 class="title-sm mb-2">Scale</h3>
+                    <p class="text-neutral-400">Launch, measure, and iterate with confidence.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== BENEFITS ========== -->
+    <section class="section-pad">
+        <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <p class="mono-label mb-4">// BENEFITS</p>
+                <h2 class="heading-md mb-8">WHY TEAMS CHOOSE POWER</h2>
+                <ul class="space-y-4">
+                    <li class="flex gap-3"><span class="benefit-check"><i data-lucide="check-circle" class="w-6 h-6"></i></span><span class="text-lg">70% faster design-to-dev handoff</span></li>
+                    <li class="flex gap-3"><span class="benefit-check"><i data-lucide="check-circle" class="w-6 h-6"></i></span><span class="text-lg">Consistent, accessible components</span></li>
+                    <li class="flex gap-3"><span class="benefit-check"><i data-lucide="check-circle" class="w-6 h-6"></i></span><span class="text-lg">Built for dark-mode first</span></li>
+                    <li class="flex gap-3"><span class="benefit-check"><i data-lucide="check-circle" class="w-6 h-6"></i></span><span class="text-lg">Zero design debt – sharp edges only</span></li>
+                </ul>
+            </div>
+            <!-- abstract shape -->
+            <div class="bg-neutral-900 border border-neutral-700 p-10 h-80 flex items-center justify-center">
+                <div class="w-40 h-40 bg-[#FAFAFA] rotate-12"></div>
+                <div class="w-40 h-40 bg-[#16A34A] -rotate-6 -ml-8 opacity-70"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== TESTIMONIALS ========== -->
+    <section class="section-pad bg-[#0a0a0a] border-y border-neutral-800">
+        <div class="max-w-7xl mx-auto">
+            <p class="mono-label mb-4">// TESTIMONIALS</p>
+            <h2 class="heading-md mb-16">TRUSTED BY THE RESTLESS</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="card">
+                    <div class="quote-mark mb-4">"</div>
+                    <p class="text-lg mb-6">"Power gave us a visual identity that actually feels powerful. Our conversion rate jumped 34%."</p>
+                    <p class="font-semibold">— Maya Chen</p>
+                    <p class="mono-label">VP Design, Northwind</p>
+                </div>
+                <div class="card">
+                    <div class="quote-mark mb-4">"</div>
+                    <p class="text-lg mb-6">"Finally a system that respects both aesthetics and accessibility. The focus states are perfect."</p>
+                    <p class="font-semibold">— Jonas Weber</p>
+                    <p class="mono-label">Lead Engineer, Kite</p>
+                </div>
+                <div class="card">
+                    <div class="quote-mark mb-4">"</div>
+                    <p class="text-lg mb-6">"We redesigned in 2 weeks. The sharp, bold look sets us apart from every competitor."</p>
+                    <p class="font-semibold">— Amara Okafor</p>
+                    <p class="mono-label">Founder, Lumen</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PRICING ========== -->
+    <section id="pricing" class="section-pad">
+        <div class="max-w-7xl mx-auto">
+            <p class="mono-label mb-4">// PRICING</p>
+            <h2 class="heading-md mb-16">SIMPLE, TRANSPARENT PRICING</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- basic -->
+                <div class="card">
+                    <h3 class="title-sm mb-2">STARTER</h3>
+                    <p class="text-4xl font-bold mb-6">$0<span class="text-lg text-neutral-500">/mo</span></p>
+                    <ul class="space-y-3 mb-8 text-neutral-300">
+                        <li>1 project</li>
+                        <li>Core components</li>
+                        <li>Community support</li>
+                    </ul>
+                    <a href="#" class="btn btn-outline w-full text-center">Start free</a>
+                </div>
+                <!-- pro (highlighted) -->
+                <div class="card pricing-highlight">
+                    <h3 class="title-sm mb-2">PRO</h3>
+                    <p class="text-4xl font-bold mb-6">$49<span class="text-lg text-neutral-500">/mo</span></p>
+                    <ul class="space-y-3 mb-8 text-neutral-300">
+                        <li>Unlimited projects</li>
+                        <li>All premium components</li>
+                        <li>Priority support</li>
+                        <li>Custom tokens</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary w-full text-center">Get Pro</a>
+                </div>
+                <!-- enterprise -->
+                <div class="card">
+                    <h3 class="title-sm mb-2">ENTERPRISE</h3>
+                    <p class="text-4xl font-bold mb-6">Custom</p>
+                    <ul class="space-y-3 mb-8 text-neutral-300">
+                        <li>Dedicated success manager</li>
+                        <li>SLA & SSO</li>
+                        <li>On-premise option</li>
+                    </ul>
+                    <a href="#" class="btn btn-outline w-full text-center">Contact sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FAQ ========== -->
+    <section id="faq" class="section-pad bg-[#0a0a0a] border-t border-neutral-800">
+        <div class="max-w-4xl mx-auto">
+            <p class="mono-label mb-4">// FAQ</p>
+            <h2 class="heading-md mb-12">QUESTIONS, ANSWERED</h2>
+            <div class="faq-item py-6">
+                <h3 class="text-xl font-medium mb-2">Can I use Power with my existing stack?</h3>
+                <p class="text-neutral-400">Absolutely. It's framework-agnostic – works with React, Vue, or plain HTML/CSS.</p>
+            </div>
+            <div class="faq-item py-6">
+                <h3 class="text-xl font-medium mb-2">Is the free tier really free?</h3>
+                <p class="text-neutral-400">Yes, forever. No credit card required. You get all core components.</p>
+            </div>
+            <div class="faq-item py-6">
+                <h3 class="text-xl font-medium mb-2">How do you handle accessibility?</h3>
+                <p class="text-neutral-400">Every component is built with keyboard navigation, ARIA labels, and high-contrast focus states by default.</p>
+            </div>
+            <div class="faq-item py-6">
+                <h3 class="text-xl font-medium mb-2">Can I customize the design tokens?</h3>
+                <p class="text-neutral-400">Yes – you can override every CSS variable. The system is built to be extended.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="border-t border-neutral-800 py-12">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-[#FAFAFA]"></span>
+                <span class="text-xl font-bold">POWER</span>
+            </div>
+            <p class="mono-label">© 2025 POWER SYSTEM — ALL RIGHTS RESERVED</p>
+            <div class="flex gap-6 text-sm">
+                <a href="#" class="hover:text-neutral-300">Twitter</a>
+                <a href="#" class="hover:text-neutral-300">GitHub</a>
+                <a href="#" class="hover:text-neutral-300">LinkedIn</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- lucide icons init -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
