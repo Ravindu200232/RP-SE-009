@@ -74,6 +74,12 @@ start.bat
 
 `start.bat` prepares Electron when needed and opens the desktop shell. The Electron splash then starts `server.py` and the Studio, so a slow first dependency install does not look like a frozen command window.
 
+For everyday use, and for a desktop shortcut, run **`AgentForge.vbs`** instead:
+it does the same thing with no console window at all. `start.bat` leaves one
+open while it works, which is what you want the first time and not afterwards.
+If the hidden launcher cannot start, it says so and writes what happened to
+`start.log`.
+
 ### macOS / Linux
 
 ```bash

@@ -390,7 +390,7 @@ export default function Home({
         {srsPhase === 'idle' && (
           <>
             {/* Main Central Prompt Box */}
-            <div className="mt-8 relative rounded-[26px] border border-line bg-panel shadow-2xl backdrop-blur-2xl transition-all focus-within:border-accent/60 focus-within:shadow-[0_20px_60px_rgba(24,119,242,.2)]">
+            <div className="mt-8 relative z-30 rounded-[26px] border border-line bg-panel shadow-2xl backdrop-blur-2xl transition-all focus-within:border-accent/60 focus-within:shadow-[0_20px_60px_rgba(24,119,242,.2)]">
               <TextArea
                 value={prompt}
                 autoFocus
@@ -468,7 +468,7 @@ export default function Home({
                     </select>
 
                     {langOpen && (
-                      <div className="absolute bottom-full mb-2 left-0 w-64 rounded-2xl border border-line bg-panel p-2 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="absolute top-full mt-2 left-0 w-64 rounded-2xl border border-line bg-panel p-2 shadow-[0_20px_50px_rgba(0,0,0,0.75)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
                         {/* Search Input */}
                         <div className="relative mb-2">
                           <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 size-2.5 text-muted2" />
@@ -483,7 +483,7 @@ export default function Home({
                         </div>
 
                         {/* Scrollable Language List */}
-                        <div className="max-h-52 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
+                        <div className="max-h-48 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
                           {filteredLanguages.map(language => {
                             const isSelected = language.code === srsLanguage
                             return (
@@ -542,7 +542,7 @@ export default function Home({
             )}
 
             {/* Visual Workflow Pipeline Stages: SRS Generate | Prototype Build | App Build | Deployment */}
-            <div className="mt-7 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[660px] w-full mx-auto">
+            <div className="mt-7 relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[660px] w-full mx-auto">
               {[
                 {
                   id: 'srs',

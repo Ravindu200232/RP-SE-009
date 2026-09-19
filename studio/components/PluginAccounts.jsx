@@ -57,6 +57,37 @@ export function usePlugins(project, pending, onPending) {
            onSaved: saved => setState(s => ({ ...s, saved })) }
 }
 
+/** Provider icon with graceful avatar fallback to prevent broken images. */
+function PluginIcon({ plugin }) {
+  const [failed, setFailed] = useState(false)
+  const raw = plugin.icon || ''
+  const src = raw.startsWith('/') ? raw : `/__agentforge/plugins/${raw}`
+  const letter = (plugin.name || plugin.id || 'P').trim()[0]?.toUpperCase() || 'P'
+
+  if (failed || !raw) {
+    return (
+      <span
+        aria-label={plugin.name || ''}
+        className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent/15 text-[12px] font-bold text-accent shadow-xs"
+      >
+        {letter}
+      </span>
+    )
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={plugin.name || ''}
+      width={28}
+      height={28}
+      onError={() => setFailed(true)}
+      className="size-7 shrink-0 rounded-lg object-contain shadow-xs"
+    />
+  )
+}
+
 /** One provider: its icon, what it is for, and what it still needs. */
 function Card({ plugin, saved, ticking, on, onTick, onSaved }) {
   const [open, setOpen] = useState(false)
@@ -101,12 +132,7 @@ function Card({ plugin, saved, ticking, on, onTick, onSaved }) {
             {on && <Check className="size-3" />}
           </button>
         )}
-        {/* The studio is served under a basePath and a plain <img> does not
-            get it - only next/image and next/link do - so the prefix is
-            written out, the way every other asset in here writes it. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/__agentforge/plugins/${plugin.icon}`} alt="" width={28} height={28}
-             className="size-7 shrink-0 rounded-lg" />
+        <PluginIcon plugin={plugin} />
         <button onClick={() => setOpen(o => !o)} className="min-w-0 flex-1 text-left">
           <span className="flex items-baseline gap-2">
             <span className="text-[12.5px] font-semibold text-ink">{plugin.name}</span>

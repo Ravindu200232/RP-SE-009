@@ -817,6 +817,7 @@ def write_handoff(target: Path, srs: dict, stack: str = "", *, refresh=False) ->
     tech = {
         "nextjs-mongo": "Next.js (App Router) + React + MongoDB/Mongoose",
         "mern-microservices": "React (Vite) + Express microservices + MongoDB/Mongoose + API gateway",
+        "remix-mongo": "Remix v2 (Vite) + React + MongoDB/Mongoose",
     }
     selected = SimpleNamespace(
         id=stack or "nextjs-mongo",

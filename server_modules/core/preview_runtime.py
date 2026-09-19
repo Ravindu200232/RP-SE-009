@@ -68,6 +68,12 @@ def _spawn_preview(runtime, generation):
            "NODE_ENV": "development", "BROWSER": "none", "FORCE_COLOR": "0", "NO_COLOR": "1"}
     if stack == "mern-microservices":
         argv = [NPM_BIN, "run", "dev"]
+    elif stack == "remix-mongo":
+        # Remix v2 runs on Vite, so the flags are Vite's: `--host`, not Next's
+        # `--hostname`, and no bundler flag of any kind. Passing Next's spelling
+        # here starts the server on a random port and the preview never finds it.
+        argv = [NPM_BIN, "run", "dev", "--",
+                "--port", str(runtime.port), "--host", "127.0.0.1"]
     else:
         binary = root / "node_modules" / "next" / "dist" / "bin" / "next"
         argv = ([NODE_BIN, str(binary), "dev"] if binary.is_file()

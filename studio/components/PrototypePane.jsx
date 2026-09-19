@@ -298,6 +298,23 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     }
   }, [visualEditOn, attachVisualInspector])
 
+  const attachFigmaEditor = useCallback(() => {
+    protoEditorRef.current?.detach?.()
+    protoEditorRef.current = null
+    const f = frameRef.current
+    if (!f) return
+    import('@/lib/wireframe-html-editor').then(({ attachEditor }) => {
+      protoEditorRef.current = attachEditor(f, {
+        onSelect: setFigmaPicked,
+        onDirty: setFigmaDirty,
+        onMetrics: setFigmaMetrics,
+      })
+      if (protoEditorRef.current) {
+        protoEditorRef.current.setDragMode(figmaDragMode)
+      }
+    })
+  }, [figmaDragMode])
+
   useEffect(() => {
     const f = frameRef.current
     if (!f) return
@@ -414,23 +431,6 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       window.removeEventListener('resize', onResize)
     }
   }, [pencilOn, point, syncCanvas, clearStrokes, attachShot, viewportOf, project])
-
-  const attachFigmaEditor = useCallback(() => {
-    protoEditorRef.current?.detach?.()
-    protoEditorRef.current = null
-    const f = frameRef.current
-    if (!f) return
-    import('@/lib/wireframe-html-editor').then(({ attachEditor }) => {
-      protoEditorRef.current = attachEditor(f, {
-        onSelect: setFigmaPicked,
-        onDirty: setFigmaDirty,
-        onMetrics: setFigmaMetrics,
-      })
-      if (protoEditorRef.current) {
-        protoEditorRef.current.setDragMode(figmaDragMode)
-      }
-    })
-  }, [figmaDragMode])
 
   useEffect(() => () => { protoEditorRef.current?.detach?.() }, [])
 

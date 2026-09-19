@@ -95,7 +95,34 @@ MERN_MICRO = Stack(
     parallel_units=True,
 )
 
-STACKS = {s.id: s for s in (NEXT_MONGO, MERN_MICRO)}
+REMIX_MONGO = Stack(
+    id="remix-mongo",
+    product="A full-stack Remix web application backed by MongoDB.",
+    tech="Remix v2 (Vite) + React + MongoDB/Mongoose",
+    language="JavaScript (ESM)",
+    unit_tool="Vitest",
+    e2e_tool="AgentX browser journeys (direct CDP)",
+    rules=(
+        "One Remix application written in JavaScript, running on the Vite plugin. "
+        "There is no remix.config.js in this shape: the framework's options live in vite.config.js.",
+        "Data is read in a route's `loader` and written in its `action`. Both run on the server, "
+        "which is what keeps Mongoose out of the browser bundle - never fetch the app's own data "
+        "from a `useEffect`.",
+        "A route module is a file under app/routes/. `_index.jsx` serves `/`; a dot in a filename "
+        "is a path separator and a leading underscore is a segment that does not appear in the URL.",
+        "Persist through the project's Mongoose data layer; no other application database.",
+        "Use Vitest for project unit and integration tests.",
+        "Use the engine's direct-CDP browser journeys for E2E; do not add a project E2E framework. "
+        "Check the routes themselves with curl first - a page that refuses to render records is not "
+        "a route that refuses to return them.",
+        "Detect the installed versions, router shape, package manager and code style from the project itself.",
+        "Never migrate the generated application to another framework, database or distributed architecture.",
+    ),
+    skills=("html-prototype", "stack-remix", "stack-testing", "stack-debug",
+            "stack-security"),
+)
+
+STACKS = {s.id: s for s in (NEXT_MONGO, MERN_MICRO, REMIX_MONGO)}
 DEFAULT_STACK = NEXT_MONGO.id
 
 
@@ -128,6 +155,11 @@ def stack_of(workspace) -> str:
         return MERN_MICRO.id
     dependencies = {**(manifest.get("dependencies") or {}),
                     **(manifest.get("devDependencies") or {})}
+    # Remix first: a Remix project has React and Vite among its dependencies
+    # and is not a Vite SPA, and `@remix-run/react` is the one entry that says
+    # so without being true of anything else.
+    if "@remix-run/react" in dependencies or "@remix-run/dev" in dependencies:
+        return REMIX_MONGO.id
     return NEXT_MONGO.id if "next" in dependencies else ""
 
 
@@ -138,6 +170,8 @@ def detect_stack(prompt: str) -> str:
     "service" in a sentence about a booking service is not an architecture.
     """
     text = str(prompt or "").lower()
+    if any(s in text for s in ("remix", "remix.run", "remix framework")):
+        return REMIX_MONGO.id
     signals = ("microservice", "micro service", "micro-service", "mern",
                "api gateway", "separate services")
     return MERN_MICRO.id if any(s in text for s in signals) else DEFAULT_STACK

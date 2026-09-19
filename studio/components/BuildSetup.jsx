@@ -54,7 +54,7 @@ export default function BuildSetup({
       )}
 
       {/* Custom Stack Selector Dropdown with refined small icon */}
-      <div className="relative" ref={stackRef}>
+      <div className="relative z-40" ref={stackRef}>
         <button
           type="button"
           onClick={() => setStackOpen(!stackOpen)}
@@ -70,7 +70,7 @@ export default function BuildSetup({
         </button>
 
         {stackOpen && (
-          <div className="absolute top-full left-0 mt-1.5 w-72 rounded-2xl border border-line bg-panel p-1.5 shadow-[0_20px_40px_-4px_rgba(0,0,0,0.48)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute top-full left-0 mt-1.5 w-72 rounded-2xl border border-line bg-panel p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.75)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
             <div className="space-y-1">
               {stackOptions.map(item => {
                 const isSelected = stack === item.id || (!stack && !item.id)
