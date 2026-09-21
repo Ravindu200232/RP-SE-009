@@ -32,6 +32,10 @@ from builder_agent.memory import Memory  # noqa: E402
 
 from . import e2e as e2e_stage  # noqa: E402
 from . import harness, report, security, unit as unit_stage  # noqa: E402
+from .browser import Browser
+from .evidence import Evidence, failure_packet
+from .instructions import execution_note
+from .tools import build_registry as build_qa_registry
 
 
 @dataclass
@@ -49,20 +53,31 @@ class QAAgent:
     def __init__(self, *, project: str, project_dir: Path | str, model: str,
                  host: str = "", stack: str = "", events: Events | None = None,
                  think: bool = False, cancel=None, unit: bool = True, e2e: bool = True,
-                 memory: Memory | None = None) -> None:
+                 memory: Memory | None = None, preview_url: str = "") -> None:
         self.project = project
         self.project_dir = Path(project_dir)
         self.events = events or Events()
         self.run_unit = unit
         self.run_e2e = e2e
+        self.preview_url = str(preview_url or "").rstrip("/")
         # The deep profile, and the only place it is used. Building runs at the
         # default profile; the suites are held to the higher bar.
         self.config = Config(workspace=self.project_dir, model=model, host=host,
                              stack=stack or "", quality=VERIFY_QUALITY, think=think,
                              unit_tests=unit, e2e_tests=e2e)
-        # Continue the completed build's transcript and evidence. QA can use a
-        # different model/profile without relearning the whole application.
-        self.agent = BuilderAgent(self.config, events=self.events, cancel=cancel, memory=memory)
+        # Continue the completed builder transcript, but attach a QA-owned
+        # evidence ledger and QA-only tools/browser. Builder itself never gets
+        # test execution or browser journey capabilities.
+        memory = memory or Memory(budget_tokens=self.config.context_tokens)
+        if memory.evidence is None:
+            memory.attach_evidence(Evidence())
+        self.agent = BuilderAgent(
+            self.config, events=self.events, cancel=cancel, memory=memory,
+            registry=build_qa_registry(), browser=Browser(events=self.events),
+            failure_packet=failure_packet, qa_instructions=execution_note(),
+            verification_tool_phases={"runTests": "unit",
+                                      "browserRunJourney": "e2e",
+                                      "browserRunJourneys": "e2e"})
 
     # -- helpers ---------------------------------------------------------
     def _run(self, command: str, timeout: int = 900) -> dict:
@@ -119,6 +134,30 @@ class QAAgent:
                 notes.append(f"{job.command[:80]}: " + " ".join(tail))
         return notes[:40]
 
+    def _ui_sweep(self) -> list[dict]:
+        """Read every declared screen with the QA browser after journeys finish.
+
+        This is reported as UI evidence but deliberately does not turn a
+        protected or parameterised page into a false build failure.
+        """
+        if not self.preview_url:
+            return []
+        try:
+            from .ui_sweep import routes_for, summarise, sweep
+            pages = routes_for(self.project_dir)
+            if not pages:
+                return []
+            shots = self.project_dir / ".agentforge" / "screenshots"
+            rows = sweep(self.agent.browser, self.preview_url, pages,
+                         shots_dir=shots, events=self.events)
+            note = summarise(rows)
+            if note:
+                self.events.emit("notice", level="info", message=f"UI check: {note}")
+            return rows
+        except Exception as error:  # noqa: BLE001 - report partial QA evidence safely
+            self.events.emit("notice", level="warn", message=f"UI check did not run: {error}")
+            return [{"page": "", "route": "", "error": str(error)[:300]}]
+
     # -- the run ---------------------------------------------------------
     def run(self) -> QAOutcome:
         outcome = QAOutcome(project=self.project)
@@ -134,6 +173,7 @@ class QAAgent:
             e2e_result = e2e_stage.E2EResult()
             findings = {"findings": [], "audit": {}}
             done: list = []
+            ui_rows: list = []
             record = {}
             path = None
 
@@ -160,6 +200,7 @@ class QAAgent:
                     history=report.append_history(existing, unit_result.rounds),
                     performance=perf_data,
                     stages=tuple(done), complete=complete)
+                record["ui_sweep"] = list(ui_rows)
                 path = report.write(self.project_dir, record)
                 self.events.emit("test", state="report", project=self.project,
                                  stages=list(done), complete=complete)
@@ -187,6 +228,12 @@ class QAAgent:
                 self.events.emit("phase", phase="e2e", title="End-to-end", status="done")
                 done.append("e2e")
                 save()
+
+            self.events.emit("phase", phase="ui", title="UI quality", status="active")
+            ui_rows = self._ui_sweep()
+            self.events.emit("phase", phase="ui", title="UI quality", status="done")
+            done.append("ui")
+            save()
 
             self.events.emit("phase", phase="security", title="Security review", status="active")
             findings = security.review(self.project_dir, self._run)

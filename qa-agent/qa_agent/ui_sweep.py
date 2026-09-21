@@ -27,7 +27,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT / "builder-agent") not in sys.path:
     sys.path.insert(0, str(_ROOT / "builder-agent"))
 
-from builder_agent.journeys import capture_ui_quality, ui_quality_note  # noqa: E402
+from .journeys import capture_ui_quality, ui_quality_note  # noqa: E402
 
 # Enough to cover an application, few enough that the sweep stays a footnote in
 # the run rather than a stage of it.

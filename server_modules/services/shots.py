@@ -42,7 +42,7 @@ class _Warm:
         self.timer: threading.Timer | None = None
 
     def page_for(self, url: str):
-        from builder_agent.browser import Browser
+        from qa_agent.browser import Browser
 
         if self.browser is None or not self.browser.running:
             self.browser = Browser()          # no event bus: nothing to stream

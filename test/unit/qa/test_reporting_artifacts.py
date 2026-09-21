@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from test import _support  # noqa: F401
-from builder_agent.evidence import Evidence
+from qa_agent.evidence import Evidence
 from qa_agent import artifacts, report
 
 

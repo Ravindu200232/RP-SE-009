@@ -41,7 +41,7 @@ class ManualPrototypeSyncTests(unittest.TestCase):
             namespace = {'PROD_DIR':root, 'ProjectState':ProjectState, 'time':time, 'emit':Mock(),
                          '_run_agent':Mock(), 'default_agent_model':lambda:'test'}
             run = load('server_modules/srs/parent_sync.py','run_manual_prototype_change',namespace)
-            with patch('builder_agent.prototype_check.validate_all',return_value=[]), patch('builder_agent.browser.Browser'):
+            with patch('builder_agent.prototype_check.validate_all',return_value=[]), patch('qa_agent.browser.Browser'):
                 run('alpha','Heading changed')
             namespace['_run_agent'].assert_not_called()
             self.assertEqual(ProjectState(root/'alpha').read()['agents']['designer']['summary'],'Heading changed')
@@ -54,7 +54,7 @@ class ManualPrototypeSyncTests(unittest.TestCase):
                          'default_agent_model':lambda:'test'}
             run = load('server_modules/srs/parent_sync.py','run_manual_prototype_change',namespace)
             findings = [{'page':'a.html','kind':'page error','text':'broken A'}, {'page':'b.html','kind':'page error','text':'broken B'}]
-            with patch('builder_agent.prototype_check.validate_all',return_value=findings), patch('builder_agent.browser.Browser'):
+            with patch('builder_agent.prototype_check.validate_all',return_value=findings), patch('qa_agent.browser.Browser'):
                 run('alpha','Heading changed')
             namespace['_run_agent'].assert_called_once()
             self.assertIn('a.html', namespace['_run_agent'].call_args.args[1])
@@ -65,6 +65,6 @@ class ManualPrototypeSyncTests(unittest.TestCase):
             root = Path(folder); (root/'alpha').mkdir()
             namespace = {'PROD_DIR':root, 'ProjectState':ProjectState, 'time':time, 'emit':Mock(), '_run_agent':Mock()}
             run = load('server_modules/srs/parent_sync.py','run_manual_prototype_change',namespace)
-            with patch('builder_agent.prototype_check.validate_all',return_value=[{'kind':'browser unavailable'}]), patch('builder_agent.browser.Browser'):
+            with patch('builder_agent.prototype_check.validate_all',return_value=[{'kind':'browser unavailable'}]), patch('qa_agent.browser.Browser'):
                 with self.assertRaisesRegex(RuntimeError,'unavailable'): run('alpha','Heading changed')
             self.assertEqual(ProjectState(root/'alpha').read()['agents']['designer']['status'],'error')

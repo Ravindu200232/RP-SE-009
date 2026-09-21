@@ -271,11 +271,6 @@ def read_site_image(owner: str, file: str) -> tuple:
     return target.read_bytes(), kinds[target.suffix.lower()]
 
 
-def write_site_images_md(proj_dir: Path) -> str:
-    """The brief for a built project's own picture folder."""
-    return write_site_images_md_in(_site_dir(proj_dir))
-
-
 def write_site_images_md_in(folder: Path) -> str:
     """The brief both agents read: what each file is, and where it lives.
 

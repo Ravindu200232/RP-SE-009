@@ -13,7 +13,9 @@ from unittest.mock import patch
 from pathlib import Path
 
 from test import _support  # noqa: F401
-from builder_agent.browser import Browser
+from qa_agent.browser import Browser
+from qa_agent.evidence import Evidence, failure_packet
+from qa_agent.tools import build_registry as build_qa_registry
 from builder_agent.config import Config
 from builder_agent.events import Events
 from builder_agent.llm import Reply, ToolCall
@@ -21,7 +23,6 @@ from builder_agent.loop import Loop
 from builder_agent.memory import Memory
 from builder_agent.processes import Processes
 from builder_agent.sandbox import Sandbox
-from builder_agent.tools import build_registry
 
 
 class ScriptedRouter:
@@ -67,10 +68,10 @@ class LoopTests(unittest.TestCase):
         config = Config(workspace=self.root, model="scripted",
                         state_root=self.root / ".state", **overrides)
         self.router = ScriptedRouter(turns)
-        return Loop(config=config, registry=build_registry(), router=self.router,
-                    memory=Memory(), sandbox=Sandbox(self.root), events=self.events,
+        return Loop(config=config, registry=build_qa_registry(), router=self.router,
+                    memory=Memory(evidence=Evidence()), sandbox=Sandbox(self.root), events=self.events,
                     processes=Processes(self.events), browser=Browser(self.events),
-                    verification_kinds=verification_kinds)
+                    verification_kinds=verification_kinds, failure_packet=failure_packet)
 
     # -- executing -------------------------------------------------------
     def test_follow_up_receives_the_previous_final_answer(self):

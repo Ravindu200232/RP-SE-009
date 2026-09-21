@@ -16,21 +16,10 @@ class PipelineLifecycleTests(unittest.TestCase):
     def tearDown(self):
         server.cancel.finish()
 
-    def test_completed_e2e_finishes_without_starting_a_second_qa_agent(self):
+    def test_completed_build_hands_the_preview_to_the_qa_pipeline(self):
         from builder_agent.memory import Memory
 
         memory = Memory()
-        memory.evidence.define_scope("web", "nextjs", [
-            {"id": "booking", "description": "Book a room",
-             "evidence": ["unit", "runtime", "e2e"]}
-        ])
-        unit = memory.evidence.start("unit", "all", "vitest run", [], ["booking"])
-        memory.evidence.observe(unit, {"exitCode": 0,
-            "stdout": "Test Files 2 passed (2)\nTests 8 passed (8)"})
-        for kind in ("runtime", "e2e"):
-            memory.evidence.record_external(kind=kind, suite=kind, source="runner",
-                status="passed", covers=["booking"],
-                output="1. navigate -> /\n2. assert textIncludes -> Booked")
         builder = SimpleNamespace(memory=memory)
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(server, "_prepare_workspace", return_value=Path(directory)), \
@@ -40,18 +29,14 @@ class PipelineLifecycleTests(unittest.TestCase):
                     builder, SimpleNamespace(status="completed"))), \
                 patch.object(server, "fill_missing_images"), \
                 patch.object(server, "_serve", return_value="http://localhost"), \
-                patch.object(server, "QAAgent") as qa, \
+                patch.object(server, "run_qa_verification", return_value=SimpleNamespace(ok=True)) as qa, \
                 patch.object(server, "edone") as done, \
                 patch.object(server, "eerr") as error:
-            qa.return_value.run.return_value = SimpleNamespace(ok=True)
             server.run_agent_pipeline("hotel", "model")
-            saved = server.qa_report.read(Path(directory))
-            self.assertEqual(saved["vitest"]["numPassedTests"], 8)
-            self.assertEqual(saved["report"]["e2e"]["stage_passed"], 2)
             done.assert_called_once_with("http://localhost", Path(directory).name)
 
         error.assert_not_called()
-        qa.assert_not_called()
+        qa.assert_called_once()
 
     def test_cancel_adapter_returns_the_requested_state(self):
         server.cancel.begin()
@@ -576,7 +561,7 @@ class HtmlModificationTests(unittest.TestCase):
         
         with patch.object(server, "_workspace", return_value=self.proj_dir), \
              patch.object(server, "_run_agent", return_value=(mock_agent, mock_outcome)) as mock_run, \
-             patch.object(server, "_record_verification") as mock_record, \
+             patch.object(server, "run_qa_verification") as mock_record, \
              patch.object(server, "_serve") as mock_serve, \
              patch.object(server, "edone") as mock_edone:
             server._edit_run("test_proj", "make title blue", "model", None, "", "",
@@ -586,7 +571,7 @@ class HtmlModificationTests(unittest.TestCase):
             self.assertTrue(mock_run.called)
             self.assertTrue(mock_run.call_args.kwargs.get("no_tests"))
             self.assertEqual(mock_run.call_args.kwargs.get("phases"), ("build",))
-            # Must NOT call _record_verification or _serve
+            # Must NOT call QA or _serve for a prototype-only edit.
             self.assertFalse(mock_record.called)
             self.assertFalse(mock_serve.called)
             # Must call edone with prototype url

@@ -7,8 +7,8 @@ what made the previous version brittle. This resolves a project directory,
 hands the agent a brief, and translates what comes back.
 
 Four entry points, one shape: build, resume, feature, repair. Each one prepares
-the workspace, runs the builder through its unit/E2E checks, brings the app up,
-and publishes the evidence it already produced.
+the workspace, runs Builder's code pass, brings the app up, then hands the
+live preview to the independent QA pipeline.
 """
 
 import re
@@ -25,9 +25,6 @@ for _root in (_BUILDER_ROOT, _QA_ROOT):
         sys.path.insert(0, _root)
 
 from builder_agent import BuilderAgent, Config, Events, detect_stack, stack_of  # noqa: E402
-from qa_agent import QAAgent  # noqa: E402
-from qa_agent.agent import QAOutcome  # noqa: E402
-from qa_agent import report as qa_report, security as qa_security  # noqa: E402
 from builder_agent.templates import restore_styling  # noqa: E402
 from builder_agent.designer import DesignerAgent
 from builder_agent.sandbox import Sandbox
@@ -37,8 +34,8 @@ from server_modules.services.mongo_common import db_name_for  # noqa: E402
 
 # StudioBridge, fill_missing_images, and emit helpers are injected into the shared runtime namespace.
 
-BUILD_PHASES = ("build", "unit", "e2e")
-EDIT_PHASES = ("build", "unit", "e2e")
+BUILD_PHASES = ("build",)
+EDIT_PHASES = ("build",)
 
 # Files worth snapshotting before an edit so a single click can undo it.
 UNDO_EXT = {".js", ".jsx", ".ts", ".tsx", ".css", ".json", ".md", ".html", ".svg"}
@@ -668,10 +665,6 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     agent.events.on("checkpoint", lambda _: save_conversation(proj_dir, agent))
     agent.events.on("agent:start", lambda _: save_conversation(proj_dir, agent))
     agent.events.on("agent:done", lambda _: save_conversation(proj_dir, agent))
-    if role == "developer":
-        agent.events.any(qa_report.LiveReport(
-            proj_dir, agent.memory.evidence, emit,
-            lambda error: elog("WARN", f"Could not save testing results: {error}")))
     # Both a build and an edit leave context for the next chat request.
     with _SESSIONS_LOCK:
         _SESSIONS[name] = {"agent": agent, "key": key, "reusable": True}
@@ -734,21 +727,6 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
         save_session_stats(proj_dir, agent)
 
 
-def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, memory=None):
-    """Run the QA agent over the finished project at the deep profile."""
-    events = Events()
-    StudioBridge(events, kind="test", phases=list(EDIT_PHASES), think=bool(think))
-    qa = QAAgent(project=project, project_dir=proj_dir,
-                 model=(qa_model or model or default_agent_model()),
-                 host=ollama.host, events=events, think=bool(think),
-                 cancel=_cancelled, memory=memory)
-    try:
-        # Record requirement verification evidence via change transactions.
-        return report
-    finally:
-        qa.dispose()
-
-
 def _workspace(project: str):
     """The project a run may touch, or nothing at all.
 
@@ -784,61 +762,6 @@ def _serve(proj_dir: Path, agent=None) -> str:
         return result["previewUrl"]
     estep("preview", "error")
     return ""
-
-
-def _ui_sweep(proj_dir: Path, project: str, agent, url: str) -> list:
-    """Read every page the specification names, on the runtime that is up.
-
-    The in-journey check only ever runs where a journey wrote a `navigate`
-    step, so a page reached by clicking was never read and a page no journey
-    visits was never read at all. This is the rest of the application.
-
-    It runs after the build, against the preview that is already serving, and
-    it cannot fail anything: a reading that could fail a build is a reading
-    somebody turns off.
-    """
-    if not url:
-        return []
-    try:
-        from qa_agent.ui_sweep import routes_for, summarise, sweep
-        pages = routes_for(proj_dir)
-        if not pages:
-            return []
-        rows = sweep(agent.browser, url, pages,
-                     shots_dir=Path(agent.sandbox.state_dir("screenshots")),
-                     events=agent.events)
-        said = summarise(rows)
-        if said:
-            elog("INFO", f"   UI check: {said}")
-        return rows
-    except Exception as error:                                       # noqa: BLE001
-        elog("WARN", f"   the UI check did not run: {error}")
-        return []
-
-
-def _record_verification(proj_dir: Path, project: str, agent, outcome, url: str = ""):
-    """Keep the builder's real results; E2E does not start another QA cycle."""
-    evidence = agent.memory.evidence.summary()
-    security = {"findings": qa_security.scan(proj_dir), "audit": {}}
-    record = qa_report.from_evidence(
-        project=project, project_dir=proj_dir, evidence=evidence, security=security,
-        complete=outcome.status == "completed",
-        ui_sweep=_ui_sweep(proj_dir, project, agent, url))
-    path = qa_report.write(proj_dir, record)
-    # Save the change artifact for synchronize_completed_change to post after the build finishes.
-    try:
-        from server_modules.srs.qa_change import write_change
-        write_change(proj_dir, evidence, record)
-    except Exception as error:  # noqa: BLE001 - a lost digest must not fail a build
-        emit({"type": "notice", "level": "warn", "project": project,
-              "message": f"QA traceability digest not written: {error}"})
-    emit({"type": "test_report", "project": project,
-          "stages": record["stages"], "complete": record["complete"]})
-    ok = evidence.get("ready", False) and not security["findings"]
-    reason = (f"{len(security['findings'])} security finding(s)" if security["findings"]
-              else "" if ok else "Required verification has not passed.")
-    return QAOutcome(project=project, ok=ok, record=record, path=str(path), reason=reason)
-
 
 
 def _finish(project: str, url: str, outcome, qa_outcome=None) -> bool:
@@ -925,7 +848,10 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
         # Re-copy public assets now that the application scaffold directory exists.
         publish_site_images(proj_dir)
         url = _serve(proj_dir, agent)
-        qa_outcome = _record_verification(proj_dir, name, agent, outcome, url)
+        qa_outcome = run_qa_verification(
+            proj_dir=proj_dir, project=name, model=model, qa_model=qa_model,
+            think=think, host=ollama.host, cancel=_cancelled,
+            memory=agent.memory, preview_url=url)
         if _finish(name, url, outcome, qa_outcome):
             elog("SUCCESS", f"✅ {name} finished in {int(time.time() - started)}s")
     except cancel.BuildCancelled:
@@ -1069,7 +995,10 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
 
         fill_missing_images(proj_dir, "the edit")
         url = _serve(proj_dir, agent)
-        qa_outcome = _record_verification(proj_dir, proj_dir.name, agent, outcome, url)
+        qa_outcome = run_qa_verification(
+            proj_dir=proj_dir, project=proj_dir.name, model=model, think=think,
+            host=ollama.host, cancel=_cancelled, memory=agent.memory,
+            preview_url=url)
         _finish(proj_dir.name, url, outcome, qa_outcome)
     except cancel.BuildCancelled:
         ecancel({"project": project})

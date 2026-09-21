@@ -32,6 +32,7 @@ out/
 /vendor/node/
 /vendor/ms-playwright/
 /.agentforge/
+/.agentforge-runtime/
 
 # Logs and transient reports
 /logs/

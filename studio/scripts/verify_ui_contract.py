@@ -83,10 +83,10 @@ required = {
         ("../qa-agent/qa_agent/ui_sweep.py", "def sweep"),
     "and the studio shows what the sweep found":
         ("components/testing/Screenshots.jsx", "qa?.ui_sweep"),
-    "a frame after every journey step":
-        ("../builder-agent/builder_agent/journeys.py", "def _frame"),
+    "journey actions stream without taking a screenshot per step":
+        ("../qa-agent/qa_agent/browser.py", "STREAM_MIN_INTERVAL"),
     "that the journey does not wait for":
-        ("../builder-agent/builder_agent/browser.py", "def ask"),
+        ("../qa-agent/qa_agent/browser.py", "def ask"),
     "and a strip to read them in":
         ("components/testing/Screenshots.jsx", "function Timeline"),
     "plugins are set up once and ticked per app":
@@ -121,10 +121,11 @@ required = {
     "nor does the resolution that follows it": ("lib/ws.js", "approval?.id === m.id"),
     "decisions reach the run": ("lib/api.js", "decide: (body)"),
     "the gate expires into the default": ("../builder-agent/builder_agent/approvals.py", "timedOut"),
-    "a journey can pick from repeated controls": ("../builder-agent/builder_agent/browser.py", "def _pick"),
-    "the browser streams what it sees": ("../builder-agent/builder_agent/browser.py", "startScreencast"),
-    "it streams whenever it is open": ("../builder-agent/builder_agent/browser.py", "def _watch"),
+    "a journey can pick from repeated controls": ("../qa-agent/qa_agent/browser.py", "def _pick"),
+    "the browser streams what it sees": ("../qa-agent/qa_agent/browser.py", "startScreencast"),
+    "it streams whenever it is open": ("../qa-agent/qa_agent/browser.py", "def _watch"),
     "the preview shows the agent's browser": ("components/AgentBrowser.jsx", "browserFrame"),
+    "the preview marks the current QA action": ("components/AgentBrowser.jsx", "MousePointer2"),
     "the browser is labelled as the agent's": ("components/AgentBrowser.jsx", "agent"),
     "a finished cast gives the preview back": ("components/AgentBrowser.jsx", "STALE_MS"),
     "frames reach the studio": ("lib/ws.js", "browser_frame"),
@@ -141,7 +142,7 @@ required = {
     "the engine says whether it is really reasoning":
         ("../server_modules/builder/bridge.py", '"thinking": self.think'),
     "a frame never blocks the socket it arrives on":
-        ("../builder-agent/builder_agent/browser.py", "def post"),
+        ("../qa-agent/qa_agent/browser.py", "def post"),
     "the engine reports thinking": ("../server_modules/builder/bridge.py", '"state": "thinking"'),
     "SRS planner animation": ("components/srs/SrsActivity.jsx", "/__agentforge/srs-planner.gif"),
     "a run can be stopped from the chat": ("components/AgentChat.jsx", "function CancelRun"),

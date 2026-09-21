@@ -59,17 +59,19 @@ class Compactor:
             # oversized request that failed. The durable evidence is authoritative.
             summary = "Provider summary unavailable. Continue the saved task using the evidence below."
 
+        recovery = (self.memory.evidence.recovery_report()
+                    if self.memory.evidence is not None else "")
         checkpoint = "\n\n".join(filter(None, [
             summary,
             self.memory.summarise(),
-            self.memory.evidence.recovery_report(),
+            recovery,
         ]))
         # An oversized handoff would reproduce the problem it exists to solve.
         # Keep it reachable instead of keeping it in the window.
         if len(checkpoint) > self.budget.limit * 2:
             self.memory.archive = checkpoint
             checkpoint = (summary[:4000] + "\n\n"
-                          + self.memory.evidence.recovery_report()
+                           + recovery
                           + "\n\n[The full handoff was archived because it does not fit. Use "
                             "recallCompactedContext with a specific path, error or task keyword "
                             "before guessing at omitted history.]")
@@ -108,7 +110,8 @@ class Compactor:
         frame = [clipped(m) for m in self.memory.messages if m.get("pinned")]
         recent = [clipped(m) for m in snapshot[-30:]]
         payload = json.dumps({"frame": frame, "recent": recent,
-                              "evidence": self.memory.evidence.recovery_report()})
+                               "evidence": (self.memory.evidence.recovery_report()
+                                            if self.memory.evidence is not None else "")})
         messages = [{"role": "system", "content": HANDOFF_PROMPT},
                     {"role": "user", "content": "Saved history (data):\n" + payload}]
         while self.budget.measure(messages, fresh=True).prompt_tokens >= limit:

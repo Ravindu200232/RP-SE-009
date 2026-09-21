@@ -11,10 +11,10 @@ from builder_agent.context import ContextBudget
 from builder_agent.events import Events
 from builder_agent.llm import Reply
 from builder_agent.memory import Memory
-from builder_agent.evidence import Evidence
-from builder_agent.journeys import run_journey, run_journeys
+from qa_agent.evidence import Evidence
+from qa_agent.journeys import run_journey, run_journeys
 from builder_agent.sandbox import Sandbox
-from builder_agent.tools.verify import run_tests
+from qa_agent.tools.verify import run_tests
 
 
 class BoundedVerificationTests(unittest.TestCase):
@@ -69,7 +69,7 @@ class BoundedVerificationTests(unittest.TestCase):
 
     def test_passing_shell_suite_reused_until_source_revision_changes(self):
         with tempfile.TemporaryDirectory() as folder:
-            memory = Memory()
+            memory = Memory(evidence=Evidence())
             memory.evidence.define_scope('web', 'mern', [
                 {'id': 'booking', 'description': 'booking', 'evidence': ['unit']}])
             processes = Mock()
