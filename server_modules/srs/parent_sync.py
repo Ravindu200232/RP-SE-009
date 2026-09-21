@@ -252,12 +252,13 @@ def _adopt_revised_documents(directory):
 
 SPEC_CHILD_BRIEF = (
     "The parent SRS has been revised at the customer's request. Read the current "
-    "handoff files and apply that revision to your own artifact. Preserve unrelated "
+    "handoff files and `.agentforge/design-spec.json` when it exists, then apply that "
+    "revision to your own artifact. Preserve unrelated "
     "behavior. Update only your own files and verify the result.\n\n"
     "They asked for:\n{prompt}\n")
 
 
-def run_spec_change(project, prompt, targets):
+def run_spec_change(project, prompt, targets, change_request_id=""):
     """A change that starts at the specification and is pushed down into the app.
 
     The mirror image of `synchronize_completed_change`, and deliberately not its
@@ -271,11 +272,17 @@ def run_spec_change(project, prompt, targets):
     if request_path is None:
         raise RuntimeError("A specification change must be started through the run queue")
     directory = PROD_DIR / project
+    if change_request_id:
+        from server_modules.services.change_requests import update as update_change_request
+        update_change_request(directory, change_request_id, status="running", started_at=time.time())
     try:
         _spec_change_stages(project, directory, request_path, prompt, targets)
     except Exception as error:                                   # noqa: BLE001
         if SERVER_STOPPING:
             return                  # a resumable transaction, not a failed one
+        if change_request_id:
+            from server_modules.services.change_requests import update as update_change_request
+            update_change_request(directory, change_request_id, status="failed", error=str(error))
         # Record sync state and error markers for retry tracking in standalone transactions.
         request = json.loads(request_path.read_text(encoding="utf-8"))
         request["sync_error"] = str(error)
@@ -284,6 +291,9 @@ def run_spec_change(project, prompt, targets):
         ProjectState(directory).update(sync=failed)
         emit({"type": "sync_state", "project": project, **failed})
         raise
+    if change_request_id:
+        from server_modules.services.change_requests import update as update_change_request
+        update_change_request(directory, change_request_id, status="completed", completed_at=time.time())
 
 
 def _spec_change_stages(project, directory, request_path, prompt, targets):

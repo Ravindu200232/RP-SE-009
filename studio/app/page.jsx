@@ -615,10 +615,19 @@ export default function Studio() {
               <PrototypePane key={`proto-${project}`} project={project} hidden={view !== 'prototype'} onBuild={resumeBuild} />
               {view === 'design' && <DesignCustomize key={`design-${project}`} projectId={project}
                 onBack={() => setView('srs')}
-                onContinue={async direction => {
+                onContinue={async ({ direction, designSpec }) => {
+                  const found = await api.srsResults(project)
+                  const srsId = found?.link?.srs_id
+                  if (!srsId) throw new Error('This project has no linked SRS for a versioned design update.')
+                  const design = await api.draftDesignSpec(srsId, designSpec)
+                  await api.approveDesignSpec(srsId, design.version)
+                  const created = await api.createChangeRequest({
+                    project, kind: 'design', prompt: direction, targets: ['designer'],
+                    design_spec_version: design.version, summary: design.summary || [],
+                  })
+                  await api.approveChangeRequest(project, created?.request?.id, ['designer'])
                   const current = useStore.getState()
-                  send({ type: 'agent_update', project, agent: 'designer', route: '/prototype',
-                    prompt: direction, model: current.models.design || current.models.agent, think: current.think })
+                  current.addLog('INFO', `Approved Design Spec v${design.version}; updating the prototype.`)
                   setView('prototype')
                 }} />}
               <CodePane hidden={view !== 'code'} />

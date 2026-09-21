@@ -129,6 +129,12 @@ export const api = {
   // A change typed into the specification, carried down into whichever of the
   // prototype and the build the user chose.
   specChange: (project, prompt, targets) => post('/spec-change', { project, prompt, targets }),
+  // Every user-approved update is retained before a run starts. The execution
+  // still uses the existing SRS transaction; this adds the company audit trail.
+  changeRequests: project => req(`/change-requests/${encodeURIComponent(project)}`),
+  createChangeRequest: body => post('/change-requests/draft', body),
+  approveChangeRequest: (project, id, targets) =>
+    post(`/change-requests/${encodeURIComponent(id)}/approve`, { project, targets }),
   workflow: (project) => req(`/workflow/${encodeURIComponent(project)}`),
   saveStream: (project, logs, chat) => post('/stream', { project, logs, chat }),
 
@@ -206,6 +212,13 @@ export const api = {
     `${project}-test-report.pdf`),
 
   srsResults: (project) => req(`/srs-results/${encodeURIComponent(project)}`),
+
+  designSpec: srsId => api.srs(`/projects/${encodeURIComponent(srsId)}/design-spec`),
+  draftDesignSpec: (srsId, spec) => api.srs(`/projects/${encodeURIComponent(srsId)}/design-spec/draft`, {
+    spec, source: 'design-customizer',
+  }),
+  approveDesignSpec: (srsId, version) =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/design-spec/${encodeURIComponent(version)}/approve`, {}),
 
   srsPdfUrl: (project) => `${API}/srs-pdf/${encodeURIComponent(project)}`,
   downloadProjectSrsPdf: (project) => download(`/srs-pdf/${encodeURIComponent(project)}`,

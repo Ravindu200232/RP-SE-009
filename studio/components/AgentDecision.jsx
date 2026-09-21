@@ -28,10 +28,6 @@ export default function AgentDecision() {
 
   useEffect(() => {
     if (!question) return
-    if (question.kind === 'plan') {
-      answer({ decision: 'accept' })
-      return
-    }
     const deadline = Date.now() + (Number(question.timeout) || 300) * 1000
     setLeft(Math.round((deadline - Date.now()) / 1000))
     const tick = setInterval(() => {
@@ -57,8 +53,7 @@ export default function AgentDecision() {
   }
 
   if (question.kind === 'plan') {
-    // Automatically accepted; do not present plan approval modal to the user
-    return null
+    return <PlanDecision question={question} left={left} sending={sending} onAnswer={answer} />
   }
   if (question.kind === 'setup') {
     return <SetupDecision question={question} left={left} sending={sending} onAnswer={answer} />

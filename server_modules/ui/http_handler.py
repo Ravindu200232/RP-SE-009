@@ -325,6 +325,14 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             # staged one by specification id; this serves the same file for a
             # project that now has a name of its own.
             self._json(read_project_wireframes(unquote(path[20:].strip("/"))))
+        elif path.startswith("/change-requests/"):
+            project = unquote(path[17:].strip("/"))
+            _, project_dir, error = _owned_dir(PROD_DIR, project, "project name", "project")
+            if error:
+                self._json({"error": error}, 404)
+            else:
+                from server_modules.services.change_requests import list_for
+                self._json({"requests": list_for(project_dir)})
         elif path.startswith("/site-images/"):
             self._json(site_image_list(unquote(path[13:].strip("/"))))
         elif path.startswith("/design-theme-preview/"):
@@ -565,6 +573,44 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         if path == "/sync/retry":
             result = retry_project_sync(str(self._body().get("project") or ""))
             return self._json(result, 400 if result.get("error") else 200)
+        if path == "/change-requests/draft":
+            body = self._body()
+            project = str(body.get("project", "")).strip()
+            _, directory, error = _owned_dir(PROD_DIR, project, "project name", "project")
+            if error:
+                return self._json({"error": error}, 404)
+            try:
+                from server_modules.services.change_requests import create
+                record = create(directory, prompt=body.get("prompt", ""), kind=body.get("kind", "srs"),
+                                targets=body.get("targets") or (), srs_version=body.get("srs_version"),
+                                design_spec_version=body.get("design_spec_version"),
+                                summary=body.get("summary") or (),
+                                owner=(acting() or {}).get("id", ""))
+                return self._json({"request": record})
+            except ValueError as error:
+                return self._json({"error": str(error)}, 400)
+        if path.startswith("/change-requests/") and path.endswith("/approve"):
+            body = self._body()
+            project = str(body.get("project", "")).strip()
+            request_id = path[17:-8].strip("/")
+            _, directory, error = _owned_dir(PROD_DIR, project, "project name", "project")
+            if error:
+                return self._json({"error": error}, 404)
+            try:
+                from server_modules.services.change_requests import approve, read
+                record = read(directory, request_id)
+                wanted = [str(role) for role in (body.get("targets") or [])
+                          if str(role) in ("designer", "developer")]
+                if any(role not in set(record.get("requested_targets") or ()) for role in wanted):
+                    return self._json({"error": "That deliverable was not part of this change request"}, 400)
+                missing = [role for role in wanted if not artifact_exists(directory, role)]
+                if missing:
+                    return self._json({"error": f"This project has no {' or '.join(missing)} artifact to update"}, 400)
+                approved = approve(directory, request_id, wanted)
+                start_run(run_spec_change, (project, approved["prompt"], wanted, request_id), project=project)
+                return self._json({"ok": True, "request": approved})
+            except ValueError as error:
+                return self._json({"error": str(error)}, 400)
         if path == "/resume":
             body = {**self._body(), "type": "agent_resume"}
             job = _message_job(body)

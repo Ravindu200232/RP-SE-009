@@ -36,7 +36,7 @@ export default function SrsRevisionsPanel() {
   async function carry(roles) {
     setBusy(true)
     try {
-      await api.specChange(project, ask.prompt, roles)
+      await api.approveChangeRequest(project, ask.requestId, roles)
       addLog('INFO', `Carrying the specification change into ${roles.join(' and ')}`)
       setAsk(null)
     } catch (e) {
@@ -62,12 +62,19 @@ export default function SrsRevisionsPanel() {
   return (
     <>
       <SrsRevisions srsId={link.srsId} className="min-h-0 flex-1" working={carrying}
-        onRevised={(answer, prompt) => {
+        onRevised={async (answer, prompt) => {
           const said = answer?.diff_summary || []
           // Nothing was built from this specification yet, so there is nothing
           // to carry the change into and nothing to ask about.
           if (!built.length) return
-          setAsk({ prompt, version: answer?.version, changed: said.join('\n') })
+          try {
+            const created = await api.createChangeRequest({
+              project, kind: 'srs', prompt, targets: built, srs_version: answer?.version, summary: said,
+            })
+            setAsk({ requestId: created?.request?.id, prompt, version: answer?.version, changed: said.join('\n') })
+          } catch (error) {
+            addLog('WARN', `Could not prepare the approval record — ${error.message}`)
+          }
         }} />
       {ask && (
         <SrsApprovalModal targets={built} version={ask.version} changed={ask.changed} busy={busy}
