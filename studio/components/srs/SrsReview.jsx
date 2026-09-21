@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   ArrowLeft, Check, FileDown, ListTree, Loader2, RotateCcw, Square, Trash2,
 } from 'lucide-react'
-import { api, API } from '@/lib/api'
+import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { loadSrsView, srsViewFromVersion } from '@/lib/srs-view'
 import { Badge, Button, Empty, SubTab, SubTabs, Tag } from '../ui'
@@ -24,6 +24,7 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
   const [specOpen, setSpecOpen] = useState(false)
   const [asking, setAsking] = useState(false)
   const [editingWireframe, setEditingWireframe] = useState(null)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
 
 
   const [busy, setBusy] = useState('')
@@ -86,6 +87,21 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
     }
   }
 
+  async function downloadPdf() {
+    setDownloadingPdf(true)
+    setError('')
+    try {
+      const name = srs?.document?.project_name || srs?.document?.document_title || 'SRS'
+      await api.downloadSrsPdf(projectId, `${name.replace(/[\\/:*?"<>|]/g, '-')}.pdf`)
+      addLog('INFO', 'SRS PDF downloaded')
+    } catch (e) {
+      setError(`The SRS PDF could not be downloaded — ${e.message}`)
+      addLog('WARN', `The SRS PDF could not be downloaded — ${e.message}`)
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }
+
   if (state === 'loading' && !srs) {
     return <Centered><Loader2 className="mx-auto mb-3 size-5 animate-spin text-accent" />
       Reading the specification…</Centered>
@@ -125,13 +141,12 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
             <FileDown className="size-3.5" /> PDF
           </span>
         ) : (
-          <a href={`${API}/srs/projects/${encodeURIComponent(projectId)}/download/pdf`}
-             target="_blank" rel="noreferrer"
-             className="flex h-[32px] items-center gap-1.5 rounded-xl border border-line bg-panel2/60 px-3.5
-                        text-[11.5px] font-semibold text-ink shadow-sm
-                        transition hover:bg-raised">
-            <FileDown className="size-3.5 text-accent" /> PDF
-          </a>
+          <button type="button" onClick={downloadPdf} disabled={downloadingPdf}
+                  className="flex h-[32px] items-center gap-1.5 rounded-xl border border-line bg-panel2/60 px-3.5
+                             text-[11.5px] font-semibold text-ink shadow-sm transition hover:bg-raised disabled:opacity-50">
+            {downloadingPdf ? <Loader2 className="size-3.5 animate-spin text-accent" />
+                            : <FileDown className="size-3.5 text-accent" />} PDF
+          </button>
         )}
 
         <Button variant="solid" className="h-[32px] rounded-xl bg-accent px-4 text-[12px] font-semibold text-white shadow-sm hover:bg-press cursor-pointer"

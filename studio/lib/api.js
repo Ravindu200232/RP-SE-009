@@ -47,6 +47,34 @@ async function req(path, opts = {}) {
   return data
 }
 
+/**
+ * Download an authenticated API artifact without exposing the session token in
+ * a URL. A normal <a href> cannot attach the Bearer header, so protected PDFs
+ * otherwise open as the API's "sign in to continue" JSON response.
+ */
+async function download(path, filename) {
+  const token = getAuthToken()
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  const r = await fetch(API + path, { headers })
+  if (!r.ok) {
+    const text = await r.text()
+    let data = null
+    try { data = text ? JSON.parse(text) : null } catch { }
+    if (r.status === 401 && data?.auth === 'required' && token === getAuthToken()) onSignedOut?.()
+    throw new Error((data && (data.error || data.detail)) || `HTTP ${r.status}`)
+  }
+  const url = URL.createObjectURL(await r.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // The browser has consumed the object URL by now; defer revocation one turn
+  // so downloads remain reliable in Chromium and Firefox alike.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
 const post = (path, body) => req(path, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -174,10 +202,16 @@ export const api = {
   qa: (project) => req(`/qa/${encodeURIComponent(project)}`),
   qaScreenshotUrl: (project, path, at = '') => `${API}/qa-screenshot/${encodeURIComponent(project)}?path=${encodeURIComponent(path)}&v=${encodeURIComponent(at)}`,
   qaPdfUrl: (project) => `${API}/qa-pdf/${encodeURIComponent(project)}`,
+  downloadQaPdf: (project) => download(`/qa-pdf/${encodeURIComponent(project)}`,
+    `${project}-test-report.pdf`),
 
   srsResults: (project) => req(`/srs-results/${encodeURIComponent(project)}`),
 
   srsPdfUrl: (project) => `${API}/srs-pdf/${encodeURIComponent(project)}`,
+  downloadProjectSrsPdf: (project) => download(`/srs-pdf/${encodeURIComponent(project)}`,
+    'SRS.pdf'),
+  downloadSrsPdf: (srsId, name = 'SRS.pdf') =>
+    download(`/srs/projects/${encodeURIComponent(srsId)}/download/pdf`, name),
   srsStatus: () => req('/srs-status'),
   integrations: (project) => req(`/srs/projects/${encodeURIComponent(project)}/integrations`),
   saveIntegrations: (project, answers) => post(`/srs/projects/${encodeURIComponent(project)}/integrations`, { answers }),
