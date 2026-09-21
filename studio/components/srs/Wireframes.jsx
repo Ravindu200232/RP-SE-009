@@ -477,8 +477,8 @@ export function Wireframes({ srs, onEditPage }) {
         </Button>
       </div>
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
-        {pages.map(page => (
-          <button key={page.route} type="button"
+        {pages.map((page, index) => (
+          <button key={`${page.route || 'wireframe'}-${index}`} type="button"
             onClick={() => (onEditPage ? onEditPage(page) : setOpen(page))}
             className="group overflow-hidden rounded-xl border border-line text-left transition hover:border-accent cursor-pointer">
             <span className="block aspect-[16/11] overflow-hidden border-b border-line bg-white">

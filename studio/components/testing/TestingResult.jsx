@@ -56,22 +56,7 @@ export default function TestingResult() {
   async function downloadPdf() {
     setPdf(true)
     try {
-      // Fetched rather than linked, so a failure arrives as a sentence in the
-      // log instead of a page of JSON where the reader expected a document.
-      const r = await fetch(api.qaPdfUrl(project))
-      if (!r.ok) {
-        let why = `HTTP ${r.status}`
-        try { why = (await r.json()).error || why } catch { }
-        throw new Error(why)
-      }
-      const url = URL.createObjectURL(await r.blob())
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${project}-test-report.pdf`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+      await api.downloadQaPdf(project)
       addLog('INFO', '📄 Test report downloaded')
     } catch (e) {
       addLog('WARN', `⚠ The test report could not be built — ${e.message}`)

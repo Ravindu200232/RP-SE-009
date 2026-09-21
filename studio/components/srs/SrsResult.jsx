@@ -17,6 +17,19 @@ export default function SrsResult({ specOnly = false, onBuild }) {
   const [sub, setSub] = useState('overview')
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
+
+  async function downloadPdf() {
+    setDownloadingPdf(true)
+    try {
+      await api.downloadProjectSrsPdf(project)
+      useStore.getState().addLog('INFO', 'SRS PDF downloaded')
+    } catch (e) {
+      useStore.getState().addLog('WARN', `The SRS PDF could not be downloaded — ${e.message}`)
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }
 
   async function load() {
     if (!project) return
@@ -64,12 +77,11 @@ export default function SrsResult({ specOnly = false, onBuild }) {
         <span className="flex-1" />
         <span className="flex shrink-0 items-center gap-2 px-3">
           {have.pdf && (
-            <a href={api.srsPdfUrl(project)} target="_blank" rel="noreferrer"
-               className="inline-flex h-[30px] items-center gap-1.5 border
-                          border-line2 px-3 font-display text-[12px] font-extrabold
-                          text-ink transition-colors hover:bg-ink/[.07]">
-              <FileDown className="size-3" /> PDF
-            </a>
+            <button type="button" onClick={downloadPdf} disabled={downloadingPdf}
+                    className="inline-flex h-[30px] items-center gap-1.5 border border-line2 px-3 font-display
+                               text-[12px] font-extrabold text-ink transition-colors hover:bg-ink/[.07] disabled:opacity-50">
+              {downloadingPdf ? <RefreshCw className="size-3 animate-spin" /> : <FileDown className="size-3" />} PDF
+            </button>
           )}
           <Button variant="outline" onClick={load}>
             <RefreshCw className="size-3" /> Refresh

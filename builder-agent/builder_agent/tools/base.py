@@ -33,6 +33,8 @@ class Tool:
     # Offered during a read-only review pass.
     review_safe: bool = False
 
+
+#user to short text for summarize
     def summary(self, args: dict) -> str:
         if self.summarize:
             try:
@@ -43,7 +45,7 @@ class Tool:
         text = " ".join(str(first).split())
         return text[:60] + "…" if len(text) > 60 else text
 
-
+#register the tools
 class Registry:
     def __init__(self) -> None:
         self.tools: dict[str, Tool] = {}
@@ -63,13 +65,14 @@ class Registry:
     def names(self) -> list[str]:
         return list(self.tools)
 
+#wanted tool use create new instance
     def subset(self, keep) -> "Registry":
         out = Registry()
         for name in keep:
             if name in self.tools:
                 out.tools[name] = self.tools[name]
         return out
-
+#convert to json for tool names,description and parameters
     def schemas(self, excluded: dict | None = None) -> list[dict]:
         """Native `tools[]` for the provider, minus anything currently withheld."""
         excluded = excluded or {}
@@ -89,7 +92,7 @@ class Registry:
         required = schema.get("required", [])
         args = args if isinstance(args, dict) else {}
         out, errors = {}, []
-
+# checking missing required parameters
         for key in required:
             value = args.get(key)
             if value is None or (isinstance(value, str) and not value.strip() and key != "content"):
@@ -105,6 +108,7 @@ class Registry:
                 errors.append(f'parameter "{key}" should be {spec.get("type")}, '
                               f"got {_type_name(value)}")
                 continue
+            #self healing
             if spec.get("enum") and coerced not in spec["enum"]:
                 errors.append(f'parameter "{key}" must be one of: {", ".join(map(str, spec["enum"]))}')
                 continue
