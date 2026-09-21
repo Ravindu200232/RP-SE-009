@@ -29,7 +29,6 @@ from .compactor import Compactor
 from .design import THEME_MARKER, install_theme, installed_theme, theme_prompt
 from .context import ContextBudget, is_context_error
 from .errors import AbortError, ToolError
-from .evidence import failure_packet
 from .knowledge import Knowledge
 from .layout import format_layout, inspect_layout
 from .memory import observation_key
@@ -151,7 +150,8 @@ def _plugin_skills(workspace) -> list[str]:
 class Loop:
     def __init__(self, *, config, registry, router, memory, sandbox, events,
                  processes, browser, cancel=None, verification_kinds=None,
-                 approvals=None) -> None:
+                 approvals=None, failure_packet=None, qa_instructions: str = "",
+                 verification_tool_phases=None) -> None:
         self.config = config
         self.registry = registry
         self.router = router
@@ -160,6 +160,9 @@ class Loop:
         self.events = events
         self.processes = processes
         self.browser = browser
+        self.failure_packet = failure_packet
+        self.qa_instructions = str(qa_instructions or "")
+        self.verification_tool_phases = dict(verification_tool_phases or {})
         self.cancel = cancel or (lambda: False)
         self.approvals = approvals
 
@@ -186,23 +189,26 @@ class Loop:
         self.active_lesson: dict | None = None
         self.state: dict = {"knowledge": self.knowledge, "skill_reads": {}, "plan": "",
                             "ambiguity_checked": False}
-        memory.evidence.bind(str(sandbox.root))
-        memory.evidence.enabled_kinds = {
-            *(("unit",) if config.unit_tests else ()),
-            *(("e2e",) if config.e2e_tests else ()),
-            "runtime",
-        }
+        self.evidence = memory.evidence
+        if self.evidence is not None:
+            self.evidence.bind(str(sandbox.root))
+            self.evidence.enabled_kinds = {
+                *(("unit",) if config.unit_tests else ()),
+                *(("e2e",) if config.e2e_tests else ()),
+                "runtime",
+            }
         self.verification_kinds = verification_kinds
-        if verification_kinds is not None:
-            memory.evidence.enabled_kinds = set(verification_kinds)
+        if verification_kinds is not None and self.evidence is not None:
+            self.evidence.enabled_kinds = set(verification_kinds)
         # Set before any _refresh_system call: the prompt names the theme file
         # only once one has been installed.
         self.theme: dict = {}
         # Appended to whichever system prompt this role builds, so the design
         # system reaches the model the same way the preview's did.
         self.theme_brief: str = ""
-        self.testing_enabled = (not config.review and registry.has("runTests")
-                                and bool(memory.evidence.enabled_kinds))
+        self.testing_enabled = (not config.review and self.evidence is not None
+                                and registry.has("runTests")
+                                and bool(self.evidence.enabled_kinds))
 
     # -- context frame ---------------------------------------------------
     def _preloaded_indexes(self, pack: str) -> str:
@@ -267,7 +273,7 @@ class Loop:
                 (f"The approved design theme is installed at {self.theme['path']}. Read it before "
                  "matching the prototype's look, and follow its tokens and component rules. "
                  if self.theme else "") +
-                "You are the Developer and QA engineer for this project. Your conversation is independent "
+                "You are the Builder developer for this project. Your conversation is independent "
                 "from the Designer's. " + pack_note + docs_note +
                 "Read .agentforge/handoff/app.md, sitemap.md and builder.md, and the "
                 "generated .agentforge/prototype/ files. Match the approved prototype 100% in layout, typography, "
@@ -278,35 +284,9 @@ class Loop:
                 "Do not replace real photos with placeholders. Batch related file operations (models, API routes, "
                 "components) in single multi-tool turns to build fast. For security, always hash passwords using "
                 "bcrypt.hashSync in all seed scripts and auth routes, and never use dangerouslySetInnerHTML. "
-                "Ensure interactive buttons and links have distinct labels or data-testid attributes to avoid "
-                "selector ambiguities during E2E journeys. Implement the approved specification using the selected stack. "
-                "The browser journeys are the E2E layer: no install, no second server, no framework to "
-                "add. Before them, cover the routes in the unit run instead: one test file per route "
-                "module, importing that module, asserting an unauthenticated read, a read as a role the "
-                "route does not allow, and a read as one it does. A browser only "
-                "issues the requests the UI issues, and nothing on screen asks for another person's "
-                "records, so no journey ever exercises the route that would hand them over. "
-                "Run the suite once and read it from its report, not from its console. "
-                "`npx vitest run --reporter=json --outputFile=test-report.json`, then "
-                "runTests(kind=\"unit\", suite=\"unit\", command=<that command>, "
-                "reportPath=\"test-report.json\"). The report names every case and carries every failure "
-                "message, and reportPath puts it in the evidence ledger - so when something breaks later, "
-                "the failing case and its message are already recorded and you fix from them. Do not re-run "
-                "one spec to grep its output: measured, a build ran the same file eight times with eight "
-                "different greps to read what one report already held. "
-                "Before your first unit run, read stack-testing/page-and-component-tests.md and "
-                "stack-testing/api-preflight.md once each - they say what must carry a test and why a "
-                "route only counts as covered when a test imports its own module. Once, not per file. "
-                "Unit-test every module that decides something or accepts input: validation, authentication "
-                "and permission checks, pricing and totals, date and availability logic, and every route "
-                "handler that reads a request body or a query parameter. One test file beside each, covering "
-                "the accepted case, the rejected case, and the boundary between them. Every page and every "
-                "component you generate also gets its own test file - it renders inside its real providers, "
-                "and each role, loading and empty branch is asserted; only a pure re-export needs none. "
-                "Measured, builds were writing two to four test files "
-                "for eighty of source, which tests the scaffold and nothing the build decided. "
-                "Continue existing work without generating a second product plan. Write code and tests only in "
-                "application folders. Define verification scope, run checks, and report completion accurately."
+                "Implement the approved specification using the selected stack. Continue existing work "
+                "without generating a second product plan. Write application code only in application folders."
+                + ("\n\n" + self.qa_instructions if self.qa_instructions else "")
                 + self._preloaded_indexes(pack) + (self.theme_brief or ""))
             return
         # The theme rides in the system prompt, the same place `render_preview`
@@ -482,7 +462,7 @@ class Loop:
         outcome.tool_calls = self.tool_calls
         outcome.files = sorted(self.files_touched)
         outcome.duration = time.time() - started
-        outcome.evidence = self.memory.evidence.summary()
+        outcome.evidence = self.evidence.summary() if self.evidence is not None else {}
         outcome.plan = self.state.get("plan", "")
         self.events.emit("agent:done", **outcome.as_dict())
         return outcome
@@ -565,7 +545,7 @@ class Loop:
                         status="unverified",
                         result=(answer
                                 + "\n\nReported without the required evidence:\n"
-                                + self.memory.evidence.recovery_report()))
+                                + self.evidence.recovery_report()))
                 self.memory.add_user(blocked, kind="completion-gate")
                 continue
             return Outcome(status="completed", result=answer)
@@ -716,7 +696,7 @@ class Loop:
 
         if not ok:
             self.failed_actions[guard_key] = self.failed_actions.get(guard_key, 0) + 1
-            packet = failure_packet(self.sandbox, body)
+            packet = self.failure_packet(self.sandbox, body) if self.failure_packet else ""
             if packet and packet not in body:
                 body = f"{body}\n\n{packet}"
             self._open_lesson(call.tool, summary, body)
@@ -724,9 +704,9 @@ class Loop:
             self._close_lesson(call.tool, summary)
 
         if result.get("mutates", tool.mutates and ok):
-            # The project changed: evidence taken before this is outdated, a
-            # previously blocked suite may retry, and the layout may have moved.
-            self.memory.evidence.changed()
+            # A QA handoff invalidates prior evidence after a product change.
+            if self.evidence is not None:
+                self.evidence.changed()
             self.layout_dirty = True
             self.repair_epoch += 1
             self.failed_actions.clear()
@@ -746,12 +726,12 @@ class Loop:
     def _open_lesson(self, tool: str, summary: str, body: str) -> None:
         if self.config.review or self.config.plan_only:
             return
+        category = ("COMMAND" if tool == "executeTerminal" else
+                    self.verification_tool_phases.get(tool, "UNKNOWN").upper())
         self.active_lesson = {
             "problem": f"{tool}: {summary}"[:200],
             "cause": body.splitlines()[0][:300] if body else "",
-            "category": ("E2E" if tool.startswith("browser") else
-                         "TEST" if tool == "runTests" else
-                         "COMMAND" if tool == "executeTerminal" else "UNKNOWN"),
+            "category": category,
         }
 
     def _close_lesson(self, tool: str, summary: str) -> None:
@@ -760,7 +740,7 @@ class Loop:
         self.active_lesson = None
         if not lesson or lesson["category"] == "UNKNOWN":
             return
-        if tool not in ("runTests", "browserRunJourney", "executeTerminal"):
+        if tool != "executeTerminal" and tool not in self.verification_tool_phases:
             return
         self.knowledge.record({**lesson, "fix": f"{tool}: {summary}"[:300],
                                "verification": f"{tool} passed: {summary}"[:300]},
@@ -768,8 +748,7 @@ class Loop:
 
     def _hint_phase_skills(self, tool: str) -> None:
         """Point at the skill that owns the phase the run just entered."""
-        phase = ("unit" if tool == "runTests" else
-                 "e2e" if tool == "browserRunJourney" else None)
+        phase = self.verification_tool_phases.get(tool)
         if not phase:
             return
         wanted = [name for name in self.phase_skills.get(phase, [])
@@ -813,7 +792,7 @@ class Loop:
         """Refuse a final answer while required evidence is missing."""
         if self.config.review or self.config.plan_only or not self.testing_enabled:
             return ""
-        evidence = self.memory.evidence
+        evidence = self.evidence
         if not evidence.active and not evidence.scope:
             return ("You cannot finish without verification. Call defineVerificationScope to "
                     "declare what this task must prove, then produce the evidence with runTests "

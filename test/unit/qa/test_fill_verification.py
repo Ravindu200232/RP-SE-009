@@ -16,9 +16,9 @@ from __future__ import annotations
 import unittest
 
 from test import _support  # noqa: F401
-from builder_agent import browser
+from qa_agent import browser
 from builder_agent.errors import ToolError
-from builder_agent.journeys import form_state
+from qa_agent.journeys import form_state
 
 FILLED = {"fillable": True, "value": "admin@indoora.com", "focused": True,
           "tag": "input", "type": "email", "label": "email"}
@@ -134,6 +134,21 @@ class FillReadBackTests(unittest.TestCase):
         self.assertTrue(keys)
         for params in keys:
             self.assertEqual(params.get("windowsVirtualKeyCode"), 65)
+
+    def test_fill_focuses_the_resolved_control_before_sending_text(self):
+        """Input.insertText must not depend on a mouse click having focused it."""
+        page = page_with(FILLED)
+        page.fill(1, "admin@indoora.com")
+        methods = [method for method, _ in page.cdp.sent]
+        self.assertIn("DOM.focus", methods)
+        self.assertLess(methods.index("DOM.focus"), methods.index("Input.insertText"))
+
+    def test_fill_exposes_the_action_point_but_never_the_typed_text(self):
+        page = page_with(FILLED)
+        page.fill(1, "admin@indoora.com")
+        self.assertEqual(page.cursor["action"], "type")
+        self.assertEqual((page.cursor["x"], page.cursor["y"]), (5.0, 5.0))
+        self.assertNotIn("admin@indoora.com", page.cursor.values())
 
 
 class WhyItFailedTests(unittest.TestCase):
@@ -259,14 +274,14 @@ class FormStateTests(unittest.TestCase):
 
 class NoPerStepPicturesTests(unittest.TestCase):
     def test_a_journey_no_longer_photographs_every_step(self):
-        self.assertFalse(hasattr(__import__("builder_agent.journeys", fromlist=["x"]),
+        self.assertFalse(hasattr(__import__("qa_agent.journeys", fromlist=["x"]),
                                  "_frame"))
 
     def test_the_named_evidence_screenshot_step_survives(self):
         """A journey can still ask for a picture; it just is not given one per step."""
         import inspect
 
-        from builder_agent import journeys
+        from qa_agent import journeys
         self.assertIn("page.screenshot(", inspect.getsource(journeys.run_journey))
 
 

@@ -56,7 +56,8 @@ class SharedRuntimeCompositionTests(unittest.TestCase):
         required = {
             "server_modules/builder/pipeline.py",
             "server_modules/builder/edits.py",
-            "server_modules/builder/qa.py",
+            "server_modules/qa/artifacts.py",
+            "server_modules/qa/runner.py",
             "server_modules/srs/srs_runtime.py",
             "server_modules/srs/srs_api.py",
             "server_modules/deploy/deploy_runtime.py",

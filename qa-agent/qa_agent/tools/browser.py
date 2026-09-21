@@ -11,11 +11,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ..errors import ToolError
 from ..journeys import (ACTION_READY_TIMEOUT, diagnostics_report, run_journey,
                         run_journeys)
-from ..policy import MODERATE, SAFE
-from .base import Tool
+from builder_agent.errors import ToolError
+from builder_agent.policy import MODERATE, SAFE
+from builder_agent.tools.base import Tool
 
 
 def browser_open(args, ctx):

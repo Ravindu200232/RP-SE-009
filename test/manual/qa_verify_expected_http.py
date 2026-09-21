@@ -6,9 +6,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "builder-agent"))
-from builder_agent.browser import Browser
-from builder_agent.evidence import Evidence
-from builder_agent.journeys import run_journey
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "qa-agent"))
+from qa_agent.browser import Browser
+from qa_agent.evidence import Evidence
+from qa_agent.journeys import run_journey
 from builder_agent.sandbox import Sandbox
 
 

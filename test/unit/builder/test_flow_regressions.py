@@ -6,7 +6,7 @@ from unittest.mock import patch
 from test import _support  # noqa: F401
 from builder_agent import design
 from builder_agent.processes import shell_info
-from builder_agent.evidence import Evidence
+from qa_agent.evidence import Evidence
 
 
 class CoverageCompletionTests(unittest.TestCase):

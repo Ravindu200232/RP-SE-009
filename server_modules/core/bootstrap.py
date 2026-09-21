@@ -52,7 +52,6 @@ from server_modules.services import cancel
 from server_modules.services.images import ImageAgent
 from server_modules.services.mongo import MONGO
 from server_modules.services.mongo_common import db_name_for
-from server_modules.services.sources import feature_image_requested
 
 import shutil
 import copy

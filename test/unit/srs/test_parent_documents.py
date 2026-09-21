@@ -106,6 +106,26 @@ class ParentDocumentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(json.loads((self.root / 'spec/srs_latest.json').read_text(encoding='utf-8')), latest['srs'])
         self.assertNotIn('OLD', json.dumps(latest['srs']))
 
+    async def test_completed_change_recovers_its_missing_parent_from_durable_srs_files(self):
+        """A sidecar restart may lose rows, but never the approved SRS itself."""
+        recovered = specification()
+        recovered["srs_document"]["version"] = "1.0.0"
+        storage.save_srs_json("lost", recovered, "1.0.0")
+
+        llm = Mock(complete_json=AsyncMock(return_value={"srs_document": {}, "diff_summary": []}))
+        with patch.object(parent_sync, "get_llm", return_value=llm), \
+             patch.object(parent_sync, "generate_pdf", new=AsyncMock()):
+            result = await parent_sync.synchronize("lost", "recovered-change", "designer",
+                                                    "Finished the saved prototype")
+
+        project = await repo.get_project("lost")
+        latest = await repo.latest_version("lost")
+        self.assertEqual(result["version"], "1.0.0")
+        self.assertEqual(project["status"], "approved")
+        self.assertEqual(latest["srs"]["srs_document"]["project_name"], "Observatory")
+        self.assertEqual(latest["srs"]["srs_document"]["version"], "1.0.0")
+        self.assertEqual(len(await repo.list_versions("lost")), 1)
+
 
 class RevisionLabelTests(unittest.IsolatedAsyncioTestCase):
     """What a revision row says it was.

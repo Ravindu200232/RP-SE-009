@@ -18,7 +18,7 @@ import inspect
 import unittest
 
 from test import _support  # noqa: F401
-from builder_agent import browser, journeys
+from qa_agent import browser, journeys
 
 
 class BrowserContractTests(unittest.TestCase):

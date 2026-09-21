@@ -57,7 +57,8 @@ def execute_terminal(args, ctx):
     # The loop owns revision updates. A service or diagnostic does not change
     # source merely because it was launched through the terminal tool.
     ctx.memory.digest["actions"] = (ctx.memory.digest["actions"] + [f"ran: {command[:160]}"])[-40:]
-    ctx.memory.evidence.observe_process(result)
+    if ctx.memory.evidence is not None:
+        ctx.memory.evidence.observe_process(result)
 
     ok = result.get("pending") or result.get("exitCode") == 0
     return {"ok": bool(ok), "content": format_result(result), "process": result,
@@ -69,7 +70,8 @@ def wait_for_process(args, ctx):
     if not job:
         raise ToolError(f"No process {args['processId']}. Call backgroundProcess to list them.")
     result = ctx.processes.wait(job, float(args.get("timeoutSeconds") or 600))
-    ctx.memory.evidence.observe_process(result)
+    if ctx.memory.evidence is not None:
+        ctx.memory.evidence.observe_process(result)
     return {"ok": result.get("pending") or result.get("exitCode") == 0,
             "content": format_result(result), "process": result}
 

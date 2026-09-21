@@ -21,7 +21,6 @@ import json
 import uuid
 from typing import Any
 
-from .evidence import Evidence
 from .llm import estimate_tokens
 
 # Below this a body costs less than the note that would replace it.
@@ -77,7 +76,8 @@ def _superseded_note(tool: str, args: dict, chars: int) -> str:
 
 
 class Memory:
-    def __init__(self, budget_tokens: int = 24_000, keep_verbatim: int = 14) -> None:
+    def __init__(self, budget_tokens: int = 24_000, keep_verbatim: int = 14,
+                 evidence=None) -> None:
         self.budget_tokens = budget_tokens
         self.keep_verbatim = keep_verbatim
         self.messages: list[dict] = []
@@ -85,9 +85,16 @@ class Memory:
         # A handoff that was semantically useful but too large for the next
         # prompt. It stays outside provider context and is recalled in pieces.
         self.archive: str | None = None
-        self.evidence = Evidence()
+        # Evidence is owned by QA. Builder conversations stay usable without
+        # importing a test ledger or carrying verification state.
+        self.evidence = evidence
         self.digest: dict[str, Any] = {"actions": [], "failures": [], "files": set(), "dropped": 0}
         self._pending: list[dict] | None = None
+
+    def attach_evidence(self, evidence):
+        """Attach QA's durable evidence ledger to a handoff conversation."""
+        self.evidence = evidence
+        return evidence
 
     # -- writing ---------------------------------------------------------
     def set_system(self, content: str) -> None:
@@ -308,7 +315,7 @@ class Memory:
             "messages": [*self.messages, *(self._pending or [])],
             "compactions": self.compactions,
             "archive": self.archive,
-            "evidence": self.evidence.serialize(),
+            "evidence": self.evidence.serialize() if self.evidence is not None else {},
             "digest": {**self.digest, "files": sorted(self.digest["files"])},
         }
 
@@ -317,7 +324,8 @@ class Memory:
         self.messages = list(saved.get("messages") or [])
         self.compactions = int(saved.get("compactions") or 0)
         self.archive = saved.get("archive")
-        self.evidence.restore(saved.get("evidence") or {})
+        if self.evidence is not None:
+            self.evidence.restore(saved.get("evidence") or {})
         digest = saved.get("digest") or {}
         self.digest = {
             "actions": list(digest.get("actions") or []),

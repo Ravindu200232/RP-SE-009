@@ -22,7 +22,6 @@ class ConversationContinuityTests(unittest.TestCase):
         self.start_patch(patch.object(server, "_SESSIONS", {}))
         self.start_patch(patch.object(Router, "context_window", return_value=128_000))
         self.start_patch(patch.object(server, "StudioBridge"))
-        self.start_patch(patch.object(server.qa_report, "LiveReport"))
         self.start_patch(patch.object(BuilderAgent, "run", autospec=True, side_effect=self.reply))
         self.start_patch(patch.object(BuilderAgent, "build", autospec=True, side_effect=self.reply))
         self.inputs = []
@@ -92,7 +91,7 @@ class ConversationContinuityTests(unittest.TestCase):
         agent = self.run_request('Add a signup link to that page')
         self.assert_remembers()
         self.assertIn('partial history', str(self.inputs[-1]))
-        self.assertEqual(agent.memory.evidence.suites, [])
+        self.assertIsNone(agent.memory.evidence)
 
     def test_opening_the_preview_keeps_the_conversation(self):
         self.run_request("Build a shop with customer accounts")

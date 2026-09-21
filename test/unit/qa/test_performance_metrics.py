@@ -7,8 +7,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from test import _support  # noqa: F401
-from builder_agent.evidence import Evidence, compute_performance_from_samples
-from builder_agent.journeys import capture_page_performance
+from qa_agent.evidence import Evidence, compute_performance_from_samples
+from qa_agent.journeys import capture_page_performance
 from qa_agent import report, artifacts
 
 

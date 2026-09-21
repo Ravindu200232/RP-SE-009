@@ -49,8 +49,8 @@ def _undrawn(project_id: str) -> bool:
 
 async def synchronize(project_id: str, change_id: str, source: str, summary: str,
                       pages=()) -> dict:
-    project = await repo.get_project(project_id)
-    latest = await repo.latest_version(project_id)
+    from .orchestrator import recover_generated_project
+    project, latest = await recover_generated_project(project_id, assume_approved=True)
     if not project or not latest:
         raise ValueError("A generated parent SRS is required")
     receipt = storage.project_dir(project_id) / "changes" / f"{change_id}.json"

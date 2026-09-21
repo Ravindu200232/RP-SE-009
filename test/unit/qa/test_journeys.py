@@ -8,15 +8,17 @@ because nothing was ever broken.
 """
 from __future__ import annotations
 
+import inspect
 import types
 import unittest
+from unittest.mock import patch
 
 from test import _support  # noqa: F401
-from builder_agent import browser
-from builder_agent.browser import CANCELLED_ERRORS, request_outcome
+from qa_agent import browser
+from qa_agent.browser import CANCELLED_ERRORS, is_signed_out_session_probe, request_outcome
 from builder_agent.errors import ToolError
-from builder_agent.evidence import Evidence
-from builder_agent.journeys import _assert, diagnostics_report, run_journey
+from qa_agent.evidence import Evidence
+from qa_agent.journeys import _assert, diagnostics_report, run_journey
 
 
 class FakePage:
@@ -165,6 +167,12 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("1 critical", detail)
 
 
+class BrowserLaunchCompatibilityTests(unittest.TestCase):
+    def test_direct_cdp_launcher_allows_current_chrome_devtools_origin_policy(self):
+        source = inspect.getsource(browser.Browser.launch)
+        self.assertIn("--remote-allow-origins=*", source)
+
+
 class RequestClassificationTests(unittest.TestCase):
     def classify(self, error, canceled=False):
         """The rule the CDP listener applies, over one `loadingFailed` payload."""
@@ -177,6 +185,12 @@ class RequestClassificationTests(unittest.TestCase):
         for error in CANCELLED_ERRORS:
             self.assertEqual(self.classify(error), "request cancelled", error)
 
+    def test_only_the_signed_out_session_probe_is_an_expected_401(self):
+        self.assertTrue(is_signed_out_session_probe(401, "http://localhost:4000/api/auth/me"))
+        self.assertTrue(is_signed_out_session_probe(401, "http://localhost:4102/auth/me?refresh=1"))
+        self.assertFalse(is_signed_out_session_probe(401, "http://localhost:4000/api/auth/login"))
+        self.assertFalse(is_signed_out_session_probe(403, "http://localhost:4000/api/auth/me"))
+
     def test_a_connection_that_was_refused_is_a_failure(self):
         for error in ("net::ERR_CONNECTION_REFUSED", "net::ERR_NAME_NOT_RESOLVED",
                       "net::ERR_TIMED_OUT", "net::ERR_EMPTY_RESPONSE"):
@@ -187,7 +201,7 @@ class LocatorTests(unittest.TestCase):
     """Choosing one element out of several, and saying how when it cannot."""
 
     def pick(self, count, index=None):
-        from builder_agent.browser import Page
+        from qa_agent.browser import Page
         return Page._pick(list(range(100, 100 + count)), index, "role link")
 
     def test_one_match_needs_no_index(self):
@@ -267,7 +281,7 @@ class ScreencastTests(unittest.TestCase):
         an acknowledgement that blocks stops the stream after frame one — which
         is exactly what a still, silent preview looked like.
         """
-        cdp, _, frames = self.cast()
+        cdp, page, frames = self.cast()
         opening = list(cdp.sent)                # starting the cast is the caller's
         cdp.handlers["Page.screencastFrame"][0](
             {"data": "AAAA", "sessionId": 7}, "s1")
@@ -276,6 +290,31 @@ class ScreencastTests(unittest.TestCase):
         self.assertEqual(cdp.posted[0][1], {"sessionId": 7})
         self.assertEqual(cdp.sent, opening)     # the frame itself waited on nothing
         self.assertEqual(frames, ["data:image/jpeg;base64,AAAA"])
+        self.assertEqual(page._stream_detail, {})
+
+    def test_an_action_frame_carries_only_cursor_coordinates_and_viewport(self):
+        cdp, page, frames = self.cast()
+        page.cursor = {"x": 123.5, "y": 88.0, "action": "type", "sequence": 4}
+        cdp.handlers["Page.screencastFrame"][0](
+            {"data": "AAAA", "sessionId": 7,
+             "metadata": {"deviceWidth": 1280, "deviceHeight": 720}}, "s1")
+
+        self.assertEqual(frames, ["data:image/jpeg;base64,AAAA"])
+        self.assertEqual(page._stream_detail, {
+            "cursor": {"x": 123.5, "y": 88.0, "action": "type", "sequence": 4},
+            "viewport": {"width": 1280, "height": 720},
+        })
+
+    def test_a_repeated_non_action_frame_is_capped_but_always_acknowledged(self):
+        cdp, page, frames = self.cast()
+        page._last_stream_at = 10.0
+        page._last_stream_cursor = 0
+        with patch.object(browser.time, "monotonic", return_value=10.01):
+            cdp.handlers["Page.screencastFrame"][0](
+                {"data": "AAAA", "sessionId": 7}, "s1")
+
+        self.assertEqual(frames, [])
+        self.assertEqual(cdp.posted[0][0], "Page.screencastFrameAck")
 
     def test_a_frame_for_another_tab_is_not_this_tab_s_frame(self):
         cdp, _, frames = self.cast()
@@ -302,11 +341,17 @@ class BrowserWatchTests(unittest.TestCase):
             start_screencast=lambda on_frame: page.started.append(on_frame))
 
         engine._watch(page)
+        page._stream_detail = {
+            "cursor": {"x": 20, "y": 30, "action": "click", "sequence": 1},
+            "viewport": {"width": 900, "height": 600},
+        }
         page.started[0]("data:image/jpeg;base64,AAAA")
 
         self.assertEqual(events.seen, [("browser", {
             "state": "frame", "frame": "data:image/jpeg;base64,AAAA",
-            "url": "http://localhost:3200/plants"})])
+            "url": "http://localhost:3200/plants",
+            "cursor": {"x": 20, "y": 30, "action": "click", "sequence": 1},
+            "viewport": {"width": 900, "height": 600}})])
 
     def test_closing_the_browser_says_so_rather_than_going_quiet(self):
         """A last frame left on screen is a preview nobody can use."""

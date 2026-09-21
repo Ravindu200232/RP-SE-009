@@ -18,7 +18,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .errors import ToolError
+from builder_agent.errors import ToolError
 
 KINDS = ("unit", "e2e", "runtime")
 EVIDENCE_KINDS = KINDS + ("visual",)

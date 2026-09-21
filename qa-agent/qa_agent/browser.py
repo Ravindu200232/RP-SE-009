@@ -31,11 +31,15 @@ import threading
 import time
 from pathlib import Path
 
-from .errors import ToolError
+from builder_agent.errors import ToolError
 
 CONNECT_TIMEOUT = 15
 CALL_TIMEOUT = 25
 MAX_STEPS = 80
+# Live frames are a visual aid, not the source of truth for QA. A short cap
+# keeps the WebSocket responsive while still delivering a fresh frame for every
+# user-visible action (the action sequence below bypasses the cap).
+STREAM_MIN_INTERVAL = 0.08
 
 # Harmless aborted or cancelled network request codes that do not represent application errors.
 CANCELLED_ERRORS = frozenset({
@@ -118,6 +122,19 @@ def request_outcome(params: dict) -> str:
     if params.get("canceled") or str(params.get("errorText", "")) in CANCELLED_ERRORS:
         return "request cancelled"
     return "request failed"
+
+
+def is_signed_out_session_probe(status: int, url: str) -> bool:
+    """A public page asking whether a session exists is not an application error.
+
+    The UI is expected to call the session endpoint before a visitor signs in.
+    That endpoint correctly returns 401 without a cookie; treating this one
+    response as a browser failure drove a previous repair loop to weaken the
+    application's authentication contract.  Other 401 responses still remain
+    diagnostics, and journeys can explicitly assert this endpoint's status.
+    """
+    path = str(url or "").split("?", 1)[0].rstrip("/")
+    return status == 401 and path.endswith("/auth/me")
 
 
 # ---------------------------------------------------------------------------
@@ -374,6 +391,13 @@ class Page:
         self.diagnostics: list[dict] = []
         # Cache active URL on navigation events to avoid deadlocking the socket reader thread.
         self.url_cached = ""
+        # Compact, non-sensitive input for the live Studio overlay. Never put
+        # typed text, labels, selectors, or accessibility content here: the
+        # screenshot already shows the page and the cursor only needs a point.
+        self.cursor: dict | None = None
+        self._cursor_sequence = 0
+        self._last_stream_at = 0.0
+        self._last_stream_cursor = 0
         self._install_listeners()
 
     def _install_listeners(self) -> None:
@@ -410,7 +434,7 @@ class Page:
                 return
             info = params.get("response") or {}
             status = int(info.get("status") or 0)
-            if status >= 400:
+            if status >= 400 and not is_signed_out_session_probe(status, info.get("url", "")):
                 self._note(f"HTTP {status}", info.get("statusText", ""), info.get("url", ""),
                            source="network", requestId=params.get("requestId"), status=status)
 
@@ -435,8 +459,34 @@ class Page:
             self.cdp.post("Page.screencastFrameAck",
                           {"sessionId": params.get("sessionId")}, self.session)
             data = params.get("data") or ""
-            if data:
-                on_frame("data:image/jpeg;base64," + data)
+            if not data:
+                return
+
+            # Chrome can produce more JPEG frames than the Studio can use.
+            # Keep the stream compact, but never hold back the frame that
+            # follows a click, type, or key action.
+            cursor = dict(getattr(self, "cursor", None) or {})
+            sequence = int(cursor.get("sequence") or 0)
+            now = time.monotonic()
+            if (now - float(getattr(self, "_last_stream_at", 0.0)) < STREAM_MIN_INTERVAL
+                    and sequence == int(getattr(self, "_last_stream_cursor", 0))):
+                return
+            self._last_stream_at = now
+            self._last_stream_cursor = sequence
+
+            metadata = params.get("metadata") or {}
+            width = int(float(metadata.get("deviceWidth") or 0))
+            height = int(float(metadata.get("deviceHeight") or 0))
+            detail = {}
+            if cursor:
+                detail["cursor"] = cursor
+            if width > 0 and height > 0:
+                detail["viewport"] = {"width": width, "height": height}
+            # Keep the public callback as one frame argument. Browser callers
+            # can read the compact detail from the page, while evidence and
+            # older consumers that only collect JPEG frames stay compatible.
+            self._stream_detail = detail
+            on_frame("data:image/jpeg;base64," + data)
 
         if getattr(self, "_casting", False):
             return                      # already streaming; one cast per tab
@@ -471,6 +521,9 @@ class Page:
 
     # -- navigation ------------------------------------------------------
     def navigate(self, url: str, timeout: float = 30) -> None:
+        # A pointer from the last page must not appear over a page that has
+        # just navigated in. The next actual interaction repopulates it.
+        self.cursor = None
         self.url_cached = str(url)
         self.cdp.send("Page.navigate", {"url": url}, self.session, timeout=timeout)
         self.wait_ready(timeout)
@@ -666,6 +719,7 @@ class Page:
         x, y = self._box(backend_id)
         # Kept so a failure afterwards can ask the page what was at this point.
         self.last_point = (x, y)
+        self._set_cursor(x, y, "click")
         for kind in ("mousePressed", "mouseReleased"):
             self.cdp.send("Input.dispatchMouseEvent",
                           {"type": kind, "x": x, "y": y, "button": "left", "clickCount": 1},
@@ -689,6 +743,12 @@ class Page:
         did not type fails at the step where it happened.
         """
         self.click(backend_id)
+        self._retag_cursor("type")
+        # A physical CDP click can hit an input without making it the active
+        # element in a newly-created Chrome target.  Focus the resolved DOM
+        # node before sending keyboard input; this is selector-independent and
+        # lets the subsequent read-back prove the text reached the same node.
+        self.cdp.send("DOM.focus", {"backendNodeId": backend_id}, self.session)
         self.cdp.send("Input.dispatchKeyEvent",
                       {"type": "keyDown", "key": "a", "code": "KeyA",
                        "windowsVirtualKeyCode": 65, "nativeVirtualKeyCode": 65,
@@ -827,12 +887,28 @@ class Page:
                  "ArrowDown": (40, "ArrowDown"), "ArrowUp": (38, "ArrowUp"),
                  "Backspace": (8, "Backspace")}
         code, name = table.get(key, (0, key))
+        self._retag_cursor("key")
         for kind in ("keyDown", "keyUp"):
             self.cdp.send("Input.dispatchKeyEvent",
                           {"type": kind, "key": name, "code": name,
                            "windowsVirtualKeyCode": code, "nativeVirtualKeyCode": code},
                           self.session)
         self.settle(cap=0.2)
+
+    def _set_cursor(self, x: float, y: float, action: str) -> None:
+        """Record an action point for the live preview without recording input."""
+        self._cursor_sequence = int(getattr(self, "_cursor_sequence", 0)) + 1
+        self.cursor = {
+            "x": round(float(x), 2),
+            "y": round(float(y), 2),
+            "action": action,
+            "sequence": self._cursor_sequence,
+        }
+
+    def _retag_cursor(self, action: str) -> None:
+        point = getattr(self, "last_point", None)
+        if point:
+            self._set_cursor(point[0], point[1], action)
 
     def frame(self, path: Path, quality: int = 55, scale: float = 0.5) -> None:
         """Photograph the page without making anybody wait for it.
@@ -933,6 +1009,10 @@ class Browser:
                 "--no-default-browser-check", "--disable-background-networking",
                 "--disable-component-update", "--disable-sync", "--disable-extensions",
                 "--disable-features=Translate,MediaRouter", "--disable-popup-blocking",
+                # Chrome 136+ rejects a DevTools WebSocket client unless its
+                # origin is explicitly allowed.  The profile is disposable
+                # and the debugging port is ephemeral and loopback-only.
+                "--remote-allow-origins=*",
                 "--window-size=1280,800", "about:blank"]
         if os.name != "nt" and hasattr(os, "geteuid") and os.geteuid() == 0:
             args.insert(2, "--no-sandbox")
@@ -992,9 +1072,14 @@ class Browser:
         """
         if not self.events:
             return
-        page.start_screencast(
-            lambda frame: self.events.emit("browser", state="frame", frame=frame,
-                                           url=page.url_cached))
+        def stream(frame):
+            payload = {"state": "frame", "frame": frame, "url": page.url_cached}
+            detail = getattr(page, "_stream_detail", None)
+            if isinstance(detail, dict):
+                payload.update({key: value for key, value in detail.items() if value})
+            self.events.emit("browser", **payload)
+
+        page.start_screencast(stream)
 
     def fresh_session(self) -> None:
         """Start from a clean auth/storage state, as a real first visit would."""

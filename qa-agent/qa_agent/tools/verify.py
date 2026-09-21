@@ -15,11 +15,11 @@ import time
 import re
 from pathlib import Path
 
-from ..errors import ToolError
 from ..evidence import DEFAULT_E2E_TARGET, DEFAULT_UNIT_TARGET, failure_packet
-from ..policy import MODERATE, SAFE, classify, BLOCKED
-from .base import Tool
-from .terminal import format_result
+from builder_agent.errors import ToolError
+from builder_agent.policy import MODERATE, SAFE, classify, BLOCKED
+from builder_agent.tools.base import Tool
+from builder_agent.tools.terminal import format_result
 
 
 def _read_coverage(ctx, reports) -> dict | None:

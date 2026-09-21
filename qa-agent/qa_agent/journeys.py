@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from urllib.parse import urljoin
 
-from .errors import ToolError
+from builder_agent.errors import ToolError
 
 MAX_STEPS = 80
 STEP_TIMEOUT = 15.0

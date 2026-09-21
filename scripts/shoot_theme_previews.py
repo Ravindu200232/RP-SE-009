@@ -36,7 +36,7 @@ def main() -> int:
     redo = "--redo" in sys.argv
     GRID.mkdir(parents=True, exist_ok=True)
 
-    from builder_agent.browser import Browser
+    from qa_agent.browser import Browser
     from builder_agent.events import Events
 
     catalogue = json.loads(CATALOGUE.read_text(encoding="utf-8")) if CATALOGUE.is_file() else {}

@@ -23,7 +23,6 @@ import uuid
 from pathlib import Path
 
 from .approvals import Approvals
-from .browser import Browser
 from .config import Config
 from .design import apply_answer as apply_design_answer
 from .design import choose as choose_design
@@ -127,7 +126,9 @@ class BuilderAgent:
         os.environ.get("AGENTFORGE_MAX_PROTOTYPE_REPAIR", "0"))
 
     def __init__(self, config: Config, *, client=None, events: Events | None = None,
-                 cancel=None, memory: Memory | None = None) -> None:
+                 cancel=None, memory: Memory | None = None, registry=None,
+                 browser=None, failure_packet=None, qa_instructions: str = "",
+                 verification_tool_phases=None) -> None:
         self.id = uuid.uuid4().hex[:12]
         self.config = config
         self.events = events or Events()
@@ -140,10 +141,15 @@ class BuilderAgent:
         self.memory = memory if memory is not None else Memory(budget_tokens=config.context_tokens)
         self.memory.budget_tokens = config.context_tokens
         self.processes = Processes(events=self.events)
-        self.browser = Browser(events=self.events)
+        # Browser execution and test evidence are QA capabilities. A QA run
+        # injects them; ordinary Builder runs receive code tools only.
+        self.browser = browser
+        self.failure_packet = failure_packet
+        self.qa_instructions = str(qa_instructions or "")
+        self.verification_tool_phases = dict(verification_tool_phases or {})
         self.client = client or OllamaClient(config.host or None)
         self.router = Router(self.client, config.model, config=config, events=self.events)
-        self.registry = build_registry()
+        self.registry = registry or build_registry()
         self.plan_text = ""
         self.plan_approval = True
         self.design_approval = True
@@ -395,7 +401,8 @@ class BuilderAgent:
 
             # The one way a drawing of plain CSS can still be shown bare: the
             # stylesheet was never really written, or the pages never link it.
-            bare = styles_of.unstyled(root, styles_of.browser_check(self.browser))
+            look = styles_of.browser_check(self.browser) if self.browser is not None else None
+            bare = styles_of.unstyled(root, look)
             if bare and round_number + 1 < self.MAX_PROTOTYPE_ROUNDS:
                 self.events.emit("notice", level="warn",
                                  message=f"{len(bare)} page(s) have no styling on them; "
@@ -729,7 +736,10 @@ class BuilderAgent:
         return Loop(config=config, registry=registry, router=self.router, memory=self.memory,
                     sandbox=self.sandbox, events=self.events, processes=self.processes,
                     browser=self.browser, cancel=self.cancel, approvals=self.approvals,
-                    verification_kinds=verification_kinds)
+                    verification_kinds=verification_kinds,
+                    failure_packet=self.failure_packet,
+                    qa_instructions=self.qa_instructions,
+                    verification_tool_phases=self.verification_tool_phases)
 
     def _finish(self) -> None:
         """Leave services running for the preview; take everything else down."""
@@ -739,11 +749,13 @@ class BuilderAgent:
             "retrying it.")
         self.processes.release_services()
         self.processes.stop_all(keep_services=True)
-        self.browser.close()
+        if self.browser is not None:
+            self.browser.close()
 
     def dispose(self) -> None:
         self.processes.stop_all()
-        self.browser.close()
+        if self.browser is not None:
+            self.browser.close()
 
     def snapshot(self) -> dict:
         return {
@@ -752,6 +764,6 @@ class BuilderAgent:
             "messages": len(self.memory), "compactions": self.memory.compactions,
             "usage": self.router.usage,
             "processes": [job.summary() for job in self.processes.list()],
-            "evidence": self.memory.evidence.summary(),
+            "evidence": self.memory.evidence.summary() if self.memory.evidence is not None else {},
             "plan": self.plan_text, "design": self.design,
         }

@@ -3,7 +3,7 @@
 def run_manual_prototype_change(project, summary):
     """Verify direct HTML edits before their existing durable SRS transaction."""
     from builder_agent.prototype_check import validate_all, repair_prompt
-    from builder_agent.browser import Browser
+    from qa_agent.browser import Browser
     from builder_agent.events import Events
     directory = PROD_DIR / project
     state = ProjectState(directory)

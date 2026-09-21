@@ -8,6 +8,7 @@ from __future__ import annotations
 import copy
 import json
 import re
+from datetime import datetime, timezone
 
 from ..agents import clarify, interview, plan_generator
 from ..agents.coverage_auditor import compute_coverage
@@ -19,7 +20,7 @@ from ..knowledge import app_types
 from ..knowledge.plan_srs import _auth_on
 from ..models import repositories as repo
 from ..schemas.project import now_iso
-from ..schemas.srs import summarize_srs
+from ..schemas.srs import summarize_srs, validate_srs
 from ..services import plan_approval, storage
 from ..services.events import bus
 
@@ -42,6 +43,109 @@ def _bump_minor(version: str) -> str:
     except ValueError:
         return "1.1.0"
     return ".".join(parts[:3])
+
+
+_SRS_SNAPSHOT_NAME = re.compile(r"^srs_v(\d+\.\d+\.\d+)\.json$")
+
+
+def _durable_versions(project_id: str) -> list[tuple[str, dict, str]]:
+    """Read valid, generated SRS snapshots that survived a store restart.
+
+    The database remains the authority during normal operation. The snapshots
+    are only used when the database no longer has the corresponding project or
+    version, which can happen when a local sidecar switches to a new SQLite
+    store after an interrupted restart. A snapshot is validated before it is
+    considered recovery material; arbitrary files in the storage directory are
+    never imported as specifications.
+    """
+    directory = storage.project_dir(project_id)
+    versions: dict[str, tuple[dict, str]] = {}
+    for path in directory.glob("srs_v*.json"):
+        match = _SRS_SNAPSHOT_NAME.match(path.name)
+        if not match:
+            continue
+        try:
+            snapshot = json.loads(path.read_text(encoding="utf-8"))
+            document = snapshot.get("srs_document") if isinstance(snapshot, dict) else None
+            if not isinstance(document, dict):
+                continue
+            validate_srs(snapshot)
+            version = str(document.get("version") or match.group(1))
+            if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+                continue
+            created_at = datetime.fromtimestamp(
+                path.stat().st_mtime, tz=timezone.utc
+            ).isoformat()
+        except (OSError, ValueError, TypeError):
+            continue
+        versions[version] = (snapshot, created_at)
+
+    def version_key(item: tuple[str, tuple[dict, str]]) -> tuple[int, int, int]:
+        return tuple(int(part) for part in item[0].split("."))
+
+    return [(version, snapshot, created_at)
+            for version, (snapshot, created_at) in sorted(versions.items(), key=version_key)]
+
+
+async def recover_generated_project(project_id: str, *, assume_approved: bool = False) -> tuple[dict | None, dict | None]:
+    """Restore a generated SRS from its durable snapshots only when DB rows vanished.
+
+    ``assume_approved`` is deliberately limited to the child-to-parent sync
+    path: reaching that path already requires an adopted, approved SRS. Normal
+    project reads recover as ``generated`` so a storage recovery can never
+    silently grant approval to a specification that was not approved before.
+    """
+    project = await repo.get_project(project_id)
+    latest = await repo.latest_version(project_id)
+    if project and latest:
+        return project, latest
+
+    snapshots = _durable_versions(project_id)
+    if not snapshots:
+        return project, latest
+
+    newest_version, newest_srs, _ = snapshots[-1]
+    document = newest_srs["srs_document"]
+    if not project:
+        summary = document.get("app_summary") or {}
+        title = str(summary.get("app_name") or document.get("project_name") or "Recovered SRS").strip()
+        project = {
+            "id": project_id,
+            "title": title or "Recovered SRS",
+            "raw_idea": str(summary.get("short_description") or title or "Recovered SRS"),
+            "detected_domain": "Recovered",
+            "domain_key": "recovered",
+            "status": "approved" if assume_approved else "generated",
+            "current_version": newest_version,
+            "language": str(document.get("document_language") or "English"),
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
+        }
+        await repo.create_project(project)
+
+    existing_versions = {str(row.get("version") or "")
+                         for row in await repo.list_versions(project_id)}
+    for version, snapshot, created_at in snapshots:
+        if version in existing_versions:
+            continue
+        await repo.save_version({
+            "id": repo.new_id("ver_"),
+            "project_id": project_id,
+            "version": version,
+            "operation_id": f"recovered:{project_id}:{version}",
+            "label": "Recovered generated SRS",
+            "srs": snapshot,
+            "diff_summary": [],
+            "source": "recovery",
+            "created_at": created_at,
+        })
+
+    latest = await repo.latest_version(project_id)
+    if latest:
+        await repo.save_diagrams(project_id,
+                                 (latest.get("srs") or {}).get("srs_document", {}).get("diagrams", []))
+    project = await repo.get_project(project_id)
+    return project, latest
 
 
 async def create_project(idea: str, language: str | None = None) -> dict:
@@ -542,10 +646,9 @@ async def _completed_operation(project_id: str):
 
 
 async def project_detail(project_id: str) -> dict:
-    project = await repo.get_project(project_id)
+    project, latest = await recover_generated_project(project_id)
     if not project:
         raise KeyError("project not found")
-    latest = await repo.latest_version(project_id)
     versions = await repo.list_versions(project_id)
     srs = latest["srs"] if latest else None
     return {"project": project, "srs": srs,
@@ -554,5 +657,5 @@ async def project_detail(project_id: str) -> dict:
 
 
 async def latest_srs(project_id: str) -> dict | None:
-    latest = await repo.latest_version(project_id)
+    _, latest = await recover_generated_project(project_id)
     return latest["srs"] if latest else None

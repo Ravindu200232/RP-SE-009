@@ -21,9 +21,10 @@ class ContextHandoffTests(unittest.TestCase):
     def test_qa_keeps_builder_reads_and_evidence_while_using_its_own_model(self):
         from builder_agent.memory import Memory
         from qa_agent.agent import QAAgent
+        from qa_agent.evidence import Evidence
 
         with tempfile.TemporaryDirectory() as directory:
-            memory = Memory()
+            memory = Memory(evidence=Evidence())
             memory.add_user("PriceEditor already reads cents; guest journey passed.")
             memory.evidence.define_scope("web", "nextjs-mongo", [
                 {"id": "price", "description": "Update room prices", "evidence": ["unit"]}
@@ -42,6 +43,14 @@ class ContextHandoffTests(unittest.TestCase):
 
 
 class BuildEvidenceReportTests(unittest.TestCase):
+    def test_qa_registry_accepts_test_runner_arguments(self):
+        from qa_agent.tools import build_registry
+
+        clean = build_registry().validate("runTests", {
+            "kind": "unit", "suite": "a", "command": "x",
+            "covers": '["one","two"]'})
+        self.assertEqual(clean["covers"], ["one", "two"])
+
     def test_existing_unit_and_e2e_results_make_a_report_without_reexecuting(self):
         evidence = {"ready": True, "suites": [
             {"kind": "unit", "suite": "all", "status": "passed", "sequence": 1,

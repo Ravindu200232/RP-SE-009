@@ -15,9 +15,9 @@ import time
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from .browser import Browser
 from .errors import ToolError
-from .journeys import _is_ignorable_diagnostic
+from qa_agent.browser import Browser
+from qa_agent.journeys import _is_ignorable_diagnostic
 
 
 MAX_PAGES = 40

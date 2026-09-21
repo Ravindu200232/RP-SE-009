@@ -7,9 +7,9 @@ the difference between diagnosing a failure and guessing at it.
 """
 from __future__ import annotations
 
+import re
 import subprocess
-
-from ..evidence import failure_packet
+from pathlib import Path
 from ..policy import SAFE
 from .base import Tool
 
@@ -49,12 +49,26 @@ def review_changes(args, ctx):
 
 def inspect_error(args, ctx):
     output = str(args["output"])
-    packet = failure_packet(ctx.sandbox, output, max_files=int(args.get("maxFiles") or 3))
-    if not packet:
+    max_files = int(args.get("maxFiles") or 3)
+    matches = re.finditer(r"(?P<path>[\w./\\-]+\.[\w]+):(?P<line>\d+)", output)
+    snippets = []
+    for match in matches:
+        if len(snippets) >= max_files:
+            break
+        try:
+            path = ctx.sandbox.resolve(match.group("path"), must_exist=True)
+            lines = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
+            line = int(match.group("line"))
+            start, end = max(0, line - 3), min(len(lines), line + 2)
+            body = "\n".join(f"{index + 1}: {lines[index]}" for index in range(start, end))
+            snippets.append(f"{match.group('path')}:{line}\n{body}")
+        except Exception:  # noqa: BLE001 - one unresolved path should not hide the error
+            continue
+    if not snippets:
         return {"ok": True, "content":
                 "That output names no workspace file and line I can resolve. Search for a "
                 "distinctive fragment of the message instead."}
-    return {"ok": True, "content": packet}
+    return {"ok": True, "content": "\n\n".join(snippets)}
 
 
 def register(registry):

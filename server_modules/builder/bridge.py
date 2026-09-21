@@ -204,8 +204,15 @@ class StudioBridge:
         An empty frame means it has closed: the studio gives the preview back
         rather than holding the last picture over it.
         """
-        emit({"type": "browser_frame", "frame": p.get("frame", ""),
-              "url": p.get("url", ""), "state": p.get("state", "frame")})
+        frame = {"type": "browser_frame", "frame": p.get("frame", ""),
+                 "url": p.get("url", ""), "state": p.get("state", "frame")}
+        # QA owns browser execution. Its compact action coordinate is safe to
+        # forward with a frame; no locator, DOM text, or typed value leaves the
+        # runner merely to draw the Studio cursor.
+        for key in ("cursor", "viewport"):
+            if p.get(key):
+                frame[key] = p[key]
+        emit(frame)
 
     def on_context(self, p):
         self._stats(tokens=int(p.get("tokens") or 0), limit=int(p.get("limit") or 0),

@@ -14,7 +14,7 @@ from pathlib import Path
 from test import _support  # noqa: F401
 from builder_agent.config import BUILD_QUALITY, Config, VERIFY_QUALITY, detect_stack, stack_for
 from builder_agent.errors import SecurityError, ToolError
-from builder_agent.evidence import Evidence, evaluate_unit_coverage
+from qa_agent.evidence import Evidence, evaluate_unit_coverage
 from builder_agent.llm import ToolCall
 from builder_agent.memory import Memory
 from builder_agent.policy import BLOCKED, DANGEROUS, MODERATE, SAFE, classify, is_read_only
@@ -245,11 +245,9 @@ class ToolRegistryTests(unittest.TestCase):
         clean = self.registry.validate("readFile", {"filePath": "a.js", "offset": "3"})
         self.assertEqual(clean["offset"], 3)
 
-    def test_a_json_array_sent_as_a_string_is_still_an_array(self):
-        clean = self.registry.validate("runTests", {
-            "kind": "unit", "suite": "a", "command": "x",
-            "covers": '["one","two"]'})
-        self.assertEqual(clean["covers"], ["one", "two"])
+    def test_builder_registry_has_no_qa_test_runner(self):
+        self.assertFalse(self.registry.has("runTests"))
+        self.assertFalse(self.registry.has("browserRunJourney"))
 
     def test_writing_over_an_existing_file_needs_saying_so(self):
         self.call("writeFile", filePath="a.js", content="one")
