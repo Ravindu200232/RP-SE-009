@@ -4,65 +4,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
-import { Button, Empty, Modal } from '../ui'
+import { Empty } from '../ui'
 import { SrsRevisions } from './SrsRevisions'
-
-const WHAT = {
-  designer: ['Prototype', 'the drawn pages'],
-  developer: ['Application', 'the built code and its tests'],
-}
-
-/** What the change should be carried into, and whether to carry it. */
-function CarryOver({ targets, version, changed, busy, onGo, onSkip }) {
-  const [picked, setPicked] = useState(() => new Set(targets))
-  const toggle = role => setPicked(was => {
-    const next = new Set(was)
-    next.has(role) ? next.delete(role) : next.add(role)
-    return next
-  })
-
-  return (
-    <Modal onClose={busy ? () => { } : onSkip} className="max-w-[460px]">
-      <div role="dialog" aria-modal="true" aria-label="Carry this change into the project">
-        <h3 className="text-sm font-semibold text-ink">
-          The specification is now v{version}
-        </h3>
-        {changed ? (
-          <p className="mt-2 whitespace-pre-wrap text-[11.5px] leading-relaxed text-muted">{changed}</p>
-        ) : null}
-        <p className="mt-3 text-[11.5px] text-muted">
-          What was built from it still says the old thing. Carry the change into:
-        </p>
-
-        <div className="mt-3 space-y-1.5">
-          {targets.map(role => (
-            <label key={role}
-              className="flex cursor-pointer items-start gap-2.5 rounded-panel border
-                         border-line bg-panel2 px-3 py-2.5 hover:border-accent">
-              <input type="checkbox" checked={picked.has(role)} disabled={busy}
-                onChange={() => toggle(role)} className="mt-0.5 accent-[#1877F2]" />
-              <span className="min-w-0">
-                <span className="block text-[12px] font-medium text-ink">{WHAT[role][0]}</span>
-                <span className="block text-[10.5px] text-muted2">{WHAT[role][1]}</span>
-              </span>
-            </label>
-          ))}
-        </div>
-
-        <div className="mt-4 flex items-center justify-end gap-2">
-          <Button variant="outline" disabled={busy} onClick={onSkip}>Not now</Button>
-          <Button disabled={busy || !picked.size} onClick={() => onGo([...picked])}>
-            {busy ? 'Starting…' : `Update ${picked.size === 2 ? 'both' : picked.size ? WHAT[[...picked][0]][0].toLowerCase() : ''}`}
-          </Button>
-        </div>
-        <p className="mt-2.5 text-[10px] leading-relaxed text-muted2">
-          Each one runs as its own agent turn and you can watch it in its tab. The
-          specification keeps the change either way.
-        </p>
-      </div>
-    </Modal>
-  )
-}
+import SrsApprovalModal from './SrsApprovalModal'
 
 export default function SrsRevisionsPanel() {
   const project = useStore(s => s.project)
@@ -126,8 +70,8 @@ export default function SrsRevisionsPanel() {
           setAsk({ prompt, version: answer?.version, changed: said.join('\n') })
         }} />
       {ask && (
-        <CarryOver targets={built} version={ask.version} changed={ask.changed} busy={busy}
-          onGo={carry} onSkip={() => setAsk(null)} />
+        <SrsApprovalModal targets={built} version={ask.version} changed={ask.changed} busy={busy}
+          onApprove={carry} onKeepDraft={() => setAsk(null)} />
       )}
     </>
   )
