@@ -34,7 +34,7 @@ RUN_POST = {"/decision"}
 # One project, named in the path.
 PROJECT_GET = ("/workflow/", "/runtime/", "/files/", "/stream/", "/session/", "/qa-screenshot/",
                "/prototype/", "/qa/", "/srs-results/", "/qa-pdf/", "/srs-pdf/",
-               "/deploy-results/", "/plugins/project/")
+               "/deploy-results/", "/plugins/project/", "/change-requests/")
 # One project, named in the body.
 PROJECT_POST = {"/sync/retry", "/resume", "/delete-project", "/save-file", "/element-edit", "/feature",
                 "/agent-update", "/stream", "/shot", "/undo", "/deploy-start",
@@ -72,6 +72,8 @@ def rule(method: str, path: str, body: dict | None = None) -> tuple:
         return ("project", unquote(path[9:-9]).strip("/"))
     if path.startswith("/open/"):
         return ("project", unquote(path[6:]).strip("/"))
+    if path.startswith("/change-requests/"):
+        return ("project", str(body.get("project") or "").strip())
     if path in PROJECT_POST:
         return ("project", str(body.get("project") or "").strip())
     if path in MAYBE_PROJECT_POST:

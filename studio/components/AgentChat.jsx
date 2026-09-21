@@ -240,13 +240,19 @@ export default function AgentChat() {
         const answer = await api.srs(`/projects/${plan.srsId}/customize`, { prompt: full })
         const targets = ['designer', 'developer'].filter(role => plan.targets?.[role])
         const defaultTargets = targets.includes(agentRole) ? [agentRole] : targets
-        const changed = (answer?.diff_summary || []).join('\n')
+        const changedLines = answer?.diff_summary || []
+        const changed = changedLines.join('\n')
+        const created = await api.createChangeRequest({
+          project, kind: 'srs', prompt: full, targets, srs_version: answer?.version,
+          summary: changedLines,
+        })
         addPlanRevisionToLog(answer?.version, targets)
         forgetConsole()
         attach.reset()
         setText('')
         if (targets.length) {
-          setPlanReview({ project, prompt: full, version: answer?.version, changed, targets, defaultTargets })
+          setPlanReview({ project, requestId: created?.request?.id, prompt: full,
+            version: answer?.version, changed, targets, defaultTargets })
         }
       } catch (e) {
         useStore.getState().addLog('WARN', `Could not revise the SRS — ${e.message}`)
@@ -295,7 +301,7 @@ export default function AgentChat() {
     }
     setApprovingPlan(true)
     try {
-      await api.specChange(project, planReview.prompt, roles)
+      await api.approveChangeRequest(project, planReview.requestId, roles)
       useStore.getState().addLog('INFO', `Approved the SRS update for ${roles.join(' and ')}.`)
       setPlanReview(null)
     } catch (e) {

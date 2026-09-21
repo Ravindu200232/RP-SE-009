@@ -105,6 +105,16 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
             (dest / "srs_latest.json").write_text(
                 json.dumps(document.json(), indent=2), encoding="utf-8")
 
+        # Visual decisions are a first-class approved artifact, not a browser
+        # preference. Keeping a copy beside the SRS lets future project changes
+        # reproduce the same brand choices without changing any agent tools.
+        design_spec = _srs_get(f"{base}/design-spec")
+        if design_spec is not None:
+            current_design = (design_spec.json() or {}).get("current")
+            if current_design:
+                (proj_dir / ".agentforge" / "design-spec.json").write_text(
+                    json.dumps(current_design, indent=2), encoding="utf-8")
+
         # Adopt wireframes into .agentforge/wireframes/ so both agents and the SRS tab can access them.
         try:
             adopt_wireframes(srs_id, proj_dir)

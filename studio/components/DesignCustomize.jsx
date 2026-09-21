@@ -258,6 +258,37 @@ function composeDirection(state, theme) {
   return parts.join('\n')
 }
 
+/** A portable, versionable counterpart of the concise direction sent to agents. */
+function designSpecFor(state, theme) {
+  return {
+    theme: { slug: state.slug || '', name: theme?.name || '' },
+    colors: { ...state.colors, button: state.button || '' },
+    typography: { heading_font: state.headingFont || '', body_font: state.bodyFont || '' },
+    layout: {
+      density: state.density || '', radius: state.radius || '', appearance: state.appearance || '',
+      border: state.border || '', shadow: state.shadow || '', icons: state.icons || '',
+      width: state.width || '', navigation: state.nav || '',
+    },
+    motion: state.motion || '',
+    wireframe_fidelity: state.wireframeFidelity || 'AI Polished',
+    direction: state.direction.trim(),
+  }
+}
+
+function stateFromDesignSpec(spec) {
+  if (!spec || typeof spec !== 'object') return null
+  const theme = spec.theme || {}, colors = spec.colors || {}, type = spec.typography || {}, layout = spec.layout || {}
+  return {
+    slug: theme.slug || '', colors, button: colors.button || '',
+    headingFont: type.heading_font || '', bodyFont: type.body_font || '',
+    density: layout.density || BLANK.density, radius: layout.radius || BLANK.radius,
+    appearance: layout.appearance || '', border: layout.border || '', shadow: layout.shadow || '',
+    icons: layout.icons || '', width: layout.width || '', nav: layout.navigation || '',
+    motion: spec.motion || '', wireframeFidelity: spec.wireframe_fidelity || BLANK.wireframeFidelity,
+    direction: spec.direction || '',
+  }
+}
+
 function Swatch({ label, value, fallback, onChange }) {
   const shown = value || fallback || DEFAULT_PALETTE[label] || '#2563eb'
   return (
@@ -654,6 +685,22 @@ function SiteImages({ projectId }) {
     return () => { open = false }
   }, [projectId])
 
+  // A confirmed design no longer belongs only to the browser that picked it.
+  // The server copy wins on another device and can be reproduced by future runs.
+  useEffect(() => {
+    let active = true
+    api.designSpec(projectId)
+      .then(answer => {
+        const restored = stateFromDesignSpec(answer?.current?.spec)
+        if (!active || !restored) return
+        setState(previous => ({ ...previous, ...restored, colors: restored.colors || {} }))
+        if (restored.headingFont) loadGoogleFont(restored.headingFont)
+        if (restored.bodyFont) loadGoogleFont(restored.bodyFont)
+      })
+      .catch(() => {}) // Older SRS installations simply continue with local drafts.
+    return () => { active = false }
+  }, [projectId])
+
   async function add(files) {
     const picked = [...(files || [])]
     if (!picked.length || !projectId) return
@@ -883,7 +930,7 @@ export default function DesignCustomize({ projectId, onContinue, onBack }) {
     setSaving(true)
     setError('')
     try {
-      await onContinue(composeDirection(state, theme))
+      await onContinue({ direction: composeDirection(state, theme), designSpec: designSpecFor(state, theme) })
     } catch (failure) {
       setError(failure.message)
     } finally {
@@ -1199,7 +1246,7 @@ export default function DesignCustomize({ projectId, onContinue, onBack }) {
         <div className="mt-6 flex justify-between gap-3">
           <Button variant="outline" onClick={onBack}>Review SRS</Button>
           <Button disabled={saving} onClick={apply}>
-            {saving ? 'Applying design…' : 'Apply to prototype'}
+            {saving ? 'Applying design…' : 'Approve & apply to prototype'}
           </Button>
         </div>
 

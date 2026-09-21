@@ -14,6 +14,7 @@ from .llm import get_llm
 from .routers import (
     analyze,
     customize,
+    design_spec,
     downloads,
     events,
     interview,
@@ -55,7 +56,7 @@ app.add_middleware(
 )
 
 for r in (projects.router, analyze.router, interview.router, plan.router,
-          srs.router, customize.router, downloads.router, events.router):
+          srs.router, customize.router, design_spec.router, downloads.router, events.router):
     app.include_router(r)
 
 
