@@ -24,6 +24,7 @@ import EditAttach from './EditAttach'
 import PluginAccounts from './PluginAccounts'
 import { Modal } from './ui'
 import SrsRevisionsPanel from './srs/SrsRevisionsPanel'
+import SrsApprovalModal from './srs/SrsApprovalModal'
 
 const ICONS = {
   read: Search, plan: Search, write: FileCode2, build: FileCode2,
@@ -68,6 +69,7 @@ export default function AgentChat() {
   const busy = useStore(s => s.busy)
   const buildAllowed = useStore(s => Boolean(s.buildAvailability[s.project]))
   const project = useStore(s => s.project)
+  const srsStamp = useStore(s => s.srsStamp[s.project])
   const agentRole = useStore(s => s.agentRole)
   const onDeploy = useStore(s => s.view === 'deploy')
   const onSrs = useStore(s => s.view === 'srs')
@@ -88,6 +90,12 @@ export default function AgentChat() {
   const text = useStore(s => s.draft || '')
   const setText = useStore(s => s.setDraft)
   const [reading, setReading] = useState(false)
+  // Plan-first is deliberately the default for a linked SRS. People can still
+  // opt into a direct visual tweak, but a feature request starts with a review.
+  const [planFirst, setPlanFirst] = useState(true)
+  const [plan, setPlan] = useState({ state: 'idle', srsId: '', targets: {} })
+  const [planReview, setPlanReview] = useState(null)
+  const [approvingPlan, setApprovingPlan] = useState(false)
   const attach = useEditAttachments()
   const end = useRef(null)
   const box = useRef(null)
@@ -103,6 +111,38 @@ export default function AgentChat() {
   useEffect(() => {
     if (busy) setOpen(true)     // a run is the thing you watch
   }, [busy])
+
+  // A confirmation belongs to exactly one project. Resetting it here prevents
+  // a fast project switch from ever applying an earlier draft elsewhere.
+  useEffect(() => {
+    setPlanFirst(true)
+    setPlanReview(null)
+  }, [project])
+
+  // The lightweight project record tells the composer whether it can safely
+  // offer the SRS approval path, without guessing that a child exists.
+  useEffect(() => {
+    let cancelled = false
+    if (!project) {
+      setPlan({ state: 'idle', srsId: '', targets: {} })
+      setPlanReview(null)
+      return undefined
+    }
+    setPlan({ state: 'loading', srsId: '', targets: {} })
+    api.srsResults(project)
+      .then(found => {
+        if (cancelled) return
+        setPlan({
+          state: 'ready',
+          srsId: found?.link?.srs_id || '',
+          targets: found?.targets || {},
+        })
+      })
+      .catch(() => {
+        if (!cancelled) setPlan({ state: 'error', srsId: '', targets: {} })
+      })
+    return () => { cancelled = true }
+  }, [project, srsStamp])
 
   // Pointing at something in the preview is the start of a sentence, so the
   // box that finishes it comes to meet you.
@@ -167,6 +207,19 @@ export default function AgentChat() {
       return
     }
 
+    // Do not let a plan revision race an agent that is already changing this
+    // project. The user keeps their typed request and can approve it once the
+    // active run has reached a stable state.
+    if (!selection.length && plan.state === 'loading') {
+      useStore.getState().addLog('INFO', 'Checking the linked SRS before sending this request…')
+      return
+    }
+    const revisePlan = !selection.length && planFirst && Boolean(plan.srsId)
+    if (revisePlan && busy) {
+      useStore.getState().addLog('WARN', 'Finish the active run before revising and approving the project plan.')
+      return
+    }
+
     let full = typed
     setReading(true)
     if (attach.items.length) {
@@ -177,7 +230,32 @@ export default function AgentChat() {
       }
     }
 
-    if (useStore.getState().project !== project || useStore.getState().agentRole !== agentRole) return
+    if (useStore.getState().project !== project || useStore.getState().agentRole !== agentRole) {
+      setReading(false)
+      return
+    }
+
+    if (revisePlan) {
+      try {
+        const answer = await api.srs(`/projects/${plan.srsId}/customize`, { prompt: full })
+        const targets = ['designer', 'developer'].filter(role => plan.targets?.[role])
+        const defaultTargets = targets.includes(agentRole) ? [agentRole] : targets
+        const changed = (answer?.diff_summary || []).join('\n')
+        addPlanRevisionToLog(answer?.version, targets)
+        forgetConsole()
+        attach.reset()
+        setText('')
+        if (targets.length) {
+          setPlanReview({ project, prompt: full, version: answer?.version, changed, targets, defaultTargets })
+        }
+      } catch (e) {
+        useStore.getState().addLog('WARN', `Could not revise the SRS — ${e.message}`)
+      } finally {
+        setReading(false)
+      }
+      return
+    }
+
     const route = agentRole === 'designer' ? '/prototype' : (selection[0]?.route || useStore.getState().previewRoute || '/')
     const payload = {
       type: selection.length ? 'element_edit' : 'agent_update',
@@ -200,6 +278,31 @@ export default function AgentChat() {
       fire(payload, full, typed, shots)
     }
     setReading(false)
+  }
+
+  function addPlanRevisionToLog(version, targets) {
+    const destination = targets.length ? ` Review and approve which deliverables to update.`
+      : ' No built deliverables are available to update yet.'
+    useStore.getState().addLog('INFO', `SRS revised${version ? ` — v${version}` : ''}.${destination}`)
+  }
+
+  async function approvePlan(roles) {
+    if (!planReview || approvingPlan) return
+    if (planReview.project !== project) {
+      useStore.getState().addLog('WARN', 'That SRS draft belongs to a different project and was not applied.')
+      setPlanReview(null)
+      return
+    }
+    setApprovingPlan(true)
+    try {
+      await api.specChange(project, planReview.prompt, roles)
+      useStore.getState().addLog('INFO', `Approved the SRS update for ${roles.join(' and ')}.`)
+      setPlanReview(null)
+    } catch (e) {
+      useStore.getState().addLog('WARN', `Could not start the approved update — ${e.message}`)
+    } finally {
+      setApprovingPlan(false)
+    }
   }
 
   /** Hold it until the run in front of it is done. */
@@ -354,6 +457,22 @@ export default function AgentChat() {
                 <EditAttach attach={attach} project={project}
                         onSpoken={said => setText((text ? text.trimEnd() + ' ' : '') + said)} disabled={reading} />
                 <PluginPicker project={project} />
+                <button type="button"
+                  disabled={reading || selection.length || !plan.srsId}
+                  onClick={() => setPlanFirst(on => !on)}
+                  title={selection.length
+                    ? 'Element-specific edits are sent directly.'
+                    : plan.srsId
+                      ? 'Choose whether this request is reviewed in the SRS first.'
+                      : 'This project has no linked SRS.'}
+                  className={cn('ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold transition-colors',
+                    planFirst && plan.srsId && !selection.length
+                      ? 'bg-accent/10 text-accent hover:bg-accent/15'
+                      : 'text-muted2 hover:bg-ink/[.05] hover:text-muted')}>
+                  <ListChecks className="size-3" />
+                  {selection.length ? 'Direct element edit' : plan.state === 'loading' ? 'Checking SRS…'
+                    : planFirst && plan.srsId ? 'Plan first' : 'Quick visual'}
+                </button>
               </span>
             ) : <span />}
             <button onClick={submit}
@@ -367,6 +486,11 @@ export default function AgentChat() {
       </footer>
 
       <StatusLine stats={stats} />
+      {planReview && (
+        <SrsApprovalModal targets={planReview.targets} version={planReview.version}
+          changed={planReview.changed} busy={approvingPlan} defaultTargets={planReview.defaultTargets}
+          onApprove={approvePlan} onKeepDraft={() => setPlanReview(null)} />
+      )}
       </>)}
     </aside>
   )
