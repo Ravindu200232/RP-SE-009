@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3200",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start -p 3200",
+    "start": "next start",
     "seed": "node scripts/seed.mjs",
     "test": "vitest run"
   },
@@ -13,7 +13,9 @@
     "next": "^15.1.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "mongoose": "^8.9.5"
+    "mongoose": "^8.9.5",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.6"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

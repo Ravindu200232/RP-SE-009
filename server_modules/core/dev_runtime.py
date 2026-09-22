@@ -358,6 +358,20 @@ def _declared_port_values(proj_dir: Path) -> dict:
             port = int(value)
             if 1024 <= port <= 65535:
                 ports.setdefault(key, port)
+    packages_dir = Path(proj_dir) / "packages"
+    if packages_dir.is_dir():
+        for package in sorted(packages_dir.iterdir()):
+            if not package.is_dir() or package.name.startswith(".") or "gateway" in package.name.lower():
+                continue
+            for name in (".env.local", ".env", ".env.example"):
+                try:
+                    body = (package / name).read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    continue
+                for key, value in _PORT_LINE.findall(body):
+                    port = int(value)
+                    if 1024 <= port <= 65535:
+                        ports.setdefault(key, port)
     return ports
 
 

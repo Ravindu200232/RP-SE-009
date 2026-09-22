@@ -65,7 +65,8 @@ def _spawn_preview(runtime, generation):
     root = runtime.directory
     stack = runtime.stack
     env = {**os.environ, **_runtime_env(runtime), "NEXT_TELEMETRY_DISABLED": "1",
-           "NODE_ENV": "development", "BROWSER": "none", "FORCE_COLOR": "0", "NO_COLOR": "1"}
+           "NODE_ENV": "development", "BROWSER": "none", "FORCE_COLOR": "0", "NO_COLOR": "1",
+           "HOST": "127.0.0.1"}
     if stack == "mern-microservices":
         argv = [NPM_BIN, "run", "dev"]
     elif stack == "remix-mongo":
@@ -76,9 +77,12 @@ def _spawn_preview(runtime, generation):
                 "--port", str(runtime.port), "--host", "127.0.0.1"]
     else:
         binary = root / "node_modules" / "next" / "dist" / "bin" / "next"
-        argv = ([NODE_BIN, str(binary), "dev"] if binary.is_file()
-                else [NPM_BIN, "run", "dev", "--"])
-        argv += [*_bundler_flag(root), "--port", str(runtime.port), "--hostname", "127.0.0.1"]
+        if binary.is_file():
+            argv = [NODE_BIN, str(binary), "dev", *_bundler_flag(root),
+                    "--port", str(runtime.port), "--hostname", "127.0.0.1"]
+        else:
+            argv = [NPM_BIN, "run", "dev", "--",
+                    "--port", str(runtime.port), "--host", "127.0.0.1"]
     with runtime.lock:
         if not RUNTIMES.current(runtime, generation):
             return False
@@ -116,21 +120,43 @@ def wait_for_dev(stack="next", timeout=None, *, runtime=None, generation=None):
     deadline = time.monotonic() + (NEXT_READY_TIMEOUT if timeout is None else timeout)
     urls = [f"http://127.0.0.1:{runtime.port}/"]
     if stack == "mern-microservices":
-        urls += [f"http://127.0.0.1:{port}/health" for key, port in runtime.ports.items() if key != "PORT"]
+        packages_dir = Path(runtime.directory) / "packages"
+        if packages_dir.is_dir():
+            existing = {p.name.replace("-", "_").upper() for p in packages_dir.iterdir()
+                        if p.is_dir() and (p / "src" / "server.js").is_file()}
+            for key, port in runtime.ports.items():
+                if key == "PORT":
+                    continue
+                prefix = key.removesuffix("_PORT").upper()
+                if not existing or prefix in existing or "SERVICE" in prefix:
+                    urls.append(f"http://127.0.0.1:{port}/health")
+        else:
+            urls += [f"http://127.0.0.1:{port}/health" for key, port in runtime.ports.items() if key != "PORT"]
     while time.monotonic() < deadline:
         if not RUNTIMES.current(runtime, generation) or not runtime.proc or runtime.proc.poll() is not None:
             return False
         pending = []
         for url in urls:
+            response = None
             try:
                 # Next's first document request compiles the route. Keep the
                 # readiness budget bounded, but don't repeatedly abort it.
                 response = requests.get(url, timeout=(1, max(.01, min(30, deadline - time.monotonic()))))
-                if response.status_code >= 400:
-                    pending.append(url)
-                response.close()
             except requests.RequestException:
+                alt = url.replace("://127.0.0.1:", "://localhost:") if "://127.0.0.1:" in url else ""
+                if alt:
+                    try:
+                        response = requests.get(alt, timeout=(1, max(.01, min(30, deadline - time.monotonic()))))
+                    except requests.RequestException:
+                        pass
+            if response is None:
                 pending.append(url)
+                continue
+            if response.status_code >= 500:
+                pending.append(url)
+            elif response.status_code >= 400 and not (url.endswith("/health") and response.status_code == 404):
+                pending.append(url)
+            response.close()
         if not pending:
             return RUNTIMES.current(runtime, generation)
         time.sleep(min(.3, max(0, deadline - time.monotonic())))

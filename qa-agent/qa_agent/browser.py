@@ -124,6 +124,24 @@ def request_outcome(params: dict) -> str:
     return "request failed"
 
 
+SESSION_PROBE_ENDPOINTS = (
+    "/auth/me",
+    "/api/me",
+    "/api/auth/session",
+    "/auth/session",
+    "/api/session",
+    "/api/user",
+    "/api/auth/user",
+    "/auth/user",
+    "/api/current-user",
+    "/current-user",
+    "/api/auth/status",
+    "/auth/status",
+    "/api/auth/check",
+    "/auth/check",
+)
+
+
 def is_signed_out_session_probe(status: int, url: str) -> bool:
     """A public page asking whether a session exists is not an application error.
 
@@ -133,8 +151,10 @@ def is_signed_out_session_probe(status: int, url: str) -> bool:
     application's authentication contract.  Other 401 responses still remain
     diagnostics, and journeys can explicitly assert this endpoint's status.
     """
-    path = str(url or "").split("?", 1)[0].rstrip("/")
-    return status == 401 and path.endswith("/auth/me")
+    if status != 401:
+        return False
+    path = str(url or "").split("?", 1)[0].rstrip("/").lower()
+    return any(path.endswith(endpoint) for endpoint in SESSION_PROBE_ENDPOINTS)
 
 
 # ---------------------------------------------------------------------------

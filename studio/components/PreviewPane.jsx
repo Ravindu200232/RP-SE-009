@@ -550,6 +550,7 @@ export default function PreviewPane({ hidden, onBuild }) {
           <div className={cn("relative h-full w-full max-w-full overflow-hidden bg-[#0c0f17]", width && "border-x border-white/10 shadow-2xl")}
                style={{ width: width ? width + 'px' : '100%' }}>
             <iframe ref={frameRef} id="frame" title="preview" src="about:blank"
+                    onLoad={() => setIframeLoading(false)}
                     className={cn("absolute inset-0 block h-full w-full border-0 bg-[#0c0f17] transition-opacity duration-300",
                       ((iframeLoading || runtime?.status === 'starting') && !isE2EActive) ? "opacity-0 pointer-events-none" : "opacity-100")} />
 
