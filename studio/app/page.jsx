@@ -452,8 +452,12 @@ export default function Studio() {
             </div>
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => setScreen('home')}
-                className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink"
+                onClick={() => {
+                  useStore.getState().resetSrs()
+                  useStore.getState().reset(null)
+                  setScreen('home')
+                }}
+                className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink cursor-pointer"
                 title="New project"
               >
                 <Plus className="size-4" />
@@ -582,10 +586,23 @@ export default function Studio() {
             activeProject={project}
             busyProject={busyProject}
             onOpen={(name, p) => openProject(name, p)}
-            onCreateNew={() => setScreen('home')}
-            onDelete={(name) => {
+            onCreateNew={() => {
+              useStore.getState().resetSrs()
+              useStore.getState().reset(null)
+              setScreen('home')
+            }}
+            onDelete={async (name) => {
+              try {
+                await api.deleteProject(name)
+              } catch (e) {
+                // Server might have already removed it; still refresh the list
+                console.warn('deleteProject error:', e.message)
+              }
               refreshProjects()
-              if (project === name) setScreen('home')
+              if (project === name) {
+                useStore.getState().reset(null)
+                setScreen('home')
+              }
             }}
             onBuildProject={async (name, p) => {
               await openProject(name, p)

@@ -26,7 +26,7 @@ class DesignerAgent(BuilderAgent):
         root.mkdir(parents=True, exist_ok=True)
         self.events.emit("phase", phase="prototype", title="Designing the prototype", status="active")
 
-        # Antigravity-style direct context pre-load for handoff documents
+        # Antigravity-style direct context pre-load for handoff documents and wireframe layouts
         handoff_dir = Path(self.config.workspace) / ".agentforge" / "handoff"
         handoff_docs = []
         if "=== PRE-LOADED SPECIFICATION" not in task and handoff_dir.is_dir():
@@ -40,14 +40,44 @@ class DesignerAgent(BuilderAgent):
                     except Exception:
                         pass
 
-        if handoff_docs:
+        # Pre-load low-fidelity wireframe blueprints so the prototype matches approved layouts strictly.
+        wf_dir = Path(self.config.workspace) / ".agentforge" / "wireframes" / "html"
+        wf_docs = []
+        if "APPROVED WIREFRAME BLUEPRINTS" not in task and wf_dir.is_dir():
+            try:
+                from server_modules.services.page_outline import outline
+                for wf_path in sorted(wf_dir.glob("*.html"))[:14]:
+                    wf_content = wf_path.read_text(encoding="utf-8", errors="replace").strip()
+                    if wf_content:
+                        st = outline(wf_content)
+                        if len(st) > 1500:
+                            st = st[:1500].rsplit("\n", 1)[0] + "\n  …"
+                        wf_docs.append(f"--- Wireframe Blueprint: {wf_path.name} ---\n{st}")
+            except Exception:
+                pass
+
+        if handoff_docs or wf_docs:
+            preloaded_parts = []
+            if handoff_docs:
+                preloaded_parts.append(
+                    "=== PRE-LOADED SPECIFICATION & HANDOFF DOCUMENTS ===\n"
+                    "The following specification handoff documents are already pre-loaded into your context:\n\n"
+                    + "\n\n".join(handoff_docs)
+                    + "\n\n=== END PRE-LOADED SPECIFICATION ==="
+                )
+            if wf_docs:
+                preloaded_parts.append(
+                    "=== PRE-LOADED WIREFRAME BLUEPRINTS ===\n"
+                    "The customer reviewed and approved the following wireframe page layouts in .agentforge/wireframes/html/.\n"
+                    "Follow these layouts strictly: replicate each page's sections, component hierarchy, table columns, form inputs, and buttons in the prototype HTML:\n\n"
+                    + "\n\n".join(wf_docs)
+                    + "\n\n=== END PRE-LOADED WIREFRAME BLUEPRINTS ==="
+                )
             preloaded = (
-                "=== PRE-LOADED SPECIFICATION & HANDOFF DOCUMENTS ===\n"
-                "The following specification handoff documents are already pre-loaded into your context:\n\n"
-                + "\n\n".join(handoff_docs)
-                + "\n\n=== END PRE-LOADED SPECIFICATION ===\n\n"
-                "The approved specification is already in your context above. "
-                "Do NOT spend tool calls running readFile on .agentforge/handoff/*.md files. "
+                "\n\n".join(preloaded_parts) + "\n\n"
+                "The approved specification and wireframes are already in your context above. "
+                "Do NOT spend tool calls running readFile on .agentforge/handoff/*.md or .agentforge/wireframes/html/*.html files. "
+                "Build the prototype pages strictly following the wireframe layouts and section ordering. "
                 "Continue the existing prototype if there is one. Write only inside .agentforge/prototype/. "
                 "Use HTML, CSS and JavaScript to implement the specified interface and interactions. "
                 "Batch operations to write or update multiple files in one turn where possible (e.g. use readFiles to inspect multiple files). "
@@ -65,6 +95,7 @@ class DesignerAgent(BuilderAgent):
                 "For localized edits, use editFile or patchFile with exact matches. "
                 "Finish promptly and summarize what changed.\n\n" + task
             )
+
 
         outcome = self._loop(self.registry, prototype=True, verification_kinds=[]).run(preloaded)
         if outcome.status == "completed" and not (root / "index.html").is_file():

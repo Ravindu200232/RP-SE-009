@@ -93,6 +93,47 @@ def _merge_list(new: list, current: list, removing: bool) -> list:
     return out
 
 
+def _merge_pages_list(new: list, current: list, prompt: str) -> list:
+    """Never drop pages/wireframes unless explicitly targeted by name or route in the prompt."""
+    if not current:
+        return new or []
+    if not new:
+        return current
+    out = list(current)
+    where = {}
+    for i, item in enumerate(out):
+        ident = _identity(item)
+        if ident is not None:
+            where[ident] = i
+    for item in new:
+        ident = _identity(item)
+        if ident in where:
+            out[where[ident]] = item
+        else:
+            out.append(item)
+
+    p_lower = (prompt or "").lower()
+    has_removal = bool(_REMOVAL.search(prompt or ""))
+    if not has_removal:
+        return out
+
+    final = []
+    for item in out:
+        name = str(item.get("page_name") or item.get("name") or "").lower()
+        route = str(item.get("route") or "").lower()
+        targeted = False
+        if name and len(name) > 3 and name in p_lower:
+            targeted = True
+        elif route and len(route) > 2 and route in p_lower:
+            targeted = True
+        ident = _identity(item)
+        in_new = any(_identity(n) == ident for n in new)
+        if not in_new and targeted:
+            continue
+        final.append(item)
+    return final
+
+
 _ID_KEYS = ("id", "requirement_id")
 _ID_SHAPE = re.compile(r"^([A-Za-z]+-?)(\d+)$")
 
@@ -153,7 +194,9 @@ def _clean_patch(patch: dict | None, doc: dict | None = None, prompt: str = "") 
         if key in _DERIVED or _blank(value):
             continue
         current = doc.get(key)
-        if isinstance(value, list) and isinstance(current, list):
+        if key in ("public_pages", "protected_pages"):
+            clean[key] = _merge_pages_list(value, current or [], prompt)
+        elif isinstance(value, list) and isinstance(current, list):
             clean[key] = _merge_list(value, current, removing)
         elif isinstance(value, dict) and isinstance(current, dict):
             section = dict(current)

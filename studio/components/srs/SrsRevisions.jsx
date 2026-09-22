@@ -22,7 +22,28 @@ export function SrsRevisions({ srsId, onRevised, onPickVersion, current, classNa
     if (!srsId) return
     try {
       const spec = await loadSrsView(srsId)
-      setVersions(spec?.versions || [])
+      const vers = spec?.versions || []
+      setVersions(vers)
+
+      // Reconstruct and preserve chat stream from saved versions so prompts are never lost
+      if (vers.length > 1) {
+        setThread(prev => {
+          if (prev.length > 0) return prev
+          const reconstructed = []
+          for (const v of vers) {
+            if (v.prompt || (v.label && v.label.startsWith('Customized:'))) {
+              const userPrompt = v.prompt || v.label.replace(/^Customized:\s*/, '')
+              reconstructed.push({ role: 'you', text: userPrompt })
+              const diffText = (v.diff_summary || []).join('\n') || 'The specification was updated.'
+              reconstructed.push({ role: 'srs', text: diffText, version: v.version })
+            }
+          }
+          if (reconstructed.length && THREAD_KEY) {
+            try { localStorage.setItem(THREAD_KEY, JSON.stringify(reconstructed.slice(-60))) } catch { }
+          }
+          return reconstructed.length ? reconstructed : prev
+        })
+      }
     } catch {
       // A project whose specification cannot be read still shows its composer;
       // the list is the part that is missing, and it says so by being empty.
@@ -38,26 +59,47 @@ export function SrsRevisions({ srsId, onRevised, onPickVersion, current, classNa
     return () => clearInterval(tick)
   }, [busy])
 
+  // Persist the chat thread per srsId so user prompts are not lost on reload.
+  const THREAD_KEY = srsId ? `srs-thread:${srsId}` : null
+
+  useEffect(() => {
+    if (!THREAD_KEY) return
+    try {
+      const saved = JSON.parse(localStorage.getItem(THREAD_KEY) || '[]')
+      if (Array.isArray(saved) && saved.length) setThread(saved)
+    } catch { /* corrupt entry – ignore */ }
+  }, [THREAD_KEY])
+
+  function appendThread(msg) {
+    setThread(prev => {
+      const next = [...prev, msg]
+      if (THREAD_KEY) {
+        try { localStorage.setItem(THREAD_KEY, JSON.stringify(next.slice(-60))) } catch { }
+      }
+      return next
+    })
+  }
+
   async function revise() {
     const text = prompt.trim()
     if (!text || busy || !srsId) return
     setPrompt('')
     onPickVersion?.(null)
-    setThread(t => [...t, { role: 'you', text }])
+    appendThread({ role: 'you', text })
     setBusy('revising')
     try {
       const answer = await api.srs(`/projects/${srsId}/customize`, { prompt: text })
       const said = answer?.diff_summary || []
-      setThread(t => [...t, {
+      appendThread({
         role: 'srs',
         text: said.length ? said.join('\n') : 'The specification was updated.',
         version: answer?.version,
-      }])
+      })
       addLog('INFO', `SRS revised — v${answer?.version || '?'}`)
       await load()
       await onRevised?.(answer, text)
     } catch (e) {
-      setThread(t => [...t, { role: 'error', text: e.message }])
+      appendThread({ role: 'error', text: e.message })
     } finally {
       setBusy('')
     }
@@ -90,7 +132,7 @@ export function SrsRevisions({ srsId, onRevised, onPickVersion, current, classNa
                 </span>
               )}
             </span>
-            <span className="mt-0.5 block text-[11.5px] leading-snug">{v.label || 'Revision'}</span>
+            <span className="mt-0.5 block text-[11.5px] leading-snug">{v.prompt ? `Customized: ${v.prompt}` : (v.label || 'Revision')}</span>
             {/* Summarized change bullets recorded for this revision. */}
             {(v.diff_summary || []).length > 0 && (
               <span className="mt-1 block space-y-0.5">

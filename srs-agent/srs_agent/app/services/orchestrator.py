@@ -624,6 +624,7 @@ async def customize(project_id: str, prompt: str) -> dict:
     from ...jobs import CURRENT_JOB
     await repo.save_version({"id": repo.new_id("ver_"), "project_id": project_id, "version": version, "operation_id": CURRENT_JOB.get(),
                              "label": f"Customized: {prompt[:60]}", "srs": snapshot, "diff_summary": diff,
+                             "prompt": prompt,
                              "created_at": now_iso()})
     await repo.save_diagrams(project_id, srs["srs_document"].get("diagrams", []))
     await repo.update_project(project_id, {"status": "customized", "current_version": version})

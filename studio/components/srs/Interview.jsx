@@ -20,6 +20,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
   const [text, setText] = useState('')
   const [picked, setPicked] = useState([])
   const [error, setError] = useState('')
+  const [pending, setPending] = useState(null)
   const composer = useRef(null)
   const tail = useRef(null)
   const attach = useAttachments()
@@ -28,6 +29,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
     try {
       const next = await api.srs(`/projects/${projectId}/interview`)
       setState(next)
+      setPending(null)
       setTyping(false)
       setText('')
       if (next.done || !next.question) {
@@ -37,12 +39,13 @@ export default function Interview({ projectId, onDone, onCancel }) {
     } catch (e) {
       if (/404|not found/i.test(e.message || '')) return onCancel?.()
       setError(e.message)
+      setPending(null)
       setPhase('error')
     }
   }
 
   useEffect(() => { refresh() }, [projectId])
-  useEffect(() => { tail.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [state.question?.id, state.answers?.length])
+  useEffect(() => { tail.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, [state.question?.id, state.answers?.length, pending])
   useEffect(() => { if (typing) composer.current?.focus() }, [typing])
 
   const q = state.question
@@ -53,8 +56,9 @@ export default function Interview({ projectId, onDone, onCancel }) {
   const recommended = q?.recommended
 
   useEffect(() => {
-    setPicked(multi ? prefill.map(String) : [])
-    setText(!options.length && prefill.length ? String(prefill[0]) : '')
+    const initPicked = (prefill || []).map(String)
+    setPicked(initPicked)
+    setText(!options.length && prefill?.length ? String(prefill[0]) : '')
   }, [q?.id])
 
   function draftPlanNow() {
@@ -72,6 +76,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
         const said = payload.value != null || (payload.selected || []).length || String(payload.text || '').trim()
         if (!attachments.length && !said) {
           setError('That attachment could not be read. Try it again, or answer in text.')
+          setPending(null)
           setPhase('asking')
           return
         }
@@ -82,9 +87,59 @@ export default function Interview({ projectId, onDone, onCancel }) {
       await refresh()
     } catch (e) {
       setError(e.message)
+      setPending(null)
       addLog('WARN', `The SRS could not record that answer — ${e.message}`)
       setPhase('asking')
     }
+  }
+
+  function submitAnswer() {
+    if (phase === 'sending' || !q) return
+
+    // Extract human-readable labels for all selected options
+    const selectedLabels = picked.map(val => {
+      const opt = options.find(o =>
+        String(o.value ?? o.label) === String(val) ||
+        String(o.label) === String(val) ||
+        String(o.value) === String(val)
+      )
+      return opt?.label ?? String(val)
+    }).filter(Boolean)
+
+    const selectedText = selectedLabels.join(', ')
+    const customText = text.trim()
+
+    // Must have at least one chosen option, custom typed text, or attachment
+    if (!selectedText && !customText && !attach.items.length) {
+      composer.current?.focus()
+      return
+    }
+
+    // Combine both: option label(s) + custom typed text
+    const parts = []
+    if (selectedText) parts.push(selectedText)
+    if (customText) parts.push(customText)
+    const combined = parts.join(' — ')
+
+    const val = combined || (multi && picked.length ? picked : (picked[0] ?? null))
+
+    const payload = {
+      key: q.id,
+      value: val,
+      text: combined || customText || selectedText,
+      selected: picked.map(String),
+      custom: customText,
+    }
+
+    // Instantly show in the chat stream UI optimistically
+    setPending({
+      question: q.question,
+      answer: combined || customText || selectedText,
+    })
+
+    setText('')
+    setPicked([])
+    answer(payload)
   }
 
   const history = useMemo(() => {
@@ -149,48 +204,76 @@ export default function Interview({ projectId, onDone, onCancel }) {
             </div>
           ))}
 
-          {q && (
+          {pending && (
+            <div className="mb-7 animate-in fade-in duration-200">
+              <Message side="left" label="AgentForge">{pending.question}</Message>
+              <Message side="right" label="You">{pending.answer}</Message>
+            </div>
+          )}
+
+          {phase === 'sending' && (
+            <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[.04] px-4 py-3 text-[12px] text-white/70">
+              <Loader2 className="size-3.5 animate-spin text-blue-400" />
+              <span>AgentForge is reviewing your answer and preparing the next step…</span>
+            </div>
+          )}
+
+          {q && phase !== 'sending' && (
             <div className="mb-5">
               <Message side="left" label="AgentForge" current>
-                <span className="block text-[16px] font-bold leading-[1.45] text-ink">{q.question}</span>
-                {q.why_needed && <span className="mt-2.5 block text-[12px] leading-relaxed text-muted">{q.why_needed}</span>}
+                <span className="block text-[16px] font-bold leading-[1.45] text-white">{q.question}</span>
+                {q.why_needed && <span className="mt-2.5 block text-[12px] leading-relaxed text-white/60">{q.why_needed}</span>}
                 {q.hint && !q.why_needed?.includes(q.hint) && <span className="mt-2 block text-[11.5px] font-medium text-amber-300/85">{q.hint}</span>}
                 {q.prefill_note && <span className="mt-2 block text-[11.5px] font-medium text-accent">You previously said “{q.prefill_note}”.</span>}
               </Message>
             </div>
           )}
 
-          {options.length > 0 && (
+          {phase !== 'sending' && options.length > 0 && (
             <div className="ml-11 mb-4 max-w-[680px]">
               <div className="flex flex-wrap gap-2.5">
                 {options.map((o, i) => {
-                  const value = o.value ?? o.label
-                  const known = prefill.map(String).includes(String(value))
-                  const chosen = picked.includes(value) || (!multi && known)
-                  const suggested = o.suggested || value === recommended
+                  const valStr = String(o.value ?? o.label)
+                  const known = prefill.map(String).includes(valStr)
+                  const chosen = picked.map(String).includes(valStr) ||
+                    (o.value != null && picked.map(String).includes(String(o.value))) ||
+                    (o.label != null && picked.map(String).includes(String(o.label)))
+                  const suggested = o.suggested || o.value === recommended || o.label === recommended
                   return (
-                    <button key={`${value}-${i}`} disabled={phase === 'sending'} onClick={() => {
-                      if (value === TYPE_ANOTHER) {
-                        composer.current?.focus()
-                        return
-                      }
-                      if (multi) return setPicked(p => p.includes(value) ? p.filter(x => x !== value) : [...p, value])
-                      answer({ key: q.id, value, selected: [String(value)] })
-                    }} className={cn('rounded-full px-4 py-2 text-[12px] font-medium transition-all shadow-sm disabled:opacity-45 text-left',
-                      chosen
-                        ? 'bg-[#1877F2] text-white border border-[#1877F2] shadow-[0_4px_12px_0_rgba(24,119,242,0.24)]'
-                        : 'border border-white/10 bg-white/[.05] text-white/80 hover:bg-white/[.1] hover:text-white hover:border-white/20'
-                    )}>
-                      <span>{o.label ?? String(value)}</span>
+                    <button
+                      key={`${valStr}-${i}`}
+                      disabled={phase === 'sending'}
+                      onClick={() => {
+                        if (valStr === TYPE_ANOTHER) {
+                          composer.current?.focus()
+                          return
+                        }
+                        if (multi) {
+                          return setPicked(p => p.map(String).includes(valStr) ? p.filter(x => String(x) !== valStr) : [...p, valStr])
+                        }
+                        // Single-select: toggle pick so the user can unpick or pick a different one
+                        setPicked(p => p.map(String).includes(valStr) ? [] : [valStr])
+                      }}
+                      className={cn('rounded-full px-4 py-2 text-[12px] font-medium transition-all shadow-sm disabled:opacity-45 text-left',
+                        chosen
+                          ? 'bg-[#1877F2] text-white border border-[#1877F2] shadow-[0_4px_12px_0_rgba(24,119,242,0.24)]'
+                          : 'border border-white/10 bg-white/[.05] text-white/80 hover:bg-white/[.1] hover:text-white hover:border-white/20'
+                      )}
+                    >
+                      <span>{o.label ?? valStr}</span>
                       {o.hint && <span className="mt-0.5 block text-[10.5px] font-normal text-white/50">{o.hint}</span>}
-                      {(suggested || known) && <span className={cn('ml-2 text-[9px] font-semibold uppercase tracking-wider', chosen ? 'text-white/80' : 'text-white/40')}>{known ? 'from brief' : 'suggested'}</span>}
+                      {(suggested || known) && (
+                        <span className={cn('ml-2 text-[9px] font-semibold uppercase tracking-wider', chosen ? 'text-white/80' : 'text-white/40')}>
+                          {known ? 'from brief' : 'suggested'}
+                        </span>
+                      )}
                     </button>
                   )
                 })}
               </div>
               {multi && (
                 <div className="mt-3 flex items-center gap-3">
-                  <Button variant="solid" disabled={!picked.length || phase === 'sending'} onClick={() => answer({ key: q.id, value: picked, selected: picked.map(String) })}>
+                  <Button variant="solid" disabled={!picked.length || phase === 'sending'} onClick={submitAnswer}>
                     Continue with {picked.length} selected
                   </Button>
                 </div>
@@ -198,45 +281,41 @@ export default function Interview({ projectId, onDone, onCancel }) {
             </div>
           )}
 
-          <div className="ml-auto mt-2 max-w-[690px] rounded-2xl border border-line bg-[#1C252E] p-4 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-[#1877F2]/50 focus-within:shadow-[0_15px_40px_rgba(24,119,242,.15)]">
-            {options.length > 0 && (
-              <div className="mb-2 px-1 text-[11px] font-medium text-white/45">
-                Or type your own answer:
-              </div>
-            )}
-            <TextArea
-              ref={composer}
-              value={text}
-              rows={options.length > 0 ? 2 : 3}
-              placeholder={options.length > 0 ? "Type custom details or a different answer…" : "Type your answer…"}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && text.trim()) {
-                  const payload = { key: q.id, value: text.trim(), text: text.trim() }
-                  if (multi && picked.length) payload.selected = picked.map(String)
-                  answer(payload)
-                }
-              }}
-              className="w-full resize-none bg-transparent px-1 py-1 text-[13.5px] leading-relaxed text-white outline-none placeholder:text-white/40 caret-blue-400"
-            />
-            <AttachList attach={attach} className="mx-1 mb-2" />
-            <div className="flex items-center gap-2 border-t border-white/10 px-1 pt-3">
-              <AttachButtons attach={attach} disabled={phase === 'sending'} />
-              <span className="flex-1" />
-              <button
-                disabled={phase === 'sending' || (!text.trim() && !attach.items.length && !(multi && picked.length))}
-                onClick={() => {
-                  const val = text.trim() || (multi && picked.length ? picked : null)
-                  const payload = { key: q.id, value: val, text: text.trim() }
-                  if (multi && picked.length) payload.selected = picked.map(String)
-                  answer(payload)
+          {phase !== 'sending' && (
+            <div className="ml-auto mt-2 max-w-[690px] rounded-2xl border border-line bg-[#1C252E] p-4 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-[#1877F2]/50 focus-within:shadow-[0_15px_40px_rgba(24,119,242,.15)]">
+              {options.length > 0 && (
+                <div className="mb-2 px-1 text-[11px] font-medium text-white/45">
+                  Or type your own answer / extra details:
+                </div>
+              )}
+              <TextArea
+                ref={composer}
+                value={text}
+                rows={options.length > 0 ? 2 : 3}
+                placeholder={options.length > 0 ? "Type custom details or a different answer…" : "Type your answer…"}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    submitAnswer()
+                  }
                 }}
-                className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#1877F2] px-4 text-[12px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition hover:bg-[#0C44AE] disabled:opacity-40"
-              >
-                {phase === 'sending' ? <Loader2 className="size-3.5 animate-spin" /> : <ArrowRight className="size-3.5" />} Send
-              </button>
+                className="w-full resize-none bg-transparent px-1 py-1 text-[13.5px] leading-relaxed text-white outline-none placeholder:text-white/40 caret-blue-400"
+              />
+              <AttachList attach={attach} className="mx-1 mb-2" />
+              <div className="flex items-center gap-2 border-t border-white/10 px-1 pt-3">
+                <AttachButtons attach={attach} disabled={phase === 'sending'} />
+                <span className="flex-1" />
+                <button
+                  disabled={phase === 'sending' || (!text.trim() && !attach.items.length && !picked.length)}
+                  onClick={submitAnswer}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#1877F2] px-4 text-[12px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition hover:bg-[#0C44AE] disabled:opacity-40 cursor-pointer"
+                >
+                  <ArrowRight className="size-3.5" /> Send
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {error && <p className="ml-auto mt-3 max-w-[690px] rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[11.5px] text-red-300">{error}</p>}
           <div ref={tail} />
@@ -261,18 +340,18 @@ function Message({ side, label, current, children }) {
   return (
     <div className={cn('flex items-end gap-3', right && 'justify-end')}>
       {!right && (
-        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent/20 border border-accent/30 text-[11px] font-bold text-accent shadow-sm">
+        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#1877F2]/20 border border-[#1877F2]/30 text-[11px] font-bold text-blue-400 shadow-sm">
           AF
         </span>
       )}
       <div className={cn('max-w-[75%]', right && 'text-right')}>
-        <div className="mb-1.5 px-1 text-[9.5px] font-bold uppercase tracking-[.14em] text-muted2">{label}</div>
+        <div className="mb-1.5 px-1 text-[9.5px] font-bold uppercase tracking-[.14em] text-white/40">{label}</div>
         <div className={cn('inline-block rounded-2xl px-4 py-3.5 text-left text-[13px] leading-relaxed shadow-sm',
           right
-            ? 'rounded-tr-sm bg-accent/15 border border-accent/30 text-ink font-medium'
+            ? 'rounded-tr-sm bg-[#1877F2]/20 border border-[#1877F2]/35 text-white font-medium'
             : current
-              ? 'rounded-tl-sm bg-panel border border-accent/40 ring-1 ring-accent/20 text-ink'
-              : 'rounded-tl-sm bg-panel border border-line text-ink'
+              ? 'rounded-tl-sm bg-[#1C252E] border border-blue-500/40 ring-1 ring-blue-500/20 text-white'
+              : 'rounded-tl-sm bg-[#1C252E]/90 border border-white/10 text-white/90'
         )}>
           {children}
         </div>
@@ -283,8 +362,21 @@ function Message({ side, label, current, children }) {
 
 function said(a) {
   if (!a) return ''
-  const v = Array.isArray(a.value) ? a.value.join(', ') : a.value
-  return v != null && String(v).trim() ? String(v) : (a.raw_text || 'Answered')
+  const custom = a.custom || a.custom_text || a.raw_text
+  if (typeof a.value === 'string' && a.value.trim()) {
+    if (custom && custom !== a.value && !a.value.includes(custom)) {
+      return `${a.value} — ${custom}`
+    }
+    return a.value
+  }
+  if (Array.isArray(a.value)) {
+    const sel = a.value.map(String).join(', ')
+    if (custom && custom !== sel && !sel.includes(custom)) {
+      return `${sel} — ${custom}`
+    }
+    return sel || custom || 'Answered'
+  }
+  return custom || (a.value != null ? String(a.value) : 'Answered')
 }
 
 export function Waiting({ children, sub }) {

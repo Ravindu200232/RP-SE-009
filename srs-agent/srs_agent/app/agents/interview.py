@@ -509,5 +509,7 @@ def flat_answers(session: dict) -> list[dict]:
             "question_id": key,
             "value": entry.get("value"),
             "raw_text": raw,
+            "selected": entry.get("selected_values") or [],
+            "custom": entry.get("custom_text") or "",
         })
     return out

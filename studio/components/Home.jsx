@@ -311,6 +311,7 @@ export default function Home({
       <SrsReview key={srsId} projectId={srsId}
                  onApproved={acceptSrs}
                  onKept={(project) => { s.resetSrs(); setPrompt(''); onKept?.(project) }}
+                 onNewProject={() => { s.resetSrs(); setPrompt('') }}
                  onBack={() => s.setSrs({ srsPhase: 'plan' })} />
     )
   }

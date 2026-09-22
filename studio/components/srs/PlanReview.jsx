@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowLeft, Check, ChevronDown, Loader2, MessageCircleMore, PencilLine,
-  Route, ShieldCheck, Sparkles, UsersRound, Workflow,
+  Plus, Route, ShieldCheck, Sparkles, UsersRound, Workflow,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
@@ -73,14 +73,29 @@ export default function PlanReview({ projectId, onGenerated, onCancel }) {
   }, [projectId])
 
   async function accept() {
-    if (hasSrs && !dirty) return onGenerated?.(projectId)
+    if (hasSrs && !dirty) {
+      try {
+        const kept = await api.keepSrs(projectId)
+        if (kept?.project) useStore.getState().bumpProjects()
+      } catch { }
+      return onGenerated?.(projectId)
+    }
     setPhase('generating')
     setWaited(0)
     setError('')
     try {
       await api.srs(`/projects/${projectId}/plan/approve`, {})
       await api.srs(`/projects/${projectId}/generate-srs`, {})
-      addLog('INFO', 'SRS written — read it before anything is built')
+      addLog('INFO', 'SRS written — saving specification to projects')
+      try {
+        const kept = await api.keepSrs(projectId)
+        if (kept?.project) {
+          addLog('SUCCESS', `Specification saved to your projects as "${kept.project}"`)
+        }
+        useStore.getState().bumpProjects()
+      } catch (err) {
+        console.warn('Auto-save SRS as project error:', err)
+      }
       onGenerated?.(projectId)
     } catch (e) {
       setError(e.message)
@@ -121,6 +136,17 @@ export default function PlanReview({ projectId, onGenerated, onCancel }) {
         </div>
         <span className="flex-1" />
         {state?.version != null && <span className="rounded-full border border-line bg-panel2 px-3 py-1 text-[11px] font-medium text-muted">Version {state.version}{(state.versions || []).length > 1 ? ` of ${state.versions.length}` : ''}</span>}
+        <button
+          type="button"
+          onClick={() => {
+            useStore.getState().resetSrs()
+            useStore.getState().reset(null)
+          }}
+          title="Abandon this plan and start a new project"
+          className="flex h-[32px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.04] px-3 text-[11.5px] font-semibold text-white/80 shadow-sm transition hover:bg-white/[.08] hover:text-white cursor-pointer"
+        >
+          <Plus className="size-3.5 text-blue-400" /> New Project
+        </button>
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-line bg-panel p-7 text-ink shadow-sm">

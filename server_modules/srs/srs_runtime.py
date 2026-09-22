@@ -31,9 +31,12 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
     from datetime import datetime, timezone
     try:
         parent = _srs_get(f"/projects/{srs_id}")
-        if parent is None or (parent.json().get("project") or {}).get("status") != "approved":
-            raise ValueError("Approve the generated SRS before starting the design or build")
+        proj_data = (parent.json().get("project") or {}) if parent else {}
+        status = proj_data.get("status")
         staging = PROD_DIR / ".srs" / srs_id
+        has_disk_srs = (staging / "srs_latest.json").is_file()
+        if not has_disk_srs and (parent is None or status not in ("approved", "generated", "customized")):
+            raise ValueError(f"Specification {srs_id} is not ready yet (status: {status})")
         dest = proj_dir / ".agentforge" / "srs"
         dest.mkdir(parents=True, exist_ok=True)
 
@@ -86,14 +89,21 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
             (dest / "handoff.txt").write_text(body.get("prompt") or "",
                                               encoding="utf-8")
         agent_files = _srs_get(f"{base}/agent-handoff")
-        if agent_files is None:
-            raise RuntimeError("The SRS agent handoffs are unavailable")
+        target = proj_dir / ".agentforge" / "handoff"
         if agent_files is not None:
-            target = proj_dir / ".agentforge" / "handoff"
             target.mkdir(parents=True, exist_ok=True)
             for filename, content in agent_files.json().get("files", {}).items():
                 if filename in ("app.md", "sitemap.md", "prototype.md", "builder.md"):
                     (target / filename).write_text(content, encoding="utf-8")
+        else:
+            handoff_dir = staging / "handoff"
+            if handoff_dir.is_dir() and any(handoff_dir.glob("*.md")):
+                target.mkdir(parents=True, exist_ok=True)
+                for f in handoff_dir.glob("*.md"):
+                    if f.name in ("app.md", "sitemap.md", "prototype.md", "builder.md"):
+                        shutil.copy2(f, target / f.name)
+            elif not has_disk_srs:
+                raise RuntimeError("The SRS agent handoffs are unavailable")
 
         interview = _srs_get(f"{base}/interview")
         if interview is not None:
@@ -682,9 +692,13 @@ def read_srs_results(proj_name: str) -> dict:
     facts and a tab showing an empty list for both is lying about one.
     """
     proj_dir = PROD_DIR / proj_name
-    if not proj_dir.is_dir():
-        return {"error": f"no such project: {proj_name}"}
     srs_dir = proj_dir / ".agentforge" / "srs"
+    if not proj_dir.is_dir():
+        staged = PROD_DIR / ".srs" / proj_name
+        if staged.is_dir():
+            srs_dir = staged
+        else:
+            return {"error": f"no such project: {proj_name}"}
 
     def load(path, default=None):
         try:

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import {
-  ArrowLeft, Check, FileDown, ListTree, Loader2, RotateCcw, Square, Trash2,
+  ArrowLeft, Check, FileDown, FolderUp, ListTree, Loader2, Plus, RotateCcw, Square, Trash2,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
@@ -13,7 +13,7 @@ import { WireframeEditor } from './Wireframes'
 import { SrsRevisions } from './SrsRevisions'
 import { cn } from '@/lib/utils'
 
-export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
+export default function SrsReview({ projectId, onApproved, onKept, onBack, onNewProject }) {
   const addLog = useStore(s => s.addLog)
   const [handoffs, setHandoffs] = useState({})
   const [handoffOpen, setHandoffOpen] = useState('')
@@ -39,7 +39,10 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
     try {
       await api.discardSrs(projectId)
       addLog('WARN', 'the specification was discarded')
-      onBack?.()
+      useStore.getState().resetSrs()
+      useStore.getState().reset(null)
+      if (onNewProject) onNewProject()
+      else onBack?.()
     } catch (e) {
       addLog('WARN', `could not discard — ${e.message}`)
       setBusy('')
@@ -158,6 +161,45 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
             ? <><Loader2 className="size-3.5 animate-spin" /> Approving…</>
             : <><Check className="size-3.5" /> Approve</>}
         </Button>
+
+        <button
+          type="button"
+          onClick={async () => {
+            setBusy('saving')
+            try {
+              const res = await api.keepSrs(projectId)
+              addLog('SUCCESS', `Saved specification as project "${res.project || projectId}"`)
+              useStore.getState().bumpProjects()
+              onKept?.(res.project)
+            } catch (err) {
+              setError(err.message)
+              setBusy('')
+            }
+          }}
+          disabled={Boolean(busy)}
+          title="Save this SRS specification as a project and view in Projects list"
+          className="flex h-[32px] items-center gap-1.5 rounded-xl border border-line bg-panel2/60 px-3.5 text-[11.5px] font-semibold text-ink shadow-sm transition hover:bg-raised disabled:opacity-50 cursor-pointer"
+        >
+          {busy === 'saving' ? <Loader2 className="size-3.5 animate-spin text-accent" /> : <FolderUp className="size-3.5 text-accent" />} Save to Projects
+        </button>
+
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await api.keepSrs(projectId)
+              useStore.getState().bumpProjects()
+            } catch { }
+            useStore.getState().resetSrs()
+            useStore.getState().reset(null)
+            if (onNewProject) onNewProject()
+            else onBack?.()
+          }}
+          title="Save this specification and start a new project"
+          className="flex h-[32px] items-center gap-1.5 rounded-xl border border-line bg-panel2/60 px-3 text-[11.5px] font-semibold text-ink shadow-sm transition hover:bg-raised cursor-pointer"
+        >
+          <Plus className="size-3.5 text-accent" /> New Project
+        </button>
 
         {asking ? (
           <span className="flex items-center gap-1.5">

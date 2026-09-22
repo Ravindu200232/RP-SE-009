@@ -5,7 +5,7 @@ import {
   FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
   PanelLeftClose, PanelLeftOpen, Home, LayoutGrid, Star, Clock,
   BookOpen, FileText, Activity, ChevronDown, CreditCard, LogOut,
-  X, Menu,
+  X, Menu, Plus,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
@@ -112,6 +112,19 @@ export default function Sidebar({
     <>
       {/* Primary Navigation Menu */}
       <nav className="flex flex-col gap-0.5 p-2 border-b border-line text-[13px]">
+        <button
+          onClick={() => {
+            useStore.getState().resetSrs()
+            useStore.getState().reset(null)
+            onScreenChange?.('home')
+            if (isMobile) onMobileClose?.()
+          }}
+          className="flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-all text-left bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-[#1877F2] font-semibold shadow-sm mb-1 cursor-pointer"
+        >
+          <Plus className="size-4 shrink-0 text-[#1877F2]" />
+          <span>New Project</span>
+        </button>
+
         <button
           onClick={() => {
             onScreenChange?.('home')

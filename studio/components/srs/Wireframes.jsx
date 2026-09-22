@@ -20,6 +20,8 @@ import {
   ArrowLeft,
   ArrowRight,
   RotateCcw as ResetIcon,
+  Sparkles,
+  Check,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -42,32 +44,55 @@ function useSrsId(owner) {
   return srsId
 }
 
-/** One page, rendered small and not interactive. */
+/** One page, rendered small and not interactive, with generation animation when drawing. */
 function Thumbnail({ srsId, page, waiting }) {
+  const isGenerating = waiting || page.drawing
   if (!srsId || !page.has_html) {
-    // "not drawn yet" is true of a page that failed and of a page whose turn
-    // has not come, and those are not the same news. While a drawing is
-    // running the card says so, and stops as soon as it is not.
     return (
-      <span className="flex h-full flex-col items-center justify-center gap-1.5 text-[11px] text-muted2">
-        {waiting
-          ? <><Loader2 className="size-3.5 animate-spin text-accent" /> drawing…</>
-          : 'not drawn yet'}
-      </span>
+      <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#0d1322]">
+        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#1877F2_1px,transparent_1px)] [background-size:12px_12px]" />
+        {isGenerating ? (
+          <div className="relative z-10 flex flex-col items-center gap-2 text-center p-3">
+            <div className="relative flex size-9 items-center justify-center rounded-xl bg-accent/20 border border-accent/40 shadow-[0_0_20px_rgba(24,119,242,0.3)]">
+              <Sparkles className="size-4 text-accent animate-spin" style={{ animationDuration: '6s' }} />
+              <div className="absolute inset-0 rounded-xl border border-accent/40 animate-ping opacity-30" />
+            </div>
+            <span className="text-[11px] font-semibold text-white tracking-wide">Drawing wireframe…</span>
+            <span className="text-[9px] text-white/50">Synthesizing blueprint layout</span>
+            <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-accent to-transparent animate-pulse" />
+          </div>
+        ) : (
+          <span className="relative z-10 text-[11px] text-muted2">not drawn yet</span>
+        )}
+      </div>
     )
   }
   return (
-    <iframe
-      title={page.page_name || page.route}
-      src={api.wireframeHtmlUrl(srsId, page.route)}
-      loading="lazy"
-      tabIndex={-1}
-      aria-hidden="true"
-      // Rendered at full width and scaled down, so the thumbnail is the page
-      // as it really is rather than a second drawing that can disagree with it.
-      className="pointer-events-none origin-top-left border-0"
-      style={{ width: '1280px', height: '1000px', transform: 'scale(0.23)' }}
-    />
+    <div className="relative h-full w-full overflow-hidden bg-white">
+      <iframe
+        title={page.page_name || page.route}
+        src={api.wireframeHtmlUrl(srsId, page.route)}
+        loading="lazy"
+        tabIndex={-1}
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none origin-top-left border-0 transition-all duration-500",
+          isGenerating && "filter blur-[4px] opacity-40 scale-[0.98]"
+        )}
+        style={{ width: '1280px', height: '1000px', transform: 'scale(0.23)' }}
+      />
+      {isGenerating && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d1322]/75 backdrop-blur-[2px] z-10 transition-all">
+          <div className="relative flex size-9 items-center justify-center rounded-xl bg-accent/25 border border-accent/50 shadow-[0_0_20px_rgba(24,119,242,0.4)]">
+            <Sparkles className="size-4 text-accent animate-spin" style={{ animationDuration: '6s' }} />
+            <div className="absolute inset-0 rounded-xl border border-accent/40 animate-ping opacity-30" />
+          </div>
+          <span className="mt-2 text-[11px] font-semibold text-white tracking-wide">Updating…</span>
+          <span className="text-[9px] text-white/60 font-mono">Redrawing wireframe</span>
+          <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-accent to-transparent animate-pulse" />
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -347,7 +372,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
               Add components
             </p>
             <p className="mb-3 text-[10px] leading-snug text-white/35">
-              {picked ? 'Goes in after the part you picked.' : 'Goes at the end of the page.'}
+              {picked ? 'Goes in after the part you picked.' : 'Goes in the visible area.'}
             </p>
             {parts.map(([group, items]) => (
               <div key={group} className="mb-3">
@@ -366,14 +391,39 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
               </div>
             ))}
           </aside>
-          <iframe
-            key={stamp}
-            ref={frame}
-            onLoad={attach}
-            title={`${page.page_name || page.route} wireframe`}
-            src={srsId ? api.wireframeHtmlUrl(srsId, page.route) : 'about:blank'}
-            className="min-h-0 min-w-0 flex-1 border-0 bg-white"
-          />
+          <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-white">
+            {drawing && (
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#0a0f1d]/85 backdrop-blur-md transition-all duration-300">
+                <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#1877F2_1px,transparent_1px)] [background-size:20px_20px]" />
+                <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#0D99FF] to-transparent animate-pulse shadow-[0_0_20px_#0D99FF]" />
+                <div className="relative z-10 flex flex-col items-center rounded-2xl border border-white/15 bg-white/[0.04] p-8 shadow-2xl backdrop-blur-2xl text-center max-w-sm">
+                  <div className="relative flex size-14 items-center justify-center rounded-2xl bg-blue-500/20 border border-blue-400/40 shadow-[0_0_35px_rgba(13,153,255,0.4)]">
+                    <Sparkles className="size-7 text-[#0D99FF] animate-spin" style={{ animationDuration: '7s' }} />
+                    <div className="absolute inset-0 rounded-2xl border-2 border-[#0D99FF] animate-ping opacity-30" />
+                  </div>
+                  <h3 className="mt-4 text-[15px] font-bold tracking-tight text-white">Updating Wireframe…</h3>
+                  <p className="mt-1 text-[12px] leading-relaxed text-slate-300">
+                    Generating updated layout structure and blueprint components for <span className="font-mono text-blue-400 font-semibold">{page.route}</span>.
+                  </p>
+                  <div className="mt-4 flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 font-mono text-[10.5px] text-blue-300">
+                    <Loader2 className="size-3 animate-spin text-blue-400" />
+                    <span>Drawing wireframe…</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <iframe
+              key={stamp}
+              ref={frame}
+              onLoad={attach}
+              title={`${page.page_name || page.route} wireframe`}
+              src={srsId ? api.wireframeHtmlUrl(srsId, page.route) : 'about:blank'}
+              className={cn(
+                "min-h-0 min-w-0 flex-1 border-0 bg-white transition-all duration-500",
+                drawing && "filter blur-[6px] scale-[0.99] opacity-40 pointer-events-none"
+              )}
+            />
+          </div>
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 items-center justify-center bg-[#0a0d14] text-[12px] text-muted">
@@ -409,6 +459,9 @@ export function Wireframes({ srs, onEditPage }) {
   const [open, setOpen] = useState(null)
   const [error, setError] = useState('')
   const [drawing, setDrawing] = useState(false)
+  const [selectedForDel, setSelectedForDel] = useState([])
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(() => {
     if (!owner) return
@@ -441,6 +494,44 @@ export function Wireframes({ srs, onEditPage }) {
     }
   }
 
+  function openDeleteModal(routesToSelect = []) {
+    setSelectedForDel(routesToSelect)
+    setDeleteModalOpen(true)
+  }
+
+  function toggleDelRoute(route) {
+    setSelectedForDel(prev =>
+      prev.includes(route) ? prev.filter(r => r !== route) : [...prev, route]
+    )
+  }
+
+  function selectAllForDel() {
+    const drawnRoutes = pages.filter(p => p.has_html).map(p => p.route)
+    setSelectedForDel(drawnRoutes)
+  }
+
+  function deselectAllForDel() {
+    setSelectedForDel([])
+  }
+
+  /** Delete selected wireframes by clearing their HTML. */
+  async function deleteSelectedWireframes() {
+    if (!srsId || !selectedForDel.length) return
+    setDeleting(true)
+    try {
+      await Promise.all(
+        selectedForDel.map(route => api.saveWireframeHtml(srsId, route, ''))
+      )
+      load()
+      setDeleteModalOpen(false)
+      setSelectedForDel([])
+    } catch (failure) {
+      setError(failure?.message || 'The selected wireframes could not be deleted.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const pages = data?.pages || []
   if (error) return <Empty>{error}</Empty>
   if (!data) return <Empty>Reading the wireframes…</Empty>
@@ -470,35 +561,166 @@ export function Wireframes({ srs, onEditPage }) {
             ? ' All drawn.'
             : ` ${drawn} of ${pages.length} drawn so far.`}
         </p>
-        <Button variant="outline" disabled={drawing || waiting || !srsId} onClick={drawAll}>
-          {drawing || waiting
-            ? <><Loader2 className="mr-1 size-3 animate-spin" /> Drawing…</>
-            : drawn ? 'Draw them again' : 'Draw every page'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {pages.some(p => p.has_html) && (
+            <Button
+              variant="outline"
+              disabled={drawing || waiting || deleting || !srsId}
+              onClick={() => openDeleteModal(pages.filter(p => p.has_html).map(p => p.route))}
+              className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10 hover:border-rose-500/50"
+            >
+              <Trash2 className="mr-1.5 size-3.5 text-rose-400" />
+              Delete wireframes…
+            </Button>
+          )}
+          <Button variant="outline" disabled={drawing || waiting || !srsId} onClick={drawAll}>
+            {drawing || waiting
+              ? <><Loader2 className="mr-1 size-3 animate-spin" /> Drawing…</>
+              : drawn ? 'Draw them again' : 'Draw every page'}
+          </Button>
+        </div>
       </div>
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
         {pages.map((page, index) => (
-          <button key={`${page.route || 'wireframe'}-${index}`} type="button"
-            onClick={() => (onEditPage ? onEditPage(page) : setOpen(page))}
-            className="group overflow-hidden rounded-xl border border-line text-left transition hover:border-accent cursor-pointer">
-            <span className="block aspect-[16/11] overflow-hidden border-b border-line bg-white">
-              <Thumbnail srsId={srsId} page={page} waiting={waiting} />
-            </span>
-            <span className="block space-y-1 p-3">
-              <span className="truncate block text-[12px] font-medium text-ink">{page.page_name}</span>
-              <span className="block truncate font-mono text-[10px] text-muted2">{page.route}</span>
-              <span className="block truncate text-[10px] text-muted2">
-                {page.roles?.length ? page.roles.join(', ') : 'public'}
-                {page.html_stale ? ' · out of date' : ''}
+          <div key={`${page.route || 'wireframe'}-${index}`} className="group relative">
+            <button type="button"
+              onClick={() => (onEditPage ? onEditPage(page) : setOpen(page))}
+              className="w-full overflow-hidden rounded-xl border border-line text-left transition hover:border-accent cursor-pointer">
+              <span className="block aspect-[16/11] overflow-hidden border-b border-line bg-white">
+                <Thumbnail srsId={srsId} page={page} waiting={waiting} />
               </span>
-            </span>
-          </button>
+              <span className="block space-y-1 p-3">
+                <span className="truncate block text-[12px] font-medium text-ink">{page.page_name}</span>
+                <span className="block truncate font-mono text-[10px] text-muted2">{page.route}</span>
+                <span className="block truncate text-[10px] text-muted2">
+                  {page.roles?.length ? page.roles.join(', ') : 'public'}
+                  {page.html_stale ? ' · out of date' : ''}
+                </span>
+              </span>
+            </button>
+            {/* Delete button — visible on hover, opens confirmation dialog with page ticked */}
+            {page.has_html && (
+              <button
+                type="button"
+                title="Delete wireframe"
+                onClick={e => { e.stopPropagation(); openDeleteModal([page.route]) }}
+                className="absolute right-2 top-2 z-10 flex items-center justify-center rounded-lg
+                           bg-black/60 p-1.5 text-white/70 opacity-0 transition
+                           hover:bg-rose-600 hover:text-white
+                           group-hover:opacity-100 cursor-pointer"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            )}
+          </div>
         ))}
       </div>
       {open && (
         <PageEditor owner={owner} srsId={srsId} page={open}
           onClose={() => setOpen(null)}
           onSaved={() => { load(); setOpen(null) }} />
+      )}
+      {/* Delete confirmation modal with checkboxes (tick marks) */}
+      {deleteModalOpen && (
+        <Modal onClose={() => !deleting && setDeleteModalOpen(false)}>
+          <div className="space-y-4 max-w-lg w-full">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-rose-500/15">
+                <Trash2 className="size-4 text-rose-400" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[15px] font-bold text-ink">Delete wireframe pages?</h3>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted">
+                  Select which wireframe HTML layouts to delete. Ticked pages will be cleared and reset to ungenerated status. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex items-center justify-between border-y border-line py-2 text-[11.5px]">
+              <span className="font-medium text-muted">
+                {selectedForDel.length} of {pages.filter(p => p.has_html).length} selected
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={selectAllForDel}
+                  className="text-accent hover:underline cursor-pointer"
+                >
+                  Select all
+                </button>
+                <span className="text-muted2">·</span>
+                <button
+                  type="button"
+                  onClick={deselectAllForDel}
+                  className="text-muted hover:text-ink cursor-pointer"
+                >
+                  Clear selection
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable list with checkboxes */}
+            <div className="max-h-[300px] overflow-y-auto space-y-1.5 pr-1">
+              {pages.filter(p => p.has_html).map(p => {
+                const checked = selectedForDel.includes(p.route)
+                return (
+                  <label
+                    key={p.route}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl border p-2.5 transition cursor-pointer select-none",
+                      checked
+                        ? "border-rose-500/50 bg-rose-500/10 text-white"
+                        : "border-line bg-panel2/40 text-muted hover:bg-panel2 hover:text-ink"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleDelRoute(p.route)}
+                      className="size-4 rounded accent-rose-600 cursor-pointer"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-semibold text-[12.5px] truncate text-ink">
+                          {p.page_name || p.route}
+                        </span>
+                        <code className="text-[10px] font-mono text-muted2 shrink-0">
+                          {p.route}
+                        </code>
+                      </div>
+                      <span className="text-[10.5px] text-muted2 block truncate">
+                        {p.roles?.length ? p.roles.join(', ') : 'public'}
+                      </span>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-line">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                onClick={deleteSelectedWireframes}
+                disabled={deleting || selectedForDel.length === 0}
+                className="bg-rose-600 hover:bg-rose-500 text-white shadow-sm"
+              >
+                {deleting ? (
+                  <><Loader2 className="mr-1.5 size-3 animate-spin" />Deleting…</>
+                ) : (
+                  `Delete ${selectedForDel.length} wireframe${selectedForDel.length === 1 ? '' : 's'}`
+                )}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )
