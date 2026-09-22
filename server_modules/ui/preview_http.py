@@ -115,12 +115,18 @@ class PreviewHTTPMixin:
         headers.update({"X-Forwarded-Host": self.headers.get("Host", ""),
                         "X-Forwarded-Proto": "http", "X-Forwarded-For": "127.0.0.1",
                         "Accept-Encoding": "identity"})
+        response = None
         try:
             response = requests.request(method, f"http://127.0.0.1:{port}{self.path}",
                                         headers=headers, data=body, stream=True,
                                         allow_redirects=False, timeout=(2, 300))
         except requests.RequestException:
-            return self._plain(503, b"Preview is unavailable")
+            try:
+                response = requests.request(method, f"http://localhost:{port}{self.path}",
+                                            headers=headers, data=body, stream=True,
+                                            allow_redirects=False, timeout=(2, 300))
+            except requests.RequestException:
+                return self._plain(503, b"Preview is unavailable")
         is_html = "text/html" in response.headers.get("Content-Type", "").lower()
         nonce = uuid.uuid4().hex
         self.send_response(response.status_code)
@@ -128,7 +134,7 @@ class PreviewHTTPMixin:
             lower = key.lower()
             if lower in HOP_BY_HOP or lower in {"content-encoding", "content-length"}:
                 continue
-            if is_html and lower in {"etag", "content-md5", "x-frame-options"}:
+            if lower in {"etag", "content-md5", "x-frame-options"}:
                 continue
             if lower == "content-security-policy" and is_html:
                 directives = []

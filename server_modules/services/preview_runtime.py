@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import re
 import socket
+import struct
 import threading
 import time
 import uuid
@@ -245,8 +246,6 @@ class RuntimeRegistry:
                     if key in runtime.ports:
                         continue
                     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
-                        listener.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
                     try:
                         listener.bind(("127.0.0.1", int(preferred) if int(preferred) not in used else 0))
                     except OSError:
@@ -263,6 +262,11 @@ class RuntimeRegistry:
     def release_reservations(self, runtime):
         with runtime.lock, self.port_lock:
             for listener in runtime.reservations:
+                try:
+                    # Set linger to 0 so the OS immediately closes without TIME_WAIT
+                    listener.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+                except Exception:
+                    pass
                 listener.close()
             runtime.reservations.clear()
 

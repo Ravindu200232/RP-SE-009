@@ -17,6 +17,10 @@
   "engines": {
     "node": ">=20"
   },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
   "devDependencies": {
     "vitest": "^2.1.8"
   }

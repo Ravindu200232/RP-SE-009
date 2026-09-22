@@ -46,21 +46,45 @@ function stopAll(code = 0) {
   process.exit(code);
 }
 
-for (const service of services) {
+const isGateway = (name) => name.includes('gateway');
+const gatewayService = services.find((s) => isGateway(s.name));
+const internalServices = services.filter((s) => !isGateway(s.name));
+
+const FIRST_INTERNAL = Number(process.env.INTERNAL_PORT_BASE ?? 4102);
+const addresses = {};
+internalServices.forEach((service, index) => {
+  const envKey = service.name.replace(/[^A-Za-z0-9]+/g, '_').toUpperCase() + '_PORT';
+  addresses[service.name] = Number(process.env[envKey] ?? (FIRST_INTERNAL + index));
+});
+
+function spawnService(service, extraEnv = {}) {
   const child = spawn(process.execPath, ['src/server.js'], {
     cwd: service.cwd,
-    env: process.env,
+    env: { ...process.env, ...extraEnv },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   child.stdout.on('data', (chunk) => process.stdout.write('[' + service.name + '] ' + chunk));
   child.stderr.on('data', (chunk) => process.stderr.write('[' + service.name + '] ' + chunk));
-  // A service that dies takes the whole run down. A half-started system that
-  // still looks alive is the harder failure to diagnose.
   child.on('exit', (code) => {
     if (!stopping) console.error('[' + service.name + '] exited with code ' + code);
     stopAll(code ?? 1);
   });
   children.push(child);
+}
+
+for (const service of internalServices) {
+  const port = String(addresses[service.name]);
+  spawnService(service, { SERVICE_PORT: port, PORT: port });
+}
+
+if (gatewayService) {
+  const gatewayEnv = { PORT: String(process.env.PORT ?? 4000) };
+  for (const [name, port] of Object.entries(addresses)) {
+    const prefix = name.replace(/[^A-Za-z0-9]+/g, '_').toUpperCase();
+    gatewayEnv[prefix + '_PORT'] = String(port);
+    gatewayEnv[prefix + '_URL'] = 'http://127.0.0.1:' + port;
+  }
+  spawnService(gatewayService, gatewayEnv);
 }
 
 process.on('SIGINT', () => stopAll(0));

@@ -17,7 +17,9 @@
     "isbot": "^5.2.2",
     "mongoose": "^8.9.5",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.6"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.17.5",
