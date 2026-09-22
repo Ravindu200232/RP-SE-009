@@ -1,0 +1,72 @@
+name: AgentFold wireframe and design upgrade
+
+on:
+  push:
+    branches:
+      - agentfold-wireframe-sync-design-upgrade
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  upgrade-build-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply safe source upgrade
+        run: python .github/scripts/apply_agentfold_upgrade.py
+
+      - name: Compile modified Python modules
+        run: |
+          python -m py_compile server_modules/builder/site_images.py
+          python -m py_compile server_modules/srs/parent_sync.py
+          python -m py_compile .github/scripts/apply_agentfold_upgrade.py
+
+      - name: Install Studio dependencies
+        working-directory: studio
+        run: npm ci
+
+      - name: Build Studio
+        working-directory: studio
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+
+      - name: Commit validated source updates to upgrade branch
+        run: |
+          git config user.name "agentfold-upgrade-bot"
+          git config user.email "agentfold-upgrade-bot@users.noreply.github.com"
+          git add studio/components/DesignCustomize.jsx \
+                  studio/components/AdvancedDesignCustomize.jsx \
+                  server_modules/builder/site_images.py \
+                  server_modules/srs/parent_sync.py
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+          else
+            git commit -m "Apply validated wireframe sync and design customization upgrade [skip ci]"
+            git push origin HEAD:agentfold-wireframe-sync-design-upgrade
+          fi
+
+      - name: Create full source ZIP
+        run: |
+          git archive --format=zip \
+            --prefix=RP-SE-009-AgentFold-updated/ \
+            HEAD \
+            -o RP-SE-009-AgentFold-updated.zip
+          ls -lh RP-SE-009-AgentFold-updated.zip
+
+      - name: Upload full source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: RP-SE-009-AgentFold-updated
+          path: RP-SE-009-AgentFold-updated.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
