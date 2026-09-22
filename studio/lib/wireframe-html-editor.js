@@ -754,10 +754,30 @@ export function attachEditor(iframe, { onSelect, onDirty, onMetrics } = {}) {
       host.innerHTML = markup.trim()
       const node = host.firstElementChild
       if (!node) return
-      if (selected && selected.parentElement) selected.after(node)
-      else (doc.querySelector('main, body > div, body') || doc.body).appendChild(node)
+      if (selected && selected.parentElement) {
+        // Insert right after the currently selected element.
+        selected.after(node)
+      } else {
+        // Nothing selected: insert at the visible centre of the iframe viewport
+        // so the element appears where the user is looking rather than scrolling
+        // them to the bottom of the page.
+        const vw = doc.defaultView?.innerWidth || doc.documentElement.clientWidth || 800
+        const vh = doc.defaultView?.innerHeight || doc.documentElement.clientHeight || 600
+        const midX = vw / 2
+        const midY = vh / 2
+        // Walk up from the point to find a sensible block-level host.
+        let anchor = doc.elementFromPoint(midX, midY)
+        while (anchor && anchor !== doc.body && anchor !== doc.documentElement) {
+          if (['DIV', 'SECTION', 'MAIN', 'ARTICLE', 'HEADER', 'FOOTER', 'ASIDE'].includes(anchor.tagName)) break
+          anchor = anchor.parentElement
+        }
+        const container = (anchor && anchor !== doc.documentElement ? anchor : null)
+          || doc.querySelector('main, body > div, body')
+          || doc.body
+        container.appendChild(node)
+      }
       select(node)
-      node.scrollIntoView({ block: 'center' })
+      node.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
       touched()
     },
     editText(on) {

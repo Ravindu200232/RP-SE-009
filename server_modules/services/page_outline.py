@@ -195,3 +195,166 @@ def outline(html: str) -> str:
 def title_of(html: str) -> str:
     found = TITLE.search(str(html or ""))
     return _tidy(found.group(1)) if found else ""
+
+
+# ---------------------------------------------------------------------------
+# JSX / TSX outline — reads the actual UI structure from React source files
+# ---------------------------------------------------------------------------
+
+# JSX attribute patterns to strip so the HTML parser can read the tags.
+_JSX_ATTR_STRIP = re.compile(
+    r"""
+    className\s*=\s*(?:\{[^}]*\}|"[^"]*"|'[^']*')   # className={…} or "…"
+    | style\s*=\s*\{[^}]*\}                           # style={{…}}
+    | on[A-Z]\w*\s*=\s*\{[^}]*\}                     # onClick={…}
+    | ref\s*=\s*\{[^}]*\}                             # ref={…}
+    | key\s*=\s*\{[^}]*\}                             # key={…}
+    | \w[\w.]*\s*=\s*\{[^}]*\}                        # any other ={…} prop
+    """,
+    re.VERBOSE,
+)
+
+
+# Self-closing JSX components (PascalCase) — map to semantic equivalents
+_COMPONENT_MAP = {
+    "header": "header", "navbar": "nav", "nav": "nav", "sidebar": "aside",
+    "footer": "footer", "main": "main", "hero": "section", "banner": "section",
+    "form": "form", "modal": "dialog", "table": "table", "card": "article",
+    "button": "button", "input": "input", "select": "select", "textarea": "textarea",
+    "section": "section", "article": "article",
+}
+
+_PASCAL_COMPONENT = re.compile(r"<([A-Z][a-zA-Z0-9]*)(\s[^>]*)?>", re.MULTILINE)
+
+
+def _extract_jsx_markup(jsx: str) -> str:
+    """Pull just the JSX/HTML markup out of a React component source file.
+
+    Strategy:
+    1. Strip import/export/hook lines that clearly contain no markup.
+    2. Find every `return (` block and collect its content.
+    3. If no explicit return block found, fall back to scanning the whole text.
+
+    Returns the extracted markup text, which may still contain JS expressions
+    that the subsequent cleanup strips.
+    """
+    text = str(jsx or "")
+
+    # --- Step 1: Remove non-markup lines safely (line-by-line, not greedy) ---
+    clean_lines = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        # Skip imports, simple hook-only lines, exports, comments
+        if (stripped.startswith("import ") or
+                stripped.startswith("//") or
+                stripped.startswith("* ") or
+                stripped.startswith("/*") or
+                stripped.startswith("*/") or
+                stripped.startswith("'use ") or
+                stripped.startswith('"use ') or
+                re.match(r"^export\s+(?:default\s+)?(?:function|class|const|let|var)\s+\w", stripped) or
+                re.match(r"^(?:const|let|var)\s+\w+\s*=\s*use\w+", stripped) or
+                re.match(r"^console\.\w+\(", stripped)):
+            continue
+        clean_lines.append(line)
+    text = "\n".join(clean_lines)
+
+    # --- Step 2: Extract return (...) blocks ---
+    # Find "return (" and collect balanced parentheses content
+    collected: list[str] = []
+    i = 0
+    while i < len(text):
+        m = re.search(r"\breturn\s*\(", text[i:])
+        if not m:
+            break
+        start = i + m.end()
+        depth = 1
+        j = start
+        while j < len(text) and depth > 0:
+            if text[j] == "(":
+                depth += 1
+            elif text[j] == ")":
+                depth -= 1
+            j += 1
+        collected.append(text[start:j - 1])
+        i = j
+
+    return "\n".join(collected) if collected else text
+
+
+def _jsx_to_html(jsx: str) -> str:
+    """Convert JSX source to pseudo-HTML the standard parser can read.
+
+    Not a correct JSX parser — it does not handle all edge cases. It strips
+    JS expressions and attribute syntax that would confuse the HTML parser and
+    turns PascalCase component names into their nearest semantic equivalent.
+    The result is structurally representative enough for an outline.
+    """
+    text = _extract_jsx_markup(str(jsx or ""))
+
+    # Strip JSX attribute syntax that would confuse the HTML parser
+    text = _JSX_ATTR_STRIP.sub("", text)
+
+    # Map PascalCase components to semantic HTML equivalents
+    def _map_component(m: re.Match) -> str:
+        name = m.group(1).lower()
+        for key, tag in _COMPONENT_MAP.items():
+            if key in name:
+                return f"<{tag}>"
+        return "<div>"
+
+    text = _PASCAL_COMPONENT.sub(_map_component, text)
+
+    # Closing PascalCase tags: </ComponentName> → </div>
+    text = re.sub(r"</[A-Z][a-zA-Z0-9]*>", "</div>", text)
+
+    # Self-closing tags: <input /> → <input>
+    text = re.sub(r"\s*/\s*>", ">", text)
+
+    # Strip JSX expression blocks {…} — these are JS values inside markup
+    text = re.sub(r"\{[^}]*\}", " ", text)
+
+    # Collapse excessive whitespace
+    text = re.sub(r"\s{3,}", " ", text)
+    return text
+
+
+
+def outline_jsx(jsx: str) -> str:
+    """The structure of one JSX / TSX component, as indented text.
+
+    Converts the JSX markup to pseudo-HTML and feeds it through the same
+    structural outline pipeline as a real HTML page. This means the wireframe
+    generator sees the same kind of outline regardless of whether the page
+    comes from a `.html` prototype file or a `.jsx` build file.
+
+    Never raises: a file that cannot be parsed yields an empty string, and
+    the caller treats that as 'nothing to redraw'.
+    """
+    try:
+        pseudo_html = _jsx_to_html(jsx)
+    except Exception:                                            # noqa: BLE001
+        return ""
+    return outline(pseudo_html)
+
+
+def title_of_jsx(jsx: str) -> str:
+    """Best-effort page title from a JSX file.
+
+    Looks for <title>, a string inside <h1>, or a metadata title= prop.
+    """
+    text = str(jsx or "")
+    # Next.js metadata export: export const metadata = { title: "..." }
+    meta_title = re.search(r"title\s*:\s*['\"]([^'\"]+)['\"]", text)
+    if meta_title:
+        return _tidy(meta_title.group(1))
+    # <title>…</title>
+    html_title = TITLE.search(text)
+    if html_title:
+        return _tidy(html_title.group(1))
+    # First h1 text
+    h1 = re.search(r"<h1[^>]*>([^<]+)</h1>", text, re.IGNORECASE)
+    if h1:
+        return _tidy(h1.group(1))
+    return ""
+

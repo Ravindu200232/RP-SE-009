@@ -80,6 +80,145 @@ def _changed_pages(directory, change):
     return pages[:MAX_REDRAWN_PAGES]
 
 
+# Next.js file-system routing patterns.
+# `app/foo/page.jsx`          → /foo
+# `app/foo/[id]/page.jsx`     → /foo/[id]
+# `pages/foo.jsx`             → /foo
+# `src/app/foo/page.jsx`      → /foo
+_NEXTJS_PAGE_SUFFIXES = ("/page.jsx", "/page.tsx", "/page.js", "/page.ts")
+_PAGES_DIR_EXT = {".jsx", ".tsx", ".js", ".ts"}
+
+# JSX/TSX files that are obviously not page files.
+_NON_PAGE_NAMES = {
+    "layout", "loading", "error", "not-found", "template", "default",
+    "_app", "_document", "_error", "middleware",
+}
+
+
+def _route_from_nextjs_path(rel: str) -> str | None:
+    """Derive a URL route from a Next.js source file path.
+
+    Handles both App Router (`app/.../page.jsx`) and Pages Router
+    (`pages/foo.jsx` or `src/pages/foo.jsx`). Returns None for files that
+    are clearly not page files (layouts, hooks, components, etc.).
+    """
+    import re as _re
+    parts = rel.replace("\\", "/").split("/")
+    # Must be inside app/ or pages/ (possibly under src/)
+    try:
+        if "src" in parts:
+            parts = parts[parts.index("src") + 1:]
+        root = parts[0] if parts else ""
+    except (IndexError, ValueError):
+        return None
+
+    if root == "app":
+        # App Router: last segment must be "page[.ext]"
+        stem = parts[-1].rsplit(".", 1)[0].lower() if parts else ""
+        if stem != "page":
+            return None
+        route_parts = parts[1:-1]  # strip "app" and "page.jsx"
+        route_parts = [p for p in route_parts if not p.startswith("(")]  # strip route groups
+        route = "/" + "/".join(route_parts) if route_parts else "/"
+        return route
+
+    if root == "pages":
+        if len(parts) < 2:
+            return None
+        stem = parts[-1].rsplit(".", 1)[0].lower()
+        suffix = parts[-1].rsplit(".", 1)[-1].lower()
+        if suffix not in ("jsx", "tsx", "js", "ts"):
+            return None
+        if stem in _NON_PAGE_NAMES or stem.startswith("_"):
+            return None
+        if stem == "index":
+            route_parts = parts[1:-1]
+        else:
+            route_parts = parts[1:-1] + [stem]
+        route = "/" + "/".join(route_parts) if route_parts else "/"
+        return route
+
+    return None
+
+
+def _changed_pages_from_build(directory, change) -> list[dict]:
+    """The pages a developer (build) change rewrote, derived from JSX/TSX files.
+
+    The prototype HTML pass covers `.html` prototype changes; this covers the
+    React source files a build agent writes. Both return the same shape so the
+    wireframe redraw call treats them identically.
+
+    Route resolution uses Next.js file-system conventions first, then falls
+    back to name-based matching against the pages the specification named.
+    Pages that cannot be reliably matched are silently skipped — inventing a
+    route is worse than leaving a wireframe unchanged.
+    """
+    from server_modules.services import change_set
+    from server_modules.services.page_outline import outline_jsx, title_of_jsx
+    from server_modules.services.prototype_routes import specified_pages
+
+    # Only consider source-code files (not CSS, JSON, config)
+    touched = change_set.touched(change)
+    source_files = [
+        name for name in touched
+        if any(name.lower().endswith(ext) for ext in (".jsx", ".tsx"))
+        and not any(seg.startswith(".") or seg in ("node_modules", ".next")
+                    for seg in name.replace("\\", "/").split("/"))
+    ]
+    if not source_files:
+        return []
+
+    # Build a set of routes the specification knows about
+    spec_pages = specified_pages(directory)
+    if not spec_pages:
+        return []
+    spec_routes = {str(p.get("route")): p for p in spec_pages if p.get("route")}
+    spec_page_names = {
+        str(p.get("page_name") or p.get("name") or ""): str(p.get("route"))
+        for p in spec_pages
+        if (p.get("page_name") or p.get("name")) and p.get("route")
+    }
+
+    pages, seen = [], set()
+    for rel in source_files:
+        # --- 1. Next.js file-system route derivation ---
+        route = _route_from_nextjs_path(rel)
+
+        # --- 2. Name-based fallback against the specification ---
+        if not route or route not in spec_routes:
+            import re as _re
+            stem = rel.replace("\\", "/").rsplit("/", 1)[-1].rsplit(".", 1)[0]
+            stem_lower = stem.lower()
+            stem_words = set(_re.split(r"[^a-z0-9]+", stem_lower))
+            stem_words -= {"page", "screen", "view", "index", "component"}
+            best_route, best_score = None, 0
+            for spec_route in spec_routes:
+                route_words = set(_re.split(r"[^a-z0-9]+", spec_route.lower()))
+                score = len(stem_words & route_words)
+                if score > best_score:
+                    best_score, best_route = score, spec_route
+            route = best_route if best_score > 0 else None
+
+        if not route or route in seen:
+            continue
+
+        # --- 3. Read the JSX file and extract its structural outline ---
+        try:
+            jsx_src = (directory / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        structure = outline_jsx(jsx_src)
+        if not structure:
+            continue
+
+        seen.add(route)
+        pages.append({"route": route, "outline": structure})
+
+    return pages[:MAX_REDRAWN_PAGES]
+
+
+
+
 def _srs_id_of(directory):
     link = json.loads((directory / ".agentforge" / "srs" / "link.json").read_text(encoding="utf-8"))
     return link["srs_id"]
@@ -400,8 +539,14 @@ def synchronize_completed_change(directory, request_path, request):
     emit({"type": "sync_state", "project": directory.name, "status": "running", "source": source})
     state.update(sync={"status": "running", "source": source, "request_id": request_path.stem})
     if stage == "source_completed":
+        # Designer changes: read prototype HTML outline
+        # Developer changes: read JSX/TSX outline from built files
+        if source == "designer":
+            changed_pages = _changed_pages(directory, source_change)
+        else:
+            changed_pages = _changed_pages_from_build(directory, source_change)
         result = _sync_parent_documents(directory, request_path, request, "source", source, summary,
-                                        _changed_pages(directory, source_change) if source == "designer" else ())
+                                        changed_pages)
         request["srs_version"] = result.get("version")
         checkpoint("srs_updated")
     # A completed prototype may update an existing build, never start the first build.
@@ -429,9 +574,15 @@ def synchronize_completed_change(directory, request_path, request):
         checkpoint("qa_pending")
     if stage == "sibling_completed":
         mirrored = change_set.read(directory, sibling)
+        # When the sibling is designer (prototype), read HTML outline.
+        # When the sibling is developer (build), read JSX outline.
+        if sibling == "designer":
+            sibling_pages = _changed_pages(directory, mirrored)
+        else:
+            sibling_pages = _changed_pages_from_build(directory, mirrored)
         result = _sync_parent_documents(directory, request_path, request, "mirror", sibling,
                                         request["sibling_summary"],
-                                        _changed_pages(directory, mirrored) if sibling == "designer" else ())
+                                        sibling_pages)
         request["srs_version"] = result.get("version")
         checkpoint("qa_pending")
     # Record QA verification only after tested code revisions are committed to document.

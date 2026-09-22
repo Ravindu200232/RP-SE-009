@@ -1,4 +1,11 @@
 # Manages customer-uploaded pictures, generating manifests and copying assets to drawings and public roots.
+from __future__ import annotations
+
+import json
+import re
+import shutil
+from pathlib import Path
+
 from server_modules.services.project_state import atomic_json
 
 SITE_IMAGE_DIRNAME = "images"
@@ -117,27 +124,81 @@ def _html_name(route: str) -> str:
     return f"{'-'.join(p for p in safe.split('-') if p) or 'index'}.html"
 
 
-def wireframe_brief(proj_dir: Path) -> str:
-    """The line that tells a drawing pass the layouts already exist."""
-    path = proj_dir / ".agentforge" / "wireframes" / "wireframes.json"
-    try:
-        pages = (json.loads(path.read_text(encoding="utf-8")) or {}).get("pages") or []
-    except Exception:                                           # noqa: BLE001
+def wireframe_brief(proj_dir: Path, max_outlined_pages: int = 14) -> str:
+    """Read the approved wireframe HTML layouts and supply their blueprints to the agent."""
+    from server_modules.services.page_outline import outline
+
+    wf_dir = proj_dir / ".agentforge" / "wireframes"
+    html_dir = wf_dir / "html"
+    if not html_dir.is_dir():
         return ""
-    if not pages:
-        return ""
-    drawn = [p for p in pages if p.get("has_html")]
+
+    path = wf_dir / "wireframes.json"
+    pages = []
+    if path.is_file():
+        try:
+            pages = (json.loads(path.read_text(encoding="utf-8")) or {}).get("pages") or []
+        except Exception:                                           # noqa: BLE001
+            pages = []
+
+    drawn = []
+    seen_files = set()
+    for p in pages:
+        if not isinstance(p, dict):
+            continue
+        route = p.get("route")
+        if not route:
+            continue
+        fname = _html_name(route)
+        fpath = html_dir / fname
+        if fpath.is_file():
+            drawn.append({
+                "route": route,
+                "name": p.get("page_name") or p.get("name") or route,
+                "file": fname,
+                "path": fpath,
+            })
+            seen_files.add(fname)
+
+    # Any additional HTML wireframe files in html_dir
+    for fpath in sorted(html_dir.glob("*.html")):
+        if fpath.name not in seen_files:
+            drawn.append({
+                "route": f"/{fpath.stem}" if fpath.stem != "index" else "/",
+                "name": fpath.stem.replace("-", " ").title(),
+                "file": fpath.name,
+                "path": fpath,
+            })
+
     if not drawn:
         return ""
-    routes = ", ".join(str(p.get("route")) for p in drawn[:14])
-    return (f"\n\nWIREFRAMES EXIST for {len(drawn)} page(s): {routes}. They are in "
-            f"`.agentforge/wireframes/html/`, one HTML file per page, named after the route "
-            f"(`/manage/tools` is `manage-tools.html`, `/` is `index.html`). Read the ones "
-            f"for the pages you are drawing before you draw them: each is the arrangement "
-            f"the customer reviewed and, where they moved something by hand, the arrangement "
-            f"they chose. Follow the order and grouping of the sections, the columns of each "
-            f"table and the fields of each form. The wireframes are black and white by "
-            f"design - take the layout from them and the look from the theme.\n")
+
+    routes_summary = ", ".join(f"{d['route']} ({d['file']})" for d in drawn[:16])
+    brief_lines = [
+        f"\n\nAPPROVED WIREFRAME BLUEPRINTS EXIST for {len(drawn)} page(s): {routes_summary}.",
+        f"The full HTML wireframes are located in `.agentforge/wireframes/html/`.",
+        "MANDATORY UI/UX CONSISTENCY RULE: You MUST follow these wireframe blueprints strictly.",
+        "The wireframe defines the spatial hierarchy, page sections, ordering, form controls, table columns,",
+        "and interactive elements that the customer reviewed and approved. Keep the same sections in the same order,",
+        "the same fields in forms, and the same actions/buttons. Do not rearrange or omit wireframe elements.",
+        "Take the layout and structure from the wireframes; take styling, colors, and polish from the design system.\n",
+        "=== WIREFRAME STRUCTURAL BLUEPRINTS (read into context) ==="
+    ]
+
+    for item in drawn[:max_outlined_pages]:
+        try:
+            content = item["path"].read_text(encoding="utf-8", errors="replace")
+            struct = outline(content)
+            if struct:
+                if len(struct) > 1500:
+                    struct = struct[:1500].rsplit("\n", 1)[0] + "\n  …"
+                brief_lines.append(f"\n--- Wireframe: {item['name']} ({item['route']} -> {item['file']}) ---\n{struct}")
+        except Exception:
+            continue
+
+    brief_lines.append("\n=== END WIREFRAME BLUEPRINTS ===\n")
+    return "\n".join(brief_lines)
+
 
 
 def _site_rows(folder: Path) -> list:

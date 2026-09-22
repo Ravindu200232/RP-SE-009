@@ -322,6 +322,51 @@ def list_projects() -> list:
 
             "deployed": _deploy_marker(d),
         })
+
+    # Also discover unadopted specifications in PROD_DIR / ".srs"
+    srs_store = PROD_DIR / ".srs"
+    if srs_store.is_dir():
+        adopted_srs_ids = set()
+        for p in projects:
+            link_file = PROD_DIR / p["name"] / ".agentforge" / "srs" / "link.json"
+            if link_file.is_file():
+                try:
+                    data = json.loads(link_file.read_text(encoding="utf-8"))
+                    if data.get("srs_id"):
+                        adopted_srs_ids.add(data["srs_id"])
+                except Exception:
+                    pass
+        for sd in sorted(srs_store.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            if not sd.is_dir() or sd.name.startswith(".") or sd.name in adopted_srs_ids:
+                continue
+            has_spec = (sd / "srs_latest.json").is_file() or any(sd.glob("srs_v*.json"))
+            if not has_spec:
+                continue
+            try:
+                kept = keep_srs(sd.name)
+                if kept.get("ok") and kept.get("project"):
+                    proj_name = kept["project"]
+                    proj_dir = PROD_DIR / proj_name
+                    if proj_dir.is_dir() and not any(p["name"] == proj_name for p in projects):
+                        html_info = _find_html_info(proj_dir)
+                        projects.append({
+                            "name": proj_dir.name,
+                            "title": _srs_app_name(sd.name) or proj_dir.name,
+                            "mtime": int(sd.stat().st_mtime),
+                            "file_count": sum(1 for _ in _iter_source(proj_dir)),
+                            "stack": detect_stack(proj_dir),
+                            "unfinished": 0,
+                            "spec_only": True,
+                            "prototype_only": False,
+                            "build_available": False,
+                            "has_html": html_info["has_html"],
+                            "html_url": html_info["html_url"],
+                            "deployed": None,
+                        })
+                        adopted_srs_ids.add(sd.name)
+            except Exception as e:
+                elog("WARN", f"   ⚠️  Could not auto-adopt staged SRS {sd.name}: {e}")
+
     return projects
 
 
