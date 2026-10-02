@@ -570,14 +570,12 @@ def decide(ctx: dict) -> Any:
     choice = str(ctx.get("decision") or "accept")
     reply = str(ctx.get("reply") or ctx.get("feedback") or "")
 
+    if bus.deliver(decision_id, reply if choice == "answer" else ""):
+        return {"ok": True}                        # a build holding still before its plan takes the answer and goes on
     if project and question.get("change_id"):
         # The planner asked it: the answer (or "you decide") goes back to that request.
         return changes.answer(project, str(question["change_id"]), reply if choice == "answer" else "",
                               str(ctx.get("model") or ""))
-    if project and question.get("flow") == "build":
-        # A build or update paused mid-run: the answer (or "you decide") resumes it exactly
-        # where it stopped, never as a fresh separate request.
-        return runs.answer_build(project, reply if choice == "answer" else "")
     if project and choice in {"answer", "revise"} and reply:
         runs.agent_update_direct({"project": project, "prompt": reply,
                                   "agent": question.get("agent", bus.DEVELOPER)})
