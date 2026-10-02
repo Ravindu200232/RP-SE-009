@@ -494,7 +494,8 @@ def ask(project: str, kind: str, question: str, options: Iterable[str] = (),
     `kind` decides where the studio shows it: `question` in the chat stream,
     `prototype` in the preview, anything else in a dialog.
     """
-    decision_id = f"ask-{next(_ids)}"
+    # Unique across restarts: a card still on screen from before one must never answer a newer question.
+    decision_id = f"ask-{next(_ids)}-{uuid.uuid4().hex[:8]}"
     event = {"type": "approval", "project": project, "agent": agent,
              "id": decision_id, "kind": kind, "question": question,
              "options": list(options), **extra}
@@ -516,6 +517,49 @@ def resolve(decision_id: str) -> dict | None:
         emit({"type": "approval_resolved", "project": question.get("project"),
               "agent": question.get("agent", DEVELOPER), "id": decision_id})
     return question
+
+
+# --- a run that holds still for the customer's answer ------------------------
+
+_waiters: dict[str, dict] = {}
+
+
+def ask_and_wait(project: str, kind: str, question: str, options: Iterable[str] = (), agent: str = DEVELOPER,
+                 cancelled: Callable[[], bool] = lambda: False, **extra: Any) -> str | None:
+    """`ask`, then hold this run until the customer answers: their answer comes back ("" when they left it to the
+    run), or None when the run was stopped first. Nothing is saved - a restart ends the run and its question together.
+    """
+    waiter = {"done": threading.Event(), "reply": "", "project": project}
+    with _lock:                      # the card and its waiter exist together: no answer can arrive between them
+        decision_id = ask(project, kind, question, options, agent, **extra)
+        _waiters[decision_id] = waiter
+    try:
+        while not waiter["done"].wait(0.5):
+            if cancelled():
+                return None
+        return waiter["reply"]
+    finally:
+        with _lock:
+            _waiters.pop(decision_id, None)
+        resolve(decision_id)         # a card nobody will answer any more goes from the screen
+
+
+def deliver(decision_id: str, reply: str) -> bool:
+    """The customer's answer to a question a run is holding still for. False when no run waits on that question."""
+    with _lock:
+        waiter = _waiters.get(decision_id)
+    if not waiter:
+        return False
+    waiter["reply"] = reply
+    waiter["done"].set()
+    return True
+
+
+def waiting_question(project: str) -> dict | None:
+    """The question a run of this project is holding still for, as it is on screen."""
+    with _lock:
+        return next((dict(_pending_decisions[i]) for i, w in _waiters.items()
+                     if w["project"] == project and i in _pending_decisions), None)
 
 
 def run_status(project: str) -> dict[str, dict]:
