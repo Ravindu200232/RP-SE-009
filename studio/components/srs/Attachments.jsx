@@ -27,8 +27,8 @@ export function AttachButtons({ attach, disabled, label = 'Attach', cell }) {
   const picker = useRef(null)
   const recorder = useRecorder(file => attach.add([file]))
 
-  const cellClass = 'inline-flex h-8 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.05] '
-                  + 'px-2.5 text-[11px] font-medium text-white/80 shadow-sm transition-all hover:bg-white/[.10] hover:border-white/20 hover:text-white '
+  const cellClass = 'grid size-8 place-items-center rounded-xl border border-black/10 bg-black/[.05] '
+                  + 'text-[11px] font-medium text-ink shadow-sm transition-all hover:bg-black/[.10] hover:border-black/20 hover:text-ink '
                   + 'disabled:pointer-events-none disabled:opacity-40'
 
   return (
@@ -43,19 +43,21 @@ export function AttachButtons({ attach, disabled, label = 'Attach', cell }) {
       {cell ? (<>
         <button disabled={disabled} className={cellClass}
                 onClick={() => picker.current?.click()}
+                aria-label="Attach a PDF, document, screenshot or image"
                 title="Attach a PDF, document, screenshot or image">
-          <Paperclip className="size-2.5 shrink-0 text-white/70" /> PDF / image
+          <Paperclip className="size-3 shrink-0 text-accent" />
         </button>
         <button disabled={disabled} onClick={recorder.toggle}
-                className={cn(cellClass, recorder.recording && 'border-accent bg-accent text-white')}
+                className={cn(cellClass, recorder.recording && 'border-accent bg-accent text-ink')}
+                aria-label={recorder.recording ? 'Stop recording' : 'Describe the app by voice'}
                 title={recorder.recording ? 'Stop recording' : 'Describe the app by voice'}>
           {recorder.recording
-            ? <><Square className="size-2.5 shrink-0 fill-current" /> Stop</>
-            : <><Mic className="size-2.5 shrink-0 text-white/70" /> Voice</>}
+            ? <Square className="size-3 shrink-0 fill-current" />
+            : <Mic className="size-3 shrink-0 text-accent" />}
         </button>
         {recorder.recording && (
-          <span className="flex items-center rounded-xl bg-accent/10 px-2
-                           font-mono text-[10.5px] text-accent">
+          <span className="flex items-center rounded-none bg-accent px-2
+                           font-mono text-[10.5px] text-ink">
             {clock(recorder.seconds)}
           </span>
         )}
@@ -89,7 +91,7 @@ export function AttachList({ attach, className }) {
   if (!attach.items.length) return null
 
   return (
-    <ul className={cn('overflow-hidden rounded-2xl border border-line bg-white/45 shadow-sm dark:bg-white/[.02]', className)}>
+    <ul className={cn('overflow-hidden rounded-none border border-line bg-black/45 shadow-sm dark:bg-black/[.02]', className)}>
       {attach.items.map(it => {
         const Icon = ICON[it.kind] || FileText
         const failed = it.state === 'failed'
@@ -125,7 +127,7 @@ export function AttachList({ attach, className }) {
                   maxLength={300}
                   aria-label={`What ${it.name} is for`}
                   placeholder="What is this for? e.g. our logo · the layout I want · a photo for the home page"
-                  className="mt-1.5 w-full rounded-lg border border-line bg-panel2/60
+                  className="mt-1.5 w-full rounded-none border border-line bg-panel2/60
                              px-2 py-1 text-[11px] text-ink outline-none transition
                              placeholder:text-muted2 focus:border-accent/50
                              disabled:opacity-60" />

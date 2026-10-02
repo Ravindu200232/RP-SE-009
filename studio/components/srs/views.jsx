@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import {
   AlertTriangle, ArrowRight, Check, CheckCircle2, Compass, Copy, Cpu, Database, FileCode,
-  FileText, Globe, Key, Lock, Maximize2, MessageSquare, ShieldAlert, ShieldCheck, Sparkles,
+  FileText, Globe, Lock, Maximize2, MessageSquare, ShieldAlert, ShieldCheck, Sparkles,
   Users, Workflow, Zap,
 } from 'lucide-react'
-import { Empty, Table } from '../ui'
+import { Empty } from '../ui'
 import DiagramViewer from './DiagramViewer'
 import Overview from './Overview'
 import { UserJourney, Wireframes } from './Wireframes'
@@ -28,25 +28,6 @@ const idOf = (item, i) =>
   (item && typeof item === 'object'
     && (item.id || item.ref || item.module || item.category || item.area)) || `#${i + 1}`
 
-/** A numbered section of the document. */
-function Section({ title, children, count, n }) {
-  return (
-    <div className="mb-6">
-      <div className="flex items-baseline gap-2.5 border-b-2 border-line2 pb-[7px]">
-        {n != null && <span className="font-mono text-[11px] text-accent">{n}</span>}
-        <h3 className="font-display text-[15px] font-extrabold tracking-[-.01em] text-ink">
-          {title}
-        </h3>
-        <span className="flex-1" />
-        {count != null && (
-          <span className="font-mono text-[10px] text-muted2">{count}</span>
-        )}
-      </div>
-      <div className="mt-1">{children}</div>
-    </div>
-  )
-}
-
 function Bullets({ items, tone }) {
   if (!list(items).length) return <p className="py-2 text-[11.5px] text-muted2">None recorded.</p>
   return (
@@ -63,11 +44,6 @@ function Bullets({ items, tone }) {
     </ul>
   )
 }
-
-/** Two section columns with a fixed gutter. */
-const Columns = ({ children }) => (
-  <div className="grid gap-x-[30px] md:grid-cols-2">{children}</div>
-)
 
 
 function Document({ srs }) {
@@ -100,36 +76,36 @@ function Document({ srs }) {
   const acceptanceN = riskN + 1
 
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-7">
       {/* ── Document Master Header Card ── */}
-      <div className="relative overflow-hidden rounded-3xl border border-blue-500/25 bg-[radial-gradient(ellipse_at_top_left,#101b38_0%,#0c1020_60%,#090d19_100%)] p-6 sm:p-8 shadow-2xl">
-        <div className="pointer-events-none absolute -right-16 -top-16 size-80 rounded-full bg-blue-600/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-none border border-accent/25 bg-panel p-6 sm:p-8 shadow-2xl">
+        <div className="pointer-events-none absolute -right-16 -top-16 size-80 rounded-full bg-accent blur-3xl" />
 
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-5">
           <div className="flex items-center gap-3">
-            <div className="grid size-11 place-items-center rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-lg shadow-blue-500/10">
+            <div className="grid size-11 place-items-center rounded-none bg-accent text-ink border border-accent/30 shadow-lg shadow-accent/10">
               <FileText className="size-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-[22px] sm:text-[26px] font-black tracking-tight text-white">
+                <h2 className="font-display text-[22px] sm:text-[26px] font-black tracking-tight text-ink">
                   {title}
                 </h2>
                 {doc.version && (
-                  <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10.5px] font-semibold text-white/80 border border-white/10">
+                  <span className="rounded-full bg-black/10 px-2.5 py-0.5 text-[10.5px] font-semibold text-ink border border-black/10">
                     v{doc.version}
                   </span>
                 )}
               </div>
-              <p className="text-[12px] text-white/50 mt-0.5">
+              <p className="text-[12px] text-muted2 mt-0.5">
                 {projectName} · Formal Software Engineering Specification
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3.5 py-1.5 text-[11.5px] font-semibold text-emerald-300 border border-emerald-500/30 shadow-sm">
-              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/5 px-3.5 py-1.5 text-[11.5px] font-semibold text-ink border border-black/10 shadow-sm">
+              <span className="size-2 rounded-full bg-ink animate-pulse" />
               <span>Living Document · 100% Verified Baseline</span>
             </span>
           </div>
@@ -137,31 +113,31 @@ function Document({ srs }) {
 
         {/* Scope & Strategic Objective */}
         <div className="relative z-10 mt-5">
-          <h3 className="text-[13px] font-bold uppercase tracking-wider text-blue-300/80 mb-1.5">
+          <h3 className="text-[13px] font-bold uppercase tracking-wider text-accent/80 mb-1.5">
             System Scope & Purpose
           </h3>
-          <p className="max-w-[960px] text-[13.5px] leading-relaxed text-white/90">
+          <p className="max-w-[960px] text-[13.5px] leading-relaxed text-ink">
             {blurb || `${projectName} delivers a comprehensive software solution tailored to business operations.`}
           </p>
           {goal && goal !== blurb && (
-            <p className="mt-2 text-[12.5px] text-white/70">
-              <span className="font-bold text-white">Strategic Objective:</span> {goal}
+            <p className="mt-2 text-[12.5px] text-muted">
+              <span className="font-bold text-ink">Strategic Objective:</span> {goal}
             </p>
           )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             {doc.system_category && (
-              <span className="rounded-xl border border-white/10 bg-white/[.04] px-3 py-1 text-[11px] font-semibold text-white/80">
+              <span className="rounded-none border border-black/10 bg-black/[.04] px-3 py-1 text-[11px] font-semibold text-ink">
                 {doc.system_category}
               </span>
             )}
             {doc.document_language && (
-              <span className="rounded-xl border border-white/10 bg-white/[.04] px-3 py-1 text-[11px] font-semibold text-white/80">
+              <span className="rounded-none border border-black/10 bg-black/[.04] px-3 py-1 text-[11px] font-semibold text-ink">
                 Language: {doc.document_language}
               </span>
             )}
             {auth && (
-              <span className="rounded-xl border border-blue-500/30 bg-blue-500/15 px-3 py-1 text-[11px] font-semibold text-blue-300">
+              <span className="rounded-none border border-accent/30 bg-accent px-3 py-1 text-[11px] font-semibold text-ink">
                 Authentication Required
               </span>
             )}
@@ -170,25 +146,25 @@ function Document({ srs }) {
 
         {/* High-Level Spec Metrics */}
         <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <span className="text-[10.5px] text-white/50 block mb-1">Functional Req</span>
-            <span className="font-display text-[20px] font-bold text-white">{list(doc.functional_requirements).length}</span>
+          <div className="rounded-none border border-black/10 bg-black/[.04] p-3.5 backdrop-blur-md">
+            <span className="text-[10.5px] text-muted2 block mb-1">Functional Req</span>
+            <span className="font-display text-[20px] font-bold text-ink">{list(doc.functional_requirements).length}</span>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <span className="text-[10.5px] text-white/50 block mb-1">Active Roles</span>
-            <span className="font-display text-[20px] font-bold text-white">{list(doc.roles).length || 1}</span>
+          <div className="rounded-none border border-black/10 bg-black/[.04] p-3.5 backdrop-blur-md">
+            <span className="text-[10.5px] text-muted2 block mb-1">Active Roles</span>
+            <span className="font-display text-[20px] font-bold text-ink">{list(doc.roles).length || 1}</span>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <span className="text-[10.5px] text-white/50 block mb-1">Core Modules</span>
-            <span className="font-display text-[20px] font-bold text-white">{list(doc.main_modules).length || 3}</span>
+          <div className="rounded-none border border-black/10 bg-black/[.04] p-3.5 backdrop-blur-md">
+            <span className="text-[10.5px] text-muted2 block mb-1">Core Modules</span>
+            <span className="font-display text-[20px] font-bold text-ink">{list(doc.main_modules).length || 3}</span>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <span className="text-[10.5px] text-white/50 block mb-1">Data Tables</span>
-            <span className="font-display text-[20px] font-bold text-white">{tables.length}</span>
+          <div className="rounded-none border border-black/10 bg-black/[.04] p-3.5 backdrop-blur-md">
+            <span className="text-[10.5px] text-muted2 block mb-1">Data Tables</span>
+            <span className="font-display text-[20px] font-bold text-ink">{tables.length}</span>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <span className="text-[10.5px] text-white/50 block mb-1">Open questions</span>
-            <span className={`font-display text-[20px] font-bold ${openQuestions ? 'text-amber-300' : 'text-white'}`}>
+          <div className="rounded-none border border-black/10 bg-black/[.04] p-3.5 backdrop-blur-md">
+            <span className="text-[10.5px] text-muted2 block mb-1">Open questions</span>
+            <span className={`font-display text-[20px] font-bold ${openQuestions ? 'text-amber-300' : 'text-ink'}`}>
               {openQuestions}
             </span>
           </div>
@@ -323,19 +299,19 @@ function DocumentToc({ auth, hasPlan }) {
     ['acceptance', 'Acceptance Criteria'],
   ]
   return (
-    <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
+    <div className="rounded-none border border-black/10 bg-panel p-6 shadow-xl">
       <div className="flex items-center gap-2 mb-3">
-        <Compass className="size-4 text-blue-400" />
-        <h3 className="text-[14px] font-bold text-white">Document Navigation & Table of Contents</h3>
+        <Compass className="size-4 text-accent" />
+        <h3 className="text-[14px] font-bold text-ink">Document Navigation & Table of Contents</h3>
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {entries.map(([id, label], i) => (
           <a
             key={id}
             href={`#${id}`}
-            className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-white/[.025] px-3.5 py-2 text-[12px] text-white/80 hover:bg-blue-600/20 hover:border-blue-500/30 hover:text-white transition-all"
+            className="flex items-center gap-2.5 rounded-none border border-black/5 bg-black/[.025] px-3.5 py-2 text-[12px] text-ink hover:bg-accent hover:border-accent/30 hover:text-ink transition-all"
           >
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-blue-500/15 font-mono text-[10px] font-bold text-blue-300">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-none bg-accent font-mono text-[10px] font-bold text-ink">
               {String(i + 1).padStart(2, '0')}
             </span>
             <span className="truncate">{label}</span>
@@ -348,12 +324,12 @@ function DocumentToc({ auth, hasPlan }) {
 
 function DocSection({ id, n, title, children }) {
   return (
-    <section id={id} className="scroll-mt-6 rounded-3xl border border-white/10 bg-[#0d121f] p-6 sm:p-7 shadow-xl">
-      <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-5">
-        <span className="flex size-6 items-center justify-center rounded-lg bg-blue-600/20 font-mono text-[11px] font-bold text-blue-400 border border-blue-500/30">
+    <section id={id} className="scroll-mt-6 rounded-none border border-black/10 bg-panel p-6 sm:p-7 shadow-xl">
+      <div className="flex items-center gap-3 border-b border-black/10 pb-4 mb-5">
+        <span className="flex size-6 items-center justify-center rounded-none bg-accent font-mono text-[11px] font-bold text-ink border border-accent/30">
           {n}
         </span>
-        <h2 className="font-display text-[17px] font-bold tracking-tight text-white">{title}</h2>
+        <h2 className="font-display text-[17px] font-bold tracking-tight text-ink">{title}</h2>
       </div>
       <div className="space-y-5">{children}</div>
     </section>
@@ -363,14 +339,14 @@ function DocSection({ id, n, title, children }) {
 function DocSubsection({ title, children }) {
   return (
     <div className="space-y-2">
-      <h3 className="text-[13px] font-bold text-blue-300 uppercase tracking-wider">{title}</h3>
+      <h3 className="text-[13px] font-bold text-accent uppercase tracking-wider">{title}</h3>
       {children}
     </div>
   )
 }
 
 const DocParagraph = ({ children }) => (
-  <p className="text-[13px] leading-relaxed text-white/80 max-w-[960px]">{children}</p>
+  <p className="text-[13px] leading-relaxed text-ink max-w-[960px]">{children}</p>
 )
 
 function DocumentControl({ doc, srs }) {
@@ -387,14 +363,14 @@ function DocumentControl({ doc, srs }) {
     <div className="space-y-4">
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map(([k, v]) => (
-          <div key={k} className="rounded-2xl border border-white/5 bg-white/[.025] p-3.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">{k}</p>
-            <p className="mt-1 text-[13px] font-bold text-white truncate">{String(v)}</p>
+          <div key={k} className="rounded-none border border-black/5 bg-black/[.025] p-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted2">{k}</p>
+            <p className="mt-1 text-[13px] font-bold text-ink truncate">{String(v)}</p>
           </div>
         ))}
       </div>
       {doc.standards_profile?.conformance_note && (
-        <p className="text-[11.5px] leading-relaxed text-white/60 italic">
+        <p className="text-[11.5px] leading-relaxed text-muted italic">
           {doc.standards_profile.conformance_note}
         </p>
       )}
@@ -433,10 +409,10 @@ function RequirementTable({ items, functional }) {
   const rows = list(items)
   if (!rows.length) return <DocParagraph>None recorded.</DocParagraph>
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#090d16] p-3">
+    <div className="overflow-x-auto rounded-none border border-black/10 bg-panel p-3">
       <table className="w-full text-left text-[12px]">
         <thead>
-          <tr className="border-b border-white/5 text-[10.5px] font-semibold uppercase tracking-wider text-white/40">
+          <tr className="border-b border-black/5 text-[10.5px] font-semibold uppercase tracking-wider text-muted2">
             <th className="p-2.5">ID</th>
             <th className="p-2.5">{functional ? 'Module' : 'Category'}</th>
             <th className="p-2.5">Requirement Description</th>
@@ -444,31 +420,31 @@ function RequirementTable({ items, functional }) {
             <th className="p-2.5">Verification</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody className="divide-y divide-black/5">
           {rows.map((r, i) => (
-            <tr key={r.id || i} className="hover:bg-white/[.02] text-white/80">
-              <td className="p-2.5 font-mono text-[11px] font-bold text-blue-400">
+            <tr key={r.id || i} className="hover:bg-black/[.02] text-ink">
+              <td className="p-2.5 font-mono text-[11px] font-bold text-accent">
                 {r.id || `#${i + 1}`}
               </td>
               <td className="p-2.5">
-                <span className="rounded-md bg-white/[.04] px-2 py-0.5 text-[11px] text-white/70">
+                <span className="rounded-none bg-black/[.04] px-2 py-0.5 text-[11px] text-muted">
                   {functional ? r.module : r.category}
                 </span>
               </td>
-              <td className="p-2.5 text-white leading-relaxed min-w-[320px]">
+              <td className="p-2.5 text-ink leading-relaxed min-w-[320px]">
                 {r.requirement}
               </td>
               {functional && (
-                <td className="p-2.5 capitalize text-white/70">
+                <td className="p-2.5 capitalize text-muted">
                   <span className={cn(
                     'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                    String(r.priority).toLowerCase() === 'high' ? 'bg-amber-500/15 text-amber-300' : 'bg-blue-500/15 text-blue-300'
+                    String(r.priority).toLowerCase() === 'high' ? 'bg-amber-500/15 text-amber-300' : 'bg-accent text-ink'
                   )}>
                     {r.priority || 'medium'}
                   </span>
                 </td>
               )}
-              <td className="p-2.5 text-emerald-400 font-medium">
+              <td className="p-2.5 text-ink font-medium">
                 <span className="inline-flex items-center gap-1">
                   <CheckCircle2 className="size-3" />
                   {r.verification_method || (functional ? 'Functional Test' : 'Test / Analysis')}
@@ -486,21 +462,21 @@ function IntegrationTable({ items }) {
   const rows = list(items)
   if (!rows.length) return <DocParagraph>No external integrations are required for the initial release.</DocParagraph>
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#090d16] p-3">
+    <div className="overflow-x-auto rounded-none border border-black/10 bg-panel p-3">
       <table className="w-full text-left text-[12px]">
         <thead>
-          <tr className="border-b border-white/5 text-[10.5px] font-semibold uppercase tracking-wider text-white/40">
+          <tr className="border-b border-black/5 text-[10.5px] font-semibold uppercase tracking-wider text-muted2">
             <th className="p-2.5">Integration</th>
             <th className="p-2.5">Type</th>
             <th className="p-2.5">Description</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody className="divide-y divide-black/5">
           {rows.map((r, i) => (
-            <tr key={r.name || i} className="hover:bg-white/[.02] text-white/80">
-              <td className="p-2.5 font-bold text-white">{r.name}</td>
-              <td className="p-2.5 text-white/60">{r.type}</td>
-              <td className="p-2.5 text-white/80">{r.description}</td>
+            <tr key={r.name || i} className="hover:bg-black/[.02] text-ink">
+              <td className="p-2.5 font-bold text-ink">{r.name}</td>
+              <td className="p-2.5 text-muted">{r.type}</td>
+              <td className="p-2.5 text-ink">{r.description}</td>
             </tr>
           ))}
         </tbody>
@@ -515,15 +491,15 @@ function WorkflowList({ items }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {rows.map((wf, i) => (
-        <div key={wf.workflow_name || i} className="rounded-2xl border border-white/5 bg-white/[.025] p-4">
-          <p className="text-[13px] font-bold text-white flex items-center justify-between border-b border-white/5 pb-2 mb-2.5">
+        <div key={wf.workflow_name || i} className="rounded-none border border-black/5 bg-black/[.025] p-4">
+          <p className="text-[13px] font-bold text-ink flex items-center justify-between border-b border-black/5 pb-2 mb-2.5">
             <span>{wf.workflow_name || `Workflow ${i + 1}`}</span>
-            {wf.who && <span className="text-[11px] font-normal text-white/50">{wf.who}</span>}
+            {wf.who && <span className="text-[11px] font-normal text-muted2">{wf.who}</span>}
           </p>
           <ol className="space-y-1.5">
             {list(wf.steps).map((step, j) => (
-              <li key={j} className="flex items-start gap-2 text-[12px] text-white/75">
-                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-blue-500/20 font-mono text-[9px] font-bold text-blue-300 mt-0.5">
+              <li key={j} className="flex items-start gap-2 text-[12px] text-ink">
+                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-accent font-mono text-[9px] font-bold text-ink mt-0.5">
                   {j + 1}
                 </span>
                 <span className="leading-relaxed">{step}</span>
@@ -540,23 +516,23 @@ function TraceabilityTable({ items }) {
   const rows = list(items)
   if (!rows.length) return <DocParagraph>No traceability rows were recorded.</DocParagraph>
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#090d16] p-3">
+    <div className="overflow-x-auto rounded-none border border-black/10 bg-panel p-3">
       <table className="w-full text-left text-[12px]">
         <thead>
-          <tr className="border-b border-white/5 text-[10.5px] font-semibold uppercase tracking-wider text-white/40">
+          <tr className="border-b border-black/5 text-[10.5px] font-semibold uppercase tracking-wider text-muted2">
             <th className="p-2.5">Req</th>
             <th className="p-2.5">Module</th>
             <th className="p-2.5">Screens & Tables</th>
             <th className="p-2.5">Verification</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody className="divide-y divide-black/5">
           {rows.slice(0, 50).map((r, i) => (
-            <tr key={`${r.requirement_id}-${i}`} className="hover:bg-white/[.02] text-white/80">
-              <td className="p-2.5 font-mono text-[11px] font-bold text-blue-400">{r.requirement_id}</td>
+            <tr key={`${r.requirement_id}-${i}`} className="hover:bg-black/[.02] text-ink">
+              <td className="p-2.5 font-mono text-[11px] font-bold text-accent">{r.requirement_id}</td>
               <td className="p-2.5">{r.source || r.module || 'Approved SRS'}</td>
-              <td className="p-2.5 text-white/60">{[...list(r.pages), ...list(r.tables)].slice(0, 4).join(', ') || '—'}</td>
-              <td className="p-2.5 text-emerald-400 font-medium">{r.verification_method || 'Functional Test'}</td>
+              <td className="p-2.5 text-muted">{[...list(r.pages), ...list(r.tables)].slice(0, 4).join(', ') || '—'}</td>
+              <td className="p-2.5 text-ink font-medium">{r.verification_method || 'Functional Test'}</td>
             </tr>
           ))}
         </tbody>
@@ -567,12 +543,12 @@ function TraceabilityTable({ items }) {
 
 function QualityReview({ items }) {
   return (
-    <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[.04] p-4">
+    <div className="rounded-none border border-amber-500/20 bg-amber-500/[.04] p-4">
       <div className="space-y-2">
         {list(items).map((r, i) => (
           <div key={r.requirement_id || i} className="flex items-start gap-2 text-[12px] text-amber-200">
             <AlertTriangle className="size-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <span><b className="font-mono text-white">{r.requirement_id}:</b> {list(r.warnings).join('; ')}</span>
+            <span><b className="font-mono text-ink">{r.requirement_id}:</b> {list(r.warnings).join('; ')}</span>
           </div>
         ))}
       </div>
@@ -583,22 +559,22 @@ function QualityReview({ items }) {
 function DatabaseTable({ table, index }) {
   const fields = list(table.fields || table.columns)
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/[.02] p-4.5 mb-4 last:mb-0">
-      <h4 className="text-[14px] font-bold text-white flex items-center gap-2 mb-1.5">
-        <Database className="size-4 text-emerald-400" />
+    <div className="rounded-none border border-black/5 bg-black/[.02] p-4.5 mb-4 last:mb-0">
+      <h4 className="text-[14px] font-bold text-ink flex items-center gap-2 mb-1.5">
+        <Database className="size-4 text-ink" />
         <span>{index + 1}. {(table.table_name || table.name || `Table ${index + 1}`).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
       </h4>
-      {table.description && <p className="text-[12px] text-white/70 mb-3">{table.description}</p>}
-      <div className="overflow-x-auto rounded-xl border border-white/5 bg-[#090d16] p-2">
+      {table.description && <p className="text-[12px] text-muted mb-3">{table.description}</p>}
+      <div className="overflow-x-auto rounded-none border border-black/5 bg-panel p-2">
         <table className="w-full text-left text-[11.5px]">
           <thead>
-            <tr className="border-b border-white/5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+            <tr className="border-b border-black/5 text-[10px] font-semibold uppercase tracking-wider text-muted2">
               <th className="p-2">Field</th>
               <th className="p-2">Type</th>
               <th className="p-2">Notes & Constraints</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-black/5">
             {fields.map((f, i) => {
               const notes = [
                 f.primary_key && 'PK',
@@ -609,10 +585,10 @@ function DatabaseTable({ table, index }) {
                 f.default != null && `default=${String(f.default)}`
               ].filter(Boolean).join(', ')
               return (
-                <tr key={f.name || i} className="hover:bg-white/[.02] text-white/80">
-                  <td className="p-2 font-mono text-[11px] font-semibold text-white">{typeof f === 'string' ? f : f.name}</td>
-                  <td className="p-2 text-white/50">{typeof f === 'object' ? f.type : ''}</td>
-                  <td className="p-2 text-emerald-400 font-mono text-[10.5px]">{notes || 'standard'}</td>
+                <tr key={f.name || i} className="hover:bg-black/[.02] text-ink">
+                  <td className="p-2 font-mono text-[11px] font-semibold text-ink">{typeof f === 'string' ? f : f.name}</td>
+                  <td className="p-2 text-muted2">{typeof f === 'object' ? f.type : ''}</td>
+                  <td className="p-2 text-ink font-mono text-[10.5px]">{notes || 'standard'}</td>
                 </tr>
               )
             })}
@@ -627,13 +603,13 @@ function RelationshipTable({ items }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {list(items).map((r, i) => (
-        <div key={i} className="rounded-xl border border-white/5 bg-white/[.02] p-3 text-[12px]">
-          <div className="flex items-center gap-2 text-blue-300 font-bold mb-1">
+        <div key={i} className="rounded-none border border-black/5 bg-black/[.02] p-3 text-[12px]">
+          <div className="flex items-center gap-2 text-accent font-bold mb-1">
             <span>{r.from || r.from_}</span>
-            <ArrowRight className="size-3 text-white/40" />
+            <ArrowRight className="size-3 text-muted2" />
             <span>{r.to}</span>
           </div>
-          <p className="text-white/60 text-[11.5px]">{r.description || r.type}</p>
+          <p className="text-muted text-[11.5px]">{r.description || r.type}</p>
         </div>
       ))}
     </div>
@@ -644,9 +620,9 @@ function RoleSummary({ roles }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {list(roles).map((r, i) => (
-        <div key={r.role_key || i} className="rounded-xl border border-white/5 bg-white/[.025] p-3.5">
-          <p className="text-[13px] font-bold text-white mb-1">{r.role_name || r.name || line(r)}</p>
-          <p className="text-[12px] text-white/70">{r.description || 'Authorized participant in the application.'}</p>
+        <div key={r.role_key || i} className="rounded-none border border-black/5 bg-black/[.025] p-3.5">
+          <p className="text-[13px] font-bold text-ink mb-1">{r.role_name || r.name || line(r)}</p>
+          <p className="text-[12px] text-muted">{r.description || 'Authorized participant in the application.'}</p>
         </div>
       ))}
     </div>
@@ -657,11 +633,11 @@ function RoleAccessTable({ items }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {list(items).map((r, i) => (
-        <div key={r.role || i} className="rounded-2xl border border-white/5 bg-white/[.025] p-4">
-          <h4 className="text-[13.5px] font-bold text-white mb-2">{r.role || r.role_name}</h4>
+        <div key={r.role || i} className="rounded-none border border-black/5 bg-black/[.025] p-4">
+          <h4 className="text-[13.5px] font-bold text-ink mb-2">{r.role || r.role_name}</h4>
           <div className="space-y-1 text-[11.5px]">
-            <p className="text-white/50"><span className="font-semibold text-white/80">Allowed Pages:</span> {list(r.allowed_pages || r.pages).map(line).join(', ') || 'All'}</p>
-            <p className="text-white/50"><span className="font-semibold text-white/80">Allowed Functions:</span> {list(r.allowed_functions || r.permissions || r.access).map(line).join(', ') || 'All'}</p>
+            <p className="text-muted2"><span className="font-semibold text-ink">Allowed Pages:</span> {list(r.allowed_pages || r.pages).map(line).join(', ') || 'All'}</p>
+            <p className="text-muted2"><span className="font-semibold text-ink">Allowed Functions:</span> {list(r.allowed_functions || r.permissions || r.access).map(line).join(', ') || 'All'}</p>
           </div>
         </div>
       ))}
@@ -686,9 +662,9 @@ function UiUxSection({ doc }) {
 function KeyValue({ label, value }) {
   if (value == null || value === '' || (Array.isArray(value) && !value.length)) return null
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[.02] p-3 text-[12px]">
-      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-white/40 block mb-1">{label}</span>
-      <span className="text-white font-medium">{Array.isArray(value) ? value.join(', ') : String(value)}</span>
+    <div className="rounded-none border border-black/5 bg-black/[.02] p-3 text-[12px]">
+      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-muted2 block mb-1">{label}</span>
+      <span className="text-ink font-medium">{Array.isArray(value) ? value.join(', ') : String(value)}</span>
     </div>
   )
 }
@@ -699,17 +675,17 @@ function RiskList({ items }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {rows.map((r, i) => (
-        <div key={r.id || i} className="rounded-2xl border border-white/5 bg-white/[.025] p-4">
+        <div key={r.id || i} className="rounded-none border border-black/5 bg-black/[.025] p-4">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
               {r.severity || 'Medium'} Risk
             </span>
-            <p className="text-[13px] font-bold text-white truncate">{r.risk || line(r)}</p>
+            <p className="text-[13px] font-bold text-ink truncate">{r.risk || line(r)}</p>
           </div>
-          {r.reason && <p className="text-[12px] text-white/70 mb-2">{r.reason}</p>}
+          {r.reason && <p className="text-[12px] text-muted mb-2">{r.reason}</p>}
           {r.mitigation && (
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[.05] p-2 text-[11px] text-emerald-200">
-              <span className="font-bold block text-emerald-300">Mitigation:</span>
+            <div className="rounded-none border border-black/20 bg-black/[.05] p-2 text-[11px] text-ink">
+              <span className="font-bold block text-ink">Mitigation:</span>
               {r.mitigation}
             </div>
           )}
@@ -725,8 +701,8 @@ function AcceptanceList({ items }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {rows.map((r, i) => (
-        <div key={r.id || i} className="flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/[.02] p-3 text-[12px] text-white/80">
-          <Check className="size-3.5 text-emerald-400 shrink-0 mt-0.5" />
+        <div key={r.id || i} className="flex items-start gap-2.5 rounded-none border border-black/5 bg-black/[.02] p-3 text-[12px] text-ink">
+          <Check className="size-3.5 text-ink shrink-0 mt-0.5" />
           <span>{typeof r === 'string' ? r : (r.criterion || line(r))}</span>
         </div>
       ))}
@@ -740,9 +716,9 @@ function PlanUsers({ items }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {rows.map((r, i) => (
-        <div key={i} className="rounded-xl border border-white/5 bg-white/[.02] p-3 text-[12px]">
-          <p className="font-bold text-white mb-1">{r.role || r.name}</p>
-          <p className="text-white/60">{list(r.can_do).join(', ') || 'General access'}</p>
+        <div key={i} className="rounded-none border border-black/5 bg-black/[.02] p-3 text-[12px]">
+          <p className="font-bold text-ink mb-1">{r.role || r.name}</p>
+          <p className="text-muted">{list(r.can_do).join(', ') || 'General access'}</p>
         </div>
       ))}
     </div>
@@ -755,10 +731,10 @@ function PlanScreens({ items }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map((r, i) => (
-        <div key={i} className="rounded-xl border border-white/5 bg-white/[.02] p-3 text-[12px]">
-          <p className="font-bold text-white mb-0.5">{r.name}</p>
-          <p className="font-mono text-[10.5px] text-purple-300 mb-1">{r.route}</p>
-          <p className="text-white/65 text-[11.5px]">{r.purpose}</p>
+        <div key={i} className="rounded-none border border-black/5 bg-black/[.02] p-3 text-[12px]">
+          <p className="font-bold text-ink mb-0.5">{r.name}</p>
+          <p className="font-mono text-[10.5px] text-accent mb-1">{r.route}</p>
+          <p className="text-muted text-[11.5px]">{r.purpose}</p>
         </div>
       ))}
     </div>
@@ -771,9 +747,9 @@ function PlanRecords({ items }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {rows.map((r, i) => (
-        <div key={i} className="rounded-xl border border-white/5 bg-white/[.02] p-3 text-[12px]">
-          <p className="font-bold text-white mb-1">{r.name}</p>
-          <p className="text-white/60">{list(r.keeps).join(', ') || '—'}</p>
+        <div key={i} className="rounded-none border border-black/5 bg-black/[.02] p-3 text-[12px]">
+          <p className="font-bold text-ink mb-1">{r.name}</p>
+          <p className="text-muted">{list(r.keeps).join(', ') || '—'}</p>
         </div>
       ))}
     </div>
@@ -786,11 +762,11 @@ function PlanWorkflows({ items }) {
   return (
     <div className="grid gap-2.5 sm:grid-cols-2">
       {rows.map((r, i) => (
-        <div key={i} className="rounded-2xl border border-white/5 bg-white/[.025] p-3.5">
-          <p className="text-[12.5px] font-bold text-white mb-1.5">{r.name || `Workflow ${i + 1}`}</p>
+        <div key={i} className="rounded-none border border-black/5 bg-black/[.025] p-3.5">
+          <p className="text-[12.5px] font-bold text-ink mb-1.5">{r.name || `Workflow ${i + 1}`}</p>
           <ol className="space-y-1">
             {list(r.steps).map((s, j) => (
-              <li key={j} className="text-[11.5px] text-white/70 leading-relaxed">{j + 1}. {s}</li>
+              <li key={j} className="text-[11.5px] text-muted leading-relaxed">{j + 1}. {s}</li>
             ))}
           </ol>
         </div>
@@ -804,34 +780,34 @@ function Plan({ srs }) {
 
   const planText = String(srs.plan || '')
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
-      <div className="rounded-3xl border border-blue-500/25 bg-[radial-gradient(ellipse_at_top,#101b38_0%,#0c1020_100%)] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-7">
+      <div className="rounded-none border border-accent/25 bg-panel p-6 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="grid size-9 place-items-center rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
+            <div className="grid size-9 place-items-center rounded-none bg-accent text-ink border border-accent/30">
               <FileCode className="size-4" />
             </div>
             <div>
-              <h2 className="text-[17px] font-bold text-white">
+              <h2 className="text-[17px] font-bold text-ink">
                 Approved Product Blueprint
               </h2>
-              <p className="text-[12px] text-white/50">
+              <p className="text-[12px] text-muted2">
                 The agreed product scope and architectural boundaries signed off with the stakeholder
               </p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold text-emerald-300 border border-emerald-500/25">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/15 px-3 py-1 text-[11px] font-semibold text-ink border border-black/25">
             <CheckCircle2 className="size-3" />
             <span>Formally Approved Baseline</span>
           </span>
         </div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-white/80">
+        <p className="mt-3 text-[12.5px] leading-relaxed text-ink">
           This blueprint defines the boundary of what the system builds. No unauthorized features or uncontrolled dependencies can be added outside of this contract.
         </p>
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <div className="prose prose-invert max-w-none text-[13px] leading-[1.8] text-white/85 whitespace-pre-wrap font-sans">
+      <div className="rounded-none border border-black/10 bg-panel p-6 shadow-xl">
+        <div className="prose prose-invert max-w-none text-[13px] leading-[1.8] text-ink whitespace-pre-wrap font-sans">
           {planText}
         </div>
       </div>
@@ -861,23 +837,23 @@ function Requirements({ srs }) {
   })
 
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
-      <div className="rounded-3xl border border-blue-500/25 bg-[radial-gradient(ellipse_at_top,#101b38_0%,#0c1020_100%)] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-7">
+      <div className="rounded-none border border-accent/25 bg-panel p-6 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="grid size-9 place-items-center rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
+            <div className="grid size-9 place-items-center rounded-none bg-accent text-ink border border-accent/30">
               <Workflow className="size-4" />
             </div>
             <div>
-              <h2 className="text-[17px] font-bold text-white">
+              <h2 className="text-[17px] font-bold text-ink">
                 System Capabilities & Requirements
               </h2>
-              <p className="text-[12px] text-white/50">
+              <p className="text-[12px] text-muted2">
                 A plain-English inventory of all actions, workflows, and rules guaranteed by this application
               </p>
             </div>
           </div>
-          <span className="rounded-full bg-blue-500/15 px-3 py-1 text-[11px] font-semibold text-blue-300 border border-blue-500/30">
+          <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-ink border border-accent/30">
             {functional.length} Total Capabilities
           </span>
         </div>
@@ -894,10 +870,10 @@ function Requirements({ srs }) {
                 key={tab.id}
                 onClick={() => setFilter(tab.id)}
                 className={cn(
-                  'rounded-xl px-3 py-1 text-[11.5px] font-semibold transition-all',
+                  'rounded-none px-3 py-1 text-[11.5px] font-semibold transition-all',
                   filter === tab.id
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                    : 'bg-white/[.04] text-white/70 hover:bg-white/[.08] hover:text-white border border-white/5'
+                    ? 'bg-accent text-ink shadow-md shadow-accent/20'
+                    : 'bg-black/[.04] text-muted hover:bg-black/[.08] hover:text-ink border border-black/5'
                 )}
               >
                 {tab.label}
@@ -910,14 +886,14 @@ function Requirements({ srs }) {
             placeholder="Search capabilities..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="rounded-xl border border-white/10 bg-white/[.03] px-3 py-1.5 text-[11.5px] text-white placeholder-white/40 focus:border-blue-500 focus:outline-none w-full sm:w-56"
+            className="rounded-none border border-black/10 bg-black/[.03] px-3 py-1.5 text-[11.5px] text-ink placeholder-white/40 focus:border-accent focus:outline-none w-full sm:w-56"
           />
         </div>
       </div>
 
       {(filter === 'all' || filter === 'core') && (
         <div className="space-y-3.5">
-          <h3 className="text-[13.5px] font-bold uppercase tracking-wider text-white/50">
+          <h3 className="text-[13.5px] font-bold uppercase tracking-wider text-muted2">
             Functional Capabilities ({filteredReqs.length})
           </h3>
           <div className="grid gap-3.5 sm:grid-cols-2">
@@ -927,42 +903,42 @@ function Requirements({ srs }) {
                 <div
                   key={r.id || i}
                   className={cn(
-                    'rounded-2xl border p-4.5 transition-all shadow-sm flex flex-col justify-between',
+                    'rounded-none border p-4.5 transition-all shadow-sm flex flex-col justify-between',
                     isAutoSynced
-                      ? 'border-purple-500/35 bg-[linear-gradient(135deg,#13112a_0%,#191433_100%)]'
-                      : 'border-white/10 bg-[#0d121f] hover:border-white/20'
+                      ? 'border-accent/35 bg-panel'
+                      : 'border-black/10 bg-panel hover:border-black/20'
                   )}
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="font-mono text-[11px] font-bold text-blue-400 bg-blue-500/15 px-2 py-0.5 rounded-md">
+                      <span className="font-mono text-[11px] font-bold text-ink bg-accent px-2 py-0.5 rounded-none">
                         {r.id || `REQ-${i + 1 < 10 ? '0' : ''}${i + 1}`}
                       </span>
                       <div className="flex items-center gap-1.5">
                         {isAutoSynced && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
-                            <Zap className="size-2.5 text-purple-300" />
+                          <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-ink border border-accent/30">
+                            <Zap className="size-2.5 text-ink" />
                             Auto-Synced Feature
                           </span>
                         )}
-                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 border border-emerald-500/25">
+                        <span className="rounded-full bg-black/15 px-2 py-0.5 text-[10px] font-semibold text-ink border border-black/25">
                           {r.module || 'Core'}
                         </span>
                       </div>
                     </div>
 
-                    <h4 className="text-[14px] font-bold text-white mb-1.5">
+                    <h4 className="text-[14px] font-bold text-ink mb-1.5">
                       {r.feature_name || r.requirement?.split('.')[0] || 'System Capability'}
                     </h4>
 
-                    <p className="text-[12px] leading-relaxed text-white/75">
+                    <p className="text-[12px] leading-relaxed text-ink">
                       {r.requirement}
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
-                    <span className="text-white/40">Priority: <b className="text-white/70 capitalize">{r.priority || 'High'}</b></span>
-                    <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
+                  <div className="mt-4 pt-3 border-t border-black/5 flex items-center justify-between text-[11px]">
+                    <span className="text-muted2">Priority: <b className="text-muted capitalize">{r.priority || 'High'}</b></span>
+                    <span className="inline-flex items-center gap-1 text-ink font-medium">
                       <CheckCircle2 className="size-3" />
                       <span>Verified 100%</span>
                     </span>
@@ -976,27 +952,27 @@ function Requirements({ srs }) {
 
       {(filter === 'all' || filter === 'workflows') && workflows.length > 0 && (
         <div className="space-y-3.5">
-          <h3 className="text-[13.5px] font-bold uppercase tracking-wider text-white/50">
+          <h3 className="text-[13.5px] font-bold uppercase tracking-wider text-muted2">
             Step-by-Step Business Workflows
           </h3>
           <div className="grid gap-3.5 sm:grid-cols-2">
             {workflows.map((wf, idx) => (
-              <div key={idx} className="rounded-2xl border border-white/10 bg-[#0d121f] p-5">
-                <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2.5">
-                  <h4 className="text-[14px] font-bold text-white flex items-center gap-2">
-                    <Workflow className="size-4 text-blue-400" />
+              <div key={idx} className="rounded-none border border-black/10 bg-panel p-5">
+                <div className="flex items-center justify-between mb-3 border-b border-black/5 pb-2.5">
+                  <h4 className="text-[14px] font-bold text-ink flex items-center gap-2">
+                    <Workflow className="size-4 text-accent" />
                     {wf.workflow_name || `Workflow ${idx + 1}`}
                   </h4>
                   {wf.who && (
-                    <span className="text-[11px] text-white/50 font-medium">
+                    <span className="text-[11px] text-muted2 font-medium">
                       Actor: {wf.who}
                     </span>
                   )}
                 </div>
                 <div className="space-y-2">
                   {list(wf.steps).map((step, sIdx) => (
-                    <div key={sIdx} className="flex items-start gap-2.5 text-[12px] text-white/80">
-                      <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-blue-500/20 font-mono text-[9.5px] font-bold text-blue-300 mt-0.5">
+                    <div key={sIdx} className="flex items-start gap-2.5 text-[12px] text-ink">
+                      <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-accent font-mono text-[9.5px] font-bold text-ink mt-0.5">
                         {sIdx + 1}
                       </span>
                       <span className="leading-relaxed">{step}</span>
@@ -1011,9 +987,9 @@ function Requirements({ srs }) {
 
       {(filter === 'all' || filter === 'security' || filter === 'quality') && (
         <div className="grid gap-5 sm:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-[#0d121f] p-5">
-            <h4 className="text-[14px] font-bold text-white flex items-center gap-2 mb-3">
-              <ShieldCheck className="size-4 text-emerald-400" />
+          <div className="rounded-none border border-black/10 bg-panel p-5">
+            <h4 className="text-[14px] font-bold text-ink flex items-center gap-2 mb-3">
+              <ShieldCheck className="size-4 text-ink" />
               Security Guardrails
             </h4>
             <div className="space-y-2">
@@ -1022,17 +998,17 @@ function Requirements({ srs }) {
                 'Encrypted database transport and zero client-side credential exposure.',
                 'Input sanitization to prevent unauthorized database modifications.'
               ]).map((sec, i) => (
-                <div key={i} className="flex items-start gap-2 text-[12px] text-white/75">
-                  <Check className="size-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                <div key={i} className="flex items-start gap-2 text-[12px] text-ink">
+                  <Check className="size-3.5 text-ink shrink-0 mt-0.5" />
                   <span>{typeof sec === 'string' ? sec : line(sec)}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0d121f] p-5">
-            <h4 className="text-[14px] font-bold text-white flex items-center gap-2 mb-3">
-              <Sparkles className="size-4 text-sky-400" />
+          <div className="rounded-none border border-black/10 bg-panel p-5">
+            <h4 className="text-[14px] font-bold text-ink flex items-center gap-2 mb-3">
+              <Sparkles className="size-4 text-accent" />
               Quality & Validation Rules
             </h4>
             <div className="space-y-2">
@@ -1041,8 +1017,8 @@ function Requirements({ srs }) {
                 'Sub-second user response time across desktop and mobile devices.',
                 'Zero broken link guarantee with verified multi-page user journeys.'
               ]).map((v, i) => (
-                <div key={i} className="flex items-start gap-2 text-[12px] text-white/75">
-                  <Check className="size-3.5 text-sky-400 shrink-0 mt-0.5" />
+                <div key={i} className="flex items-start gap-2 text-[12px] text-ink">
+                  <Check className="size-3.5 text-accent shrink-0 mt-0.5" />
                   <span>{typeof v === 'string' ? v : (v.rule || v.requirement || line(v))}</span>
                 </div>
               ))}
@@ -1061,27 +1037,27 @@ function Data({ srs }) {
   if (!tables.length) return <Empty>No database records defined in this SRS.</Empty>
 
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
-      <div className="rounded-3xl border border-emerald-500/25 bg-[radial-gradient(ellipse_at_top,#0e1e1a_0%,#091110_100%)] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-7">
+      <div className="rounded-none border border-black/25 bg-panel p-6 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="grid size-9 place-items-center rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
+            <div className="grid size-9 place-items-center rounded-none bg-black/20 text-ink border border-black/30">
               <Database className="size-4" />
             </div>
             <div>
-              <h2 className="text-[17px] font-bold text-white">
+              <h2 className="text-[17px] font-bold text-ink">
                 Information This System Remembers
               </h2>
-              <p className="text-[12px] text-white/50">
+              <p className="text-[12px] text-muted2">
                 A non-technical inventory of customer, order, and business records stored permanently in the application
               </p>
             </div>
           </div>
-          <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold text-emerald-300 border border-emerald-500/30">
+          <span className="rounded-full bg-black/15 px-3 py-1 text-[11px] font-semibold text-ink border border-black/30">
             {tables.length} Business Records
           </span>
         </div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-white/80">
+        <p className="mt-3 text-[12.5px] leading-relaxed text-ink">
           Your software organizes data into distinct records so that customer actions, accounts, and history are preserved reliably. All records are backed by atomic validation and secure cloud storage.
         </p>
       </div>
@@ -1091,22 +1067,22 @@ function Data({ srs }) {
           const fields = list(table.fields || table.columns)
           const recordName = (table.table_name || table.name || `Record ${i + 1}`).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
           return (
-            <div key={i} className="rounded-3xl border border-white/10 bg-[#0d121f] p-5 sm:p-6 shadow-xl">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3 mb-4">
+            <div key={i} className="rounded-none border border-black/10 bg-panel p-5 sm:p-6 shadow-xl">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 pb-3 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="grid size-7 place-items-center rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                  <div className="grid size-7 place-items-center rounded-none bg-black/15 text-ink border border-black/25">
                     <Database className="size-3.5" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold text-white">
+                    <h3 className="text-[15px] font-bold text-ink">
                       {recordName}
                     </h3>
-                    <p className="text-[11.5px] text-white/60">
+                    <p className="text-[11.5px] text-muted">
                       {table.description || `Stores information relevant to ${recordName.toLowerCase()}.`}
                     </p>
                   </div>
                 </div>
-                <span className="font-mono text-[11px] text-white/40">
+                <span className="font-mono text-[11px] text-muted2">
                   {fields.length} attributes stored
                 </span>
               </div>
@@ -1114,14 +1090,14 @@ function Data({ srs }) {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-[12px]">
                   <thead>
-                    <tr className="border-b border-white/5 text-[10.5px] font-semibold uppercase tracking-wider text-white/40">
+                    <tr className="border-b border-black/5 text-[10.5px] font-semibold uppercase tracking-wider text-muted2">
                       <th className="pb-2">Field Name</th>
                       <th className="pb-2">Purpose / What it Stores</th>
                       <th className="pb-2">Required?</th>
                       <th className="pb-2">Protection</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-black/5">
                     {fields.map((f, j) => {
                       const name = typeof f === 'string' ? f : f.name
                       const isPK = f.primary_key
@@ -1129,21 +1105,21 @@ function Data({ srs }) {
                       const isUnique = f.unique
                       const ref = f.references
                       return (
-                        <tr key={j} className="text-white/80 hover:bg-white/[.02]">
-                          <td className="py-2.5 font-mono text-[11.5px] font-semibold text-white">
+                        <tr key={j} className="text-ink hover:bg-black/[.02]">
+                          <td className="py-2.5 font-mono text-[11.5px] font-semibold text-ink">
                             {name}
                           </td>
-                          <td className="py-2.5 text-white/70">
+                          <td className="py-2.5 text-muted">
                             {f.description || (isPK ? 'Unique identifier for each record' : ref ? `Connects directly to ${ref}` : 'Standard business data entry')}
                           </td>
                           <td className="py-2.5">
                             {isRequired ? (
-                              <span className="text-emerald-400 font-medium">Required</span>
+                              <span className="text-ink font-medium">Required</span>
                             ) : (
-                              <span className="text-white/40">Optional</span>
+                              <span className="text-muted2">Optional</span>
                             )}
                           </td>
-                          <td className="py-2.5 text-white/60 font-mono text-[11px]">
+                          <td className="py-2.5 text-muted font-mono text-[11px]">
                             {isPK ? 'Primary Key' : isUnique ? 'Must be unique' : ref ? `Linked (${ref})` : 'Standard'}
                           </td>
                         </tr>
@@ -1158,20 +1134,20 @@ function Data({ srs }) {
       </div>
 
       {relationships.length > 0 && (
-        <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-          <h3 className="text-[15px] font-bold text-white mb-3 flex items-center gap-2">
-            <Workflow className="size-4 text-blue-400" />
+        <div className="rounded-none border border-black/10 bg-panel p-6 shadow-xl">
+          <h3 className="text-[15px] font-bold text-ink mb-3 flex items-center gap-2">
+            <Workflow className="size-4 text-accent" />
             <span>How Records Connect (Business Relationships)</span>
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {relationships.map((rel, idx) => (
-              <div key={idx} className="rounded-2xl border border-white/5 bg-white/[.02] p-4 text-[12px]">
-                <div className="flex items-center gap-2 text-blue-300 font-bold mb-1">
+              <div key={idx} className="rounded-none border border-black/5 bg-black/[.02] p-4 text-[12px]">
+                <div className="flex items-center gap-2 text-accent font-bold mb-1">
                   <span>{(rel.from || rel.from_ || 'Entity A').replace(/_/g, ' ')}</span>
-                  <ArrowRight className="size-3 text-white/40" />
+                  <ArrowRight className="size-3 text-muted2" />
                   <span>{(rel.to || 'Entity B').replace(/_/g, ' ')}</span>
                 </div>
-                <p className="text-white/70 leading-relaxed">
+                <p className="text-muted leading-relaxed">
                   {rel.description || `Each ${(rel.from || '').split('.')[0]} correlates to ${(rel.to || '').split('.')[0]}.`}
                 </p>
               </div>
@@ -1195,64 +1171,64 @@ function Roles({ srs }) {
   }
 
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
-      <div className="rounded-3xl border border-blue-500/25 bg-[radial-gradient(ellipse_at_top,#101a33_0%,#0c1020_100%)] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-7">
+      <div className="rounded-none border border-accent/25 bg-panel p-6 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="grid size-9 place-items-center rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
+            <div className="grid size-9 place-items-center rounded-none bg-accent text-ink border border-accent/30">
               <Users className="size-4" />
             </div>
             <div>
-              <h2 className="text-[17px] font-bold text-white">
+              <h2 className="text-[17px] font-bold text-ink">
                 Who Uses This App & What They Can Do
               </h2>
-              <p className="text-[12px] text-white/50">
+              <p className="text-[12px] text-muted2">
                 User personas, permission tiers, and access boundaries defined in plain English
               </p>
             </div>
           </div>
-          <span className="rounded-full bg-blue-500/15 px-3 py-1 text-[11px] font-semibold text-blue-300 border border-blue-500/30">
+          <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-ink border border-accent/30">
             {roles.length || 1} User Roles
           </span>
         </div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-white/80">
+        <p className="mt-3 text-[12.5px] leading-relaxed text-ink">
           Role-Based Access Control guarantees that sensitive actions (such as managing accounts, updating inventory, or viewing financial metrics) are only visible to authorized personnel.
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {roles.map((r, i) => (
-          <div key={i} className="rounded-2xl border border-white/10 bg-[#0d121f] p-5 shadow-lg">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-3 mb-3">
-              <div className="grid size-10 place-items-center rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/25">
+          <div key={i} className="rounded-none border border-black/10 bg-panel p-5 shadow-lg">
+            <div className="flex items-center gap-3 border-b border-black/10 pb-3 mb-3">
+              <div className="grid size-10 place-items-center rounded-none bg-accent text-ink border border-accent/25">
                 <Users className="size-5" />
               </div>
               <div>
-                <h3 className="text-[15px] font-bold text-white">
+                <h3 className="text-[15px] font-bold text-ink">
                   {r.role_name || r.name || r.role || `Role ${i + 1}`}
                 </h3>
-                <span className="text-[10.5px] font-semibold text-blue-300 uppercase tracking-wider">
+                <span className="text-[10.5px] font-semibold text-accent uppercase tracking-wider">
                   Active Persona
                 </span>
               </div>
             </div>
 
-            <p className="text-[12.5px] leading-relaxed text-white/75 mb-4">
+            <p className="text-[12.5px] leading-relaxed text-ink mb-4">
               {r.description || 'Authorized participant in the application lifecycle.'}
             </p>
 
-            <div className="space-y-1.5 border-t border-white/5 pt-3">
-              <span className="text-[10.5px] font-semibold uppercase tracking-wider text-white/40 block">
+            <div className="space-y-1.5 border-t border-black/5 pt-3">
+              <span className="text-[10.5px] font-semibold uppercase tracking-wider text-muted2 block">
                 Allowed Capabilities:
               </span>
               <div className="flex flex-wrap gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-300 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 rounded-none bg-black/10 px-2 py-0.5 text-[11px] text-ink border border-black/20">
                   <Check className="size-3" /> Navigation Access
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-300 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 rounded-none bg-black/10 px-2 py-0.5 text-[11px] text-ink border border-black/20">
                   <Check className="size-3" /> Data Interaction
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-300 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 rounded-none bg-black/10 px-2 py-0.5 text-[11px] text-ink border border-black/20">
                   <Check className="size-3" /> Workflow Triggering
                 </span>
               </div>
@@ -1264,15 +1240,15 @@ function Roles({ srs }) {
       {(publicPages.length > 0 || protectedPages.length > 0) && (
         <div className="grid gap-4 sm:grid-cols-2">
           {publicPages.length > 0 && (
-            <div className="rounded-2xl border border-white/10 bg-[#0d121f] p-5 shadow-lg">
-              <h4 className="text-[14px] font-bold text-white flex items-center gap-2 mb-3">
-                <Globe className="size-4 text-emerald-400" />
+            <div className="rounded-none border border-black/10 bg-panel p-5 shadow-lg">
+              <h4 className="text-[14px] font-bold text-ink flex items-center gap-2 mb-3">
+                <Globe className="size-4 text-ink" />
                 Public Pages (Anyone Can View)
               </h4>
               <div className="space-y-1.5">
                 {publicPages.map((p, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[12px] text-white/70">
-                    <Check className="size-3 text-emerald-400" />
+                  <div key={i} className="flex items-center gap-2 text-[12px] text-muted">
+                    <Check className="size-3 text-ink" />
                     <span>{typeof p === 'string' ? p : line(p)}</span>
                   </div>
                 ))}
@@ -1281,14 +1257,14 @@ function Roles({ srs }) {
           )}
 
           {protectedPages.length > 0 && (
-            <div className="rounded-2xl border border-white/10 bg-[#0d121f] p-5 shadow-lg">
-              <h4 className="text-[14px] font-bold text-white flex items-center gap-2 mb-3">
+            <div className="rounded-none border border-black/10 bg-panel p-5 shadow-lg">
+              <h4 className="text-[14px] font-bold text-ink flex items-center gap-2 mb-3">
                 <Lock className="size-4 text-amber-400" />
                 Protected Pages (Requires Login)
               </h4>
               <div className="space-y-1.5">
                 {protectedPages.map((p, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[12px] text-white/70">
+                  <div key={i} className="flex items-center gap-2 text-[12px] text-muted">
                     <Lock className="size-3 text-amber-400" />
                     <span>{typeof p === 'string' ? p : line(p)}</span>
                   </div>
@@ -1316,56 +1292,56 @@ function Handoff({ srs }) {
   }
 
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
-      <div className="rounded-3xl border border-purple-500/25 bg-[radial-gradient(ellipse_at_top,#1a1330_0%,#0e0b1c_100%)] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-7">
+      <div className="rounded-none border border-accent/25 bg-panel p-6 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="grid size-9 place-items-center rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30">
+            <div className="grid size-9 place-items-center rounded-none bg-accent text-ink border border-accent/30">
               <Cpu className="size-4" />
             </div>
             <div>
-              <h2 className="text-[17px] font-bold text-white">
+              <h2 className="text-[17px] font-bold text-ink">
                 Engineering Architecture & Tech Delivery
               </h2>
-              <p className="text-[12px] text-white/50">
+              <p className="text-[12px] text-muted2">
                 Production architecture specification consumed by the automated builder agent
               </p>
             </div>
           </div>
           <button
             onClick={copy}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[.06] px-3.5 py-1.5 text-[11.5px] font-semibold text-white hover:bg-white/10 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-none border border-black/15 bg-black/[.06] px-3.5 py-1.5 text-[11.5px] font-semibold text-ink hover:bg-black/10 transition-all shadow-sm"
           >
-            {copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
+            {copied ? <Check className="size-3.5 text-ink" /> : <Copy className="size-3.5" />}
             <span>{copied ? 'Copied Prompt' : 'Copy Engineering Prompt'}</span>
           </button>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-white/5 bg-white/[.025] p-3.5">
-            <span className="text-[11px] text-white/50 block mb-1">Framework</span>
-            <span className="font-bold text-white text-[14px]">Next.js 16</span>
+          <div className="rounded-none border border-black/5 bg-black/[.025] p-3.5">
+            <span className="text-[11px] text-muted2 block mb-1">Framework</span>
+            <span className="font-bold text-ink text-[14px]">Next.js 16</span>
           </div>
-          <div className="rounded-2xl border border-white/5 bg-white/[.025] p-3.5">
-            <span className="text-[11px] text-white/50 block mb-1">Database</span>
-            <span className="font-bold text-white text-[14px]">MongoDB Atlas</span>
+          <div className="rounded-none border border-black/5 bg-black/[.025] p-3.5">
+            <span className="text-[11px] text-muted2 block mb-1">Database</span>
+            <span className="font-bold text-ink text-[14px]">MongoDB Atlas</span>
           </div>
-          <div className="rounded-2xl border border-white/5 bg-white/[.025] p-3.5">
-            <span className="text-[11px] text-white/50 block mb-1">Styling</span>
-            <span className="font-bold text-white text-[14px]">Tailwind Dark Bolt</span>
+          <div className="rounded-none border border-black/5 bg-black/[.025] p-3.5">
+            <span className="text-[11px] text-muted2 block mb-1">Styling</span>
+            <span className="font-bold text-ink text-[14px]">Tailwind Dark Bolt</span>
           </div>
-          <div className="rounded-2xl border border-white/5 bg-white/[.025] p-3.5">
-            <span className="text-[11px] text-white/50 block mb-1">Architecture</span>
-            <span className="font-bold text-white text-[14px]">{handoff.appType || 'REST App'}</span>
+          <div className="rounded-none border border-black/5 bg-black/[.025] p-3.5">
+            <span className="text-[11px] text-muted2 block mb-1">Architecture</span>
+            <span className="font-bold text-ink text-[14px]">{handoff.appType || 'REST App'}</span>
           </div>
         </div>
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <h3 className="text-[14px] font-bold text-white mb-3">
+      <div className="rounded-none border border-black/10 bg-panel p-6 shadow-xl">
+        <h3 className="text-[14px] font-bold text-ink mb-3">
           Builder Agent Prompt Stream
         </h3>
-        <pre className="whitespace-pre-wrap break-words rounded-2xl border border-white/5 bg-[#090d16] p-4.5 font-mono text-[11.5px] leading-relaxed text-white/80 max-h-[420px] overflow-y-auto">
+        <pre className="whitespace-pre-wrap break-words rounded-none border border-black/5 bg-panel p-4.5 font-mono text-[11.5px] leading-relaxed text-ink max-h-[420px] overflow-y-auto">
           {handoff.prompt}
         </pre>
       </div>
@@ -1381,24 +1357,24 @@ function Diagrams({ srs }) {
   const current = diagrams[Math.min(open, diagrams.length - 1)]
 
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-6">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-6">
       {/* ── 1. Hero & Diagram Switcher ── */}
-      <div className="rounded-3xl border border-blue-500/25 bg-[radial-gradient(ellipse_at_top,#101b38_0%,#0c1020_100%)] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+      <div className="rounded-none border border-accent/25 bg-panel p-6 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="grid size-9 place-items-center rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
+            <div className="grid size-9 place-items-center rounded-none bg-accent text-ink border border-accent/30">
               <Compass className="size-4" />
             </div>
             <div>
-              <h2 className="text-[17px] font-bold text-white">
+              <h2 className="text-[17px] font-bold text-ink">
                 Visual System Diagrams & Architecture
               </h2>
-              <p className="text-[12px] text-white/50">
+              <p className="text-[12px] text-muted2">
                 Multi-perspective architectural diagrams explaining user journeys, data flow, and components in plain English
               </p>
             </div>
           </div>
-          <span className="rounded-full bg-blue-500/15 px-3 py-1 text-[11px] font-semibold text-blue-300 border border-blue-500/30">
+          <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-ink border border-accent/30">
             {diagrams.length} Visual Models
           </span>
         </div>
@@ -1410,10 +1386,10 @@ function Diagrams({ srs }) {
               key={d.name}
               onClick={() => setOpen(i)}
               className={cn(
-                'rounded-xl px-3 py-1.5 text-[11.5px] font-semibold transition-all',
+                'rounded-none px-3 py-1.5 text-[11.5px] font-semibold transition-all',
                 i === open
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                  : 'bg-white/[.04] text-white/70 hover:bg-white/[.08] hover:text-white border border-white/5'
+                  ? 'bg-accent text-ink shadow-md shadow-accent/30'
+                  : 'bg-black/[.04] text-muted hover:bg-black/[.08] hover:text-ink border border-black/5'
               )}
             >
               {d.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
@@ -1423,32 +1399,32 @@ function Diagrams({ srs }) {
       </div>
 
       {/* ── 2. Diagram Purpose & Definition Card ── */}
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
-          <span className="font-mono text-[10.5px] uppercase tracking-wider text-blue-400 font-bold">
+      <div className="rounded-none border border-black/10 bg-panel p-6 shadow-xl">
+        <div className="flex items-center justify-between border-b border-black/10 pb-3 mb-3">
+          <span className="font-mono text-[10.5px] uppercase tracking-wider text-accent font-bold">
             {current.standard || current.title || 'OMG UML Standard'}
           </span>
-          <span className="text-[11px] text-white/40 font-mono">Model #{open + 1} of {diagrams.length}</span>
+          <span className="text-[11px] text-muted2 font-mono">Model #{open + 1} of {diagrams.length}</span>
         </div>
 
-        <h3 className="text-[16px] font-bold text-white mb-2">
+        <h3 className="text-[16px] font-bold text-ink mb-2">
           {current.question}
         </h3>
 
-        <p className="text-[13px] leading-relaxed text-white/80 mb-4 max-w-[960px]">
+        <p className="text-[13px] leading-relaxed text-ink mb-4 max-w-[960px]">
           {current.definition}
         </p>
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/[.03] p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-blue-300 mb-2 flex items-center gap-1.5">
-              <Workflow className="size-3.5 text-blue-400" />
+          <div className="rounded-none border border-accent/20 bg-accent p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-ink mb-2 flex items-center gap-1.5">
+              <Workflow className="size-3.5 text-ink" />
               <span>How This Diagram Starts</span>
             </p>
-            <ol className="space-y-1.5 text-[12px] text-white/75">
+            <ol className="space-y-1.5 text-[12px] text-ink">
               {list(current.drawingRules).map((rule, i) => (
                 <li key={rule} className="flex items-start gap-2">
-                  <span className="font-mono text-blue-400 font-bold text-[11px] mt-0.5">{i + 1}.</span>
+                  <span className="font-mono text-ink font-bold text-[11px] mt-0.5">{i + 1}.</span>
                   <span>{rule}</span>
                 </li>
               ))}
@@ -1456,15 +1432,15 @@ function Diagrams({ srs }) {
           </div>
 
           {list(current.notation).length > 0 && (
-            <div className="rounded-2xl border border-white/5 bg-white/[.02] p-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-white/50 mb-2 flex items-center gap-1.5">
-                <Compass className="size-3.5 text-purple-400" />
+            <div className="rounded-none border border-black/5 bg-black/[.02] p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted2 mb-2 flex items-center gap-1.5">
+                <Compass className="size-3.5 text-accent" />
                 <span>How to Read the Notation</span>
               </p>
-              <ul className="space-y-1.5 text-[12px] text-white/75">
+              <ul className="space-y-1.5 text-[12px] text-ink">
                 {list(current.notation).map(item => (
                   <li key={item} className="flex items-start gap-2">
-                    <span className="text-purple-400 font-bold">•</span>
+                    <span className="text-accent font-bold">•</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -1474,7 +1450,7 @@ function Diagrams({ srs }) {
         </div>
 
         {!current.applicable && (
-          <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/[.06] p-3 text-[12px] text-amber-200">
+          <div className="mt-4 rounded-none border border-amber-500/25 bg-amber-500/[.06] p-3 text-[12px] text-amber-200">
             <span className="font-bold">Not applicable to this baseline:</span>{' '}
             {current.applicabilityNote || 'The approved requirements do not provide the semantics needed to draw this view without inventing behavior.'}
           </div>
@@ -1482,7 +1458,7 @@ function Diagrams({ srs }) {
       </div>
 
       {/* ── 3. Visual SVG Graphic Container ── */}
-      <div className="group relative overflow-x-auto rounded-3xl border border-white/10 bg-[#090d16] p-5 shadow-2xl">
+      <div className="group relative overflow-x-auto rounded-none border border-black/10 bg-panel p-5 shadow-2xl">
         {current.svg ? (
           <>
             <button
@@ -1495,48 +1471,48 @@ function Diagrams({ srs }) {
                 dangerouslySetInnerHTML={{ __html: current.svg }}
               />
             </button>
-            <span className="pointer-events-none absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-black/80 px-3 py-1.5 text-[11px] font-semibold text-white/90 opacity-0 transition-opacity group-hover:opacity-100 border border-white/10 shadow-lg">
+            <span className="pointer-events-none absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-black/80 px-3 py-1.5 text-[11px] font-semibold text-ink opacity-0 transition-opacity group-hover:opacity-100 border border-black/10 shadow-lg">
               <Maximize2 className="size-3.5" /> Click to Enlarge
             </span>
           </>
         ) : (
-          <pre className="whitespace-pre font-mono text-[11.5px] text-white/70 max-h-[360px] overflow-y-auto p-2">
+          <pre className="whitespace-pre font-mono text-[11.5px] text-muted max-h-[360px] overflow-y-auto p-2">
             {current.mermaid}
           </pre>
         )}
       </div>
 
       {/* ── 4. Plain-English System Flow & Narrative Guide ── */}
-      <div className="rounded-3xl border border-blue-500/25 bg-[#0e1322] p-6 shadow-xl text-white">
-        <div className="flex items-center gap-2.5 border-b border-white/10 pb-3.5 mb-4">
-          <div className="grid size-8 place-items-center rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
+      <div className="rounded-none border border-accent/25 bg-panel p-6 shadow-xl text-ink">
+        <div className="flex items-center gap-2.5 border-b border-black/10 pb-3.5 mb-4">
+          <div className="grid size-8 place-items-center rounded-none bg-accent text-ink border border-accent/30">
             <Compass className="size-4" />
           </div>
           <div>
-            <h4 className="text-[14px] font-bold text-white">
+            <h4 className="text-[14px] font-bold text-ink">
               System Flow Walkthrough (Plain English)
             </h4>
-            <p className="text-[11.5px] text-white/50">
+            <p className="text-[11.5px] text-muted2">
               How data, users, and actions flow through this diagram in everyday terms
             </p>
           </div>
         </div>
 
         {current.businessSummary && (
-          <p className="text-[13px] leading-relaxed text-white/80 font-medium mb-4">
+          <p className="text-[13px] leading-relaxed text-ink font-medium mb-4">
             {current.businessSummary}
           </p>
         )}
 
         {list(current.flowExplanation).length > 0 && (
           <div className="space-y-2 mb-4">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-400 mb-2">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-accent mb-2">
               Step-by-Step Flow:
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {list(current.flowExplanation).map((step, idx) => (
-                <div key={idx} className="flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/[.025] p-3 text-[12px] text-white/85">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-500/20 font-mono text-[10px] font-bold text-blue-300">
+                <div key={idx} className="flex items-start gap-2.5 rounded-none border border-black/5 bg-black/[.025] p-3 text-[12px] text-ink">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-bold text-ink">
                     {idx + 1}
                   </span>
                   <span className="leading-relaxed">{step.replace(/^\d+\.\s*/, '')}</span>
@@ -1547,14 +1523,14 @@ function Diagrams({ srs }) {
         )}
 
         {list(current.keyTakeaways).length > 0 && (
-          <div className="border-t border-white/10 pt-3.5">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 mb-2">
+          <div className="border-t border-black/10 pt-3.5">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-ink mb-2">
               Key Protections & Business Rules:
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {list(current.keyTakeaways).map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-[12px] text-emerald-300">
-                  <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+                <div key={idx} className="flex items-center gap-2 text-[12px] text-ink">
+                  <CheckCircle2 className="size-3.5 text-ink shrink-0" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -1567,7 +1543,7 @@ function Diagrams({ srs }) {
         <DiagramViewer svg={current.svg} title={current.title} onClose={() => setZoomed(false)} />
       )}
       {!current.svg && (
-        <p className="text-[11px] text-white/40 italic">
+        <p className="text-[11px] text-muted2 italic">
           {current.rendered
             ? 'The picture for this revision is on disk but only the current version is displayed — its Mermaid source is shown instead.'
             : 'No image was rendered for this one — the Mermaid source is shown instead.'}
@@ -1584,22 +1560,22 @@ function Interview({ srs }) {
   const byId = Object.fromEntries(answers.map(a => [a.question_id, a]))
 
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
-      <div className="rounded-3xl border border-blue-500/25 bg-[radial-gradient(ellipse_at_top,#101b38_0%,#0c1020_100%)] p-6 shadow-xl">
-        <div className="flex items-center gap-2.5 border-b border-white/10 pb-4">
-          <div className="grid size-9 place-items-center rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-7">
+      <div className="rounded-none border border-accent/25 bg-panel p-6 shadow-xl">
+        <div className="flex items-center gap-2.5 border-b border-black/10 pb-4">
+          <div className="grid size-9 place-items-center rounded-none bg-accent text-ink border border-accent/30">
             <MessageSquare className="size-4" />
           </div>
           <div>
-            <h2 className="text-[17px] font-bold text-white">
+            <h2 className="text-[17px] font-bold text-ink">
               Client Discovery & Requirements Interview
             </h2>
-            <p className="text-[12px] text-white/50">
+            <p className="text-[12px] text-muted2">
               The discovery dialogue that shaped the system requirements and architectural scope
             </p>
           </div>
         </div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-white/80">
+        <p className="mt-3 text-[12.5px] leading-relaxed text-ink">
           Every requirement in this specification traces back to the answers and preferences clarified during this initial interview.
         </p>
       </div>
@@ -1609,27 +1585,27 @@ function Interview({ srs }) {
           const a = byId[q.id]
           const value = a && (Array.isArray(a.value) ? a.value.join(', ') : a.value)
           return (
-            <div key={q.id || i} className="rounded-2xl border border-white/10 bg-[#0d121f] p-5 shadow-lg">
+            <div key={q.id || i} className="rounded-none border border-black/10 bg-panel p-5 shadow-lg">
               <div className="flex items-center gap-2 mb-2">
-                <span className="flex size-5 items-center justify-center rounded-full bg-blue-500/20 font-mono text-[10px] font-bold text-blue-400">
+                <span className="flex size-5 items-center justify-center rounded-full bg-accent font-mono text-[10px] font-bold text-ink">
                   {i + 1}
                 </span>
-                <span className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-muted2 uppercase tracking-wider">
                   Clarification Topic
                 </span>
               </div>
-              <h4 className="text-[14px] font-bold text-white mb-3">
+              <h4 className="text-[14px] font-bold text-ink mb-3">
                 {q.question}
               </h4>
-              <div className="rounded-xl border border-blue-500/20 bg-blue-500/[.06] p-3.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-300 mb-1">
+              <div className="rounded-none border border-accent/20 bg-accent p-3.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-ink mb-1">
                   Agreed Client Decision:
                 </div>
-                <p className="text-[13px] font-medium text-white">
+                <p className="text-[13px] font-medium text-ink">
                   {value != null && String(value).trim() ? String(value) : 'Not specified / Default baseline applied'}
                 </p>
                 {a?.raw_text && a.raw_text !== value && (
-                  <p className="mt-1 text-[11px] text-white/50 italic">
+                  <p className="mt-1 text-[11px] text-muted2 italic">
                     “{a.raw_text}”
                   </p>
                 )}
@@ -1642,72 +1618,6 @@ function Interview({ srs }) {
   )
 }
 
-function PrototypeFlow({ srs }) {
-  // Display prototype pages discovered on disk, showing empty states when none exist.
-  const pages = list(srs?.prototype?.pages)
-  const screenshot = Boolean(srs?.prototype?.screenshot)
-  const routes = list((srs.document || {}).screens)
-
-  const named = (file) => {
-    const match = routes.find(s => String(s?.file || s?.page || '').toLowerCase() === String(file).toLowerCase())
-    return (match && (match.screen_name || match.name)) || null
-  }
-
-  return (
-    <div className="mx-auto max-w-[1120px] pb-12 text-white">
-      <div className="mb-6 rounded-2xl border border-white/10 bg-[#0d1220] p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="grid size-8 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-white/50">
-              <Workflow className="size-4" />
-            </div>
-            <div>
-              <h3 className="text-[15px] font-bold text-white">Prototype pages</h3>
-              <p className="text-[11.5px] text-white/45">
-                The HTML files in this project, as they are on disk.
-              </p>
-            </div>
-          </div>
-          <span className="font-mono text-[11px] text-white/40">
-            {pages.length} page{pages.length === 1 ? '' : 's'}
-          </span>
-        </div>
-      </div>
-
-      {pages.length === 0 ? (
-        <Empty>No prototype has been drawn for this project yet.</Empty>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {pages.map((page, idx) => (
-            <div key={page.file || idx}
-              className="rounded-2xl border border-white/10 bg-[#0f1422] p-4 transition hover:border-white/20">
-              <div className="flex items-center justify-between gap-2 border-b border-white/[.07] pb-2.5">
-                <span className="font-mono text-[11px] text-white/35">#{idx + 1}</span>
-                <span className="truncate font-mono text-[10.5px] text-white/45">{page.file}</span>
-              </div>
-              <h5 className="mt-2.5 text-[14px] font-bold text-white">
-                {named(page.file) || page.screen_name}
-              </h5>
-              {page.bytes != null && (
-                <p className="mt-1 font-mono text-[10.5px] text-white/30">
-                  {Math.round(page.bytes / 1024)} KB
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {screenshot && (
-        <p className="mt-5 text-[12px] text-white/45">
-          A desktop screenshot of the drawing was captured for this project.
-        </p>
-      )}
-    </div>
-  )
-}
-
-
 export const VIEWS = [
   { id: 'wireframe', label: 'Wireframe', C: Wireframes },
   { id: 'overview', label: 'Overview', C: Overview },
@@ -1717,7 +1627,6 @@ export const VIEWS = [
   { id: 'diagrams', label: 'Diagrams', C: Diagrams },
   { id: 'data', label: 'Data & Storage', C: Data },
   { id: 'roles', label: 'Roles & Access', C: Roles },
-  { id: 'prototype_flow', label: 'Prototype & UI Flow', C: PrototypeFlow },
   { id: 'plan', label: 'Approved Plan', C: Plan },
   { id: 'handoff', label: 'Handoff', C: Handoff },
   { id: 'interview', label: 'Interview', C: Interview },
@@ -1740,11 +1649,6 @@ export function badgeFor(id, srs) {
   if (id === 'diagrams' && n(srs?.diagrams)) {
     return { n: n(srs.diagrams), bad: false }
   }
-  if (id === 'prototype_flow') {
-    // No `|| 1`: a project with no pages had a badge claiming one.
-    const pages = srs?.prototype?.pages
-    return n(pages) ? { n: n(pages), bad: false } : null
-  }
   if (id === 'interview' && n(srs?.interview?.transcript)) {
     return { n: n(srs.interview.transcript), bad: false }
   }
@@ -1757,35 +1661,34 @@ export function badgeFor(id, srs) {
 
 function Risks({ srs }) {
   const doc = srs.document || {}
-  const ambiguities = list(doc.ambiguities)
   const risks = list(doc.risk_priority)
   const acceptance = list(doc.acceptance_criteria)
 
   if (!srs.have?.document) return <Empty>No SRS document was adopted for this project.</Empty>
 
   return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
-      <div className="rounded-3xl border border-amber-500/25 bg-[radial-gradient(ellipse_at_top,#20170a_0%,#120e06_100%)] p-6 shadow-xl">
-        <div className="flex items-center gap-2.5 border-b border-white/10 pb-4">
-          <div className="grid size-9 place-items-center rounded-xl bg-amber-600/20 text-amber-400 border border-amber-500/30">
+    <div className="mx-auto max-w-[1140px] pb-14 text-ink space-y-7">
+      <div className="rounded-none border border-amber-500/25 bg-panel p-6 shadow-xl">
+        <div className="flex items-center gap-2.5 border-b border-black/10 pb-4">
+          <div className="grid size-9 place-items-center rounded-none bg-amber-600/20 text-amber-400 border border-amber-500/30">
             <ShieldAlert className="size-4" />
           </div>
           <div>
-            <h2 className="text-[17px] font-bold text-white">
+            <h2 className="text-[17px] font-bold text-ink">
               Business Safeguards & Risk Protections
             </h2>
-            <p className="text-[12px] text-white/50">
+            <p className="text-[12px] text-muted2">
               Proactive mitigations, edge-case protections, and acceptance criteria ensuring software resilience
             </p>
           </div>
         </div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-white/80">
+        <p className="mt-3 text-[12.5px] leading-relaxed text-ink">
           Identified project risks are paired with architectural safeguards so that system downtime, data inconsistency, and user errors are prevented by design.
         </p>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-[14px] font-bold text-white uppercase tracking-wider text-white/60">
+        <h3 className="text-[14px] font-bold text-ink uppercase tracking-wider text-muted">
           Proactive Risk Mitigations
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -1795,31 +1698,31 @@ function Risks({ srs }) {
           ]).map((r, i) => {
             const sev = String(r.severity || 'Medium').toLowerCase()
             return (
-              <div key={i} className="rounded-2xl border border-white/10 bg-[#0d121f] p-5 shadow-lg flex flex-col justify-between">
+              <div key={i} className="rounded-none border border-black/10 bg-panel p-5 shadow-lg flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className={cn(
                       'rounded-full px-2.5 py-0.5 text-[10.5px] font-bold border',
                       sev === 'high' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' :
                       sev === 'medium' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' :
-                      'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                      'bg-accent text-ink border-accent/30'
                     )}>
                       {r.severity || 'Medium'} Severity
                     </span>
-                    <span className="text-[10px] text-white/40 font-mono">Risk #{i + 1}</span>
+                    <span className="text-[10px] text-muted2 font-mono">Risk #{i + 1}</span>
                   </div>
-                  <h4 className="text-[14px] font-bold text-white mb-2">
+                  <h4 className="text-[14px] font-bold text-ink mb-2">
                     {r.risk || line(r)}
                   </h4>
                   {r.reason && (
-                    <p className="text-[12px] text-white/65 mb-3 leading-relaxed">
-                      <span className="font-semibold text-white/80">Cause:</span> {r.reason}
+                    <p className="text-[12px] text-muted mb-3 leading-relaxed">
+                      <span className="font-semibold text-ink">Cause:</span> {r.reason}
                     </p>
                   )}
                 </div>
                 {r.mitigation && (
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[.05] p-3 text-[11.5px] text-emerald-200">
-                    <span className="font-bold block text-emerald-300 mb-0.5">Built-in Mitigation:</span>
+                  <div className="rounded-none border border-black/20 bg-black/[.05] p-3 text-[11.5px] text-ink">
+                    <span className="font-bold block text-ink mb-0.5">Built-in Mitigation:</span>
                     {r.mitigation}
                   </div>
                 )}
@@ -1830,15 +1733,15 @@ function Risks({ srs }) {
       </div>
 
       {acceptance.length > 0 && (
-        <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-          <h3 className="text-[15px] font-bold text-white mb-4 flex items-center gap-2">
-            <CheckCircle2 className="size-4 text-emerald-400" />
+        <div className="rounded-none border border-black/10 bg-panel p-6 shadow-xl">
+          <h3 className="text-[15px] font-bold text-ink mb-4 flex items-center gap-2">
+            <CheckCircle2 className="size-4 text-ink" />
             <span>Acceptance Verification Criteria</span>
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
             {acceptance.map((crit, idx) => (
-              <div key={idx} className="flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/[.02] p-3 text-[12px] text-white/80">
-                <Check className="size-3.5 text-emerald-400 shrink-0 mt-0.5" />
+              <div key={idx} className="flex items-start gap-2.5 rounded-none border border-black/5 bg-black/[.02] p-3 text-[12px] text-ink">
+                <Check className="size-3.5 text-ink shrink-0 mt-0.5" />
                 <span>{typeof crit === 'string' ? crit : (crit.criterion || line(crit))}</span>
               </div>
             ))}

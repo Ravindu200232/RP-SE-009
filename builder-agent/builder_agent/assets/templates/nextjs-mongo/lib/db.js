@@ -11,8 +11,16 @@ import mongoose from 'mongoose';
  */
 const cache = globalThis.__mongoose ?? (globalThis.__mongoose = { conn: null, promise: null });
 
-export async function connectDb(uri = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/sketch_next') {
+export async function connectDb(uri = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/__APP_DB__') {
   if (cache.conn) return cache.conn;
+  // A caller that already connected (the test helper opens the project's own `_test`
+  // database) owns that connection. Calling `mongoose.connect` again with another URI
+  // fails ("Can't call openUri() on an active connection with different connection
+  // strings"), and reusing it is what keeps tests off the application's database.
+  if (mongoose.connection.readyState === 1) {
+    cache.conn = mongoose.connection;
+    return cache.conn;
+  }
   cache.promise ??= mongoose.connect(uri, { bufferCommands: false });
   try {
     cache.conn = await cache.promise;

@@ -3,16 +3,13 @@
 /** Renders interactive dialog modals for design choices and environment configuration during builds. */
 
 import { useEffect, useMemo, useState } from 'react'
-import {
-  Check, Eye, EyeOff, KeyRound, Loader2, Palette, RotateCcw,
-  Search, SkipForward,
-} from 'lucide-react'
+import { Check, Eye, EyeOff, KeyRound, Loader2, Palette, RotateCcw, Search, SkipForward } from 'lucide-react'
 
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import PlanReading from './PlanReading'
 import DesignPreview from './DesignPreview'
-import { Button, Modal } from './ui'
+import { Modal } from './ui'
 import { cn } from '@/lib/utils'
 
 /** Clears only the specific answered decision to preserve subsequent queued questions. */
@@ -28,10 +25,6 @@ export default function AgentDecision() {
 
   useEffect(() => {
     if (!question) return
-    if (question.kind === 'plan') {
-      answer({ decision: 'accept' })
-      return
-    }
     const deadline = Date.now() + (Number(question.timeout) || 300) * 1000
     setLeft(Math.round((deadline - Date.now()) / 1000))
     const tick = setInterval(() => {
@@ -57,8 +50,7 @@ export default function AgentDecision() {
   }
 
   if (question.kind === 'plan') {
-    // Automatically accepted; do not present plan approval modal to the user
-    return null
+    return <PlanDecision question={question} left={left} sending={sending} onAnswer={answer} />
   }
   if (question.kind === 'setup') {
     return <SetupDecision question={question} left={left} sending={sending} onAnswer={answer} />
@@ -94,12 +86,12 @@ function SetupDecision({ question, left, sending, onAnswer }) {
   return (
     <Modal onClose={() => { }} className="max-w-[640px]">
       <header className="flex items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-2xl border border-emerald-500/25 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+        <span className="grid size-9 place-items-center rounded-2xl border border-emerald-500/25 bg-emerald-500/10 text-ink shadow-[0_0_20px_rgba(16,185,129,0.15)]">
           <KeyRound className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-[16px] font-bold tracking-tight text-white">{question.purpose}</h2>
-          <p className="mt-0.5 text-xs text-slate-400 leading-relaxed">
+          <h2 className="text-[16px] font-bold tracking-tight text-ink">{question.purpose}</h2>
+          <p className="mt-0.5 text-xs text-muted leading-relaxed">
             These stay on this machine, in the project’s .env.local. They are not
             sent to the model.
           </p>
@@ -110,7 +102,7 @@ function SetupDecision({ question, left, sending, onAnswer }) {
       {choices.length > 0 && (
         <div className="mt-5">
           {question.question && (
-            <p className="mb-2.5 text-xs font-semibold text-slate-300">{question.question}</p>
+            <p className="mb-2.5 text-xs font-semibold text-ink">{question.question}</p>
           )}
           <div className="grid gap-2 sm:grid-cols-2">
             {choices.map(option => (
@@ -119,10 +111,10 @@ function SetupDecision({ question, left, sending, onAnswer }) {
                       className={cn('rounded-xl border p-3 text-left transition-all',
                         choice === option.id
                           ? 'border-emerald-500/50 bg-emerald-500/15 shadow-[0_0_20px_rgba(16,185,129,0.12)]'
-                          : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]')}>
-                <span className="block text-xs font-bold text-white">{option.label}</span>
+                          : 'border-black/10 bg-black/[0.03] hover:bg-black/[0.06]')}>
+                <span className="block text-xs font-bold text-ink">{option.label}</span>
                 {option.hint && (
-                  <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-400">
+                  <span className="mt-0.5 block text-[11px] leading-relaxed text-muted">
                     {option.hint}
                   </span>
                 )}
@@ -134,17 +126,17 @@ function SetupDecision({ question, left, sending, onAnswer }) {
 
       <div className="mt-5 space-y-3.5">
         {fields.map(field => (
-          <div key={field.key} className="rounded-xl border border-white/10 bg-[#080b12] p-3 shadow-inner">
+          <div key={field.key} className="rounded-xl border border-black/10 bg-panel p-3 shadow-inner">
             <label htmlFor={`setup-${field.key}`}
-                   className="flex items-baseline gap-2 text-xs font-semibold text-slate-200">
+                   className="flex items-baseline gap-2 text-xs font-semibold text-ink">
               {field.label}
-              <code className="font-mono text-[10px] text-emerald-400">{field.key}</code>
+              <code className="font-mono text-[10px] text-ink">{field.key}</code>
               {field.required === false && (
-                <span className="text-[10px] text-slate-500">optional</span>
+                <span className="text-[10px] text-muted2">optional</span>
               )}
             </label>
             {field.hint && (
-              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">{field.hint}</p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-muted">{field.hint}</p>
             )}
             <div className="mt-2 flex items-center gap-2">
               <input id={`setup-${field.key}`}
@@ -152,35 +144,35 @@ function SetupDecision({ question, left, sending, onAnswer }) {
                      value={values[field.key] || ''} spellCheck={false}
                      autoComplete="off" placeholder={field.example}
                      onChange={e => set(field.key, e.target.value)}
-                     className="h-9 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 font-mono text-xs text-white outline-none transition-all placeholder:text-slate-500 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40" />
+                     className="h-9 flex-1 rounded-xl border border-black/10 bg-black/[0.04] px-3 font-mono text-xs text-ink outline-none transition-all placeholder:text-muted2 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/40" />
               {field.secret && (
                 <button onClick={() => setShown(s => ({ ...s, [field.key]: !s[field.key] }))}
                         title={shown[field.key] ? 'Hide it' : 'Show what you typed'}
-                        className="grid size-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition-all hover:bg-white/[0.08] hover:text-white">
+                        className="grid size-9 shrink-0 place-items-center rounded-xl border border-black/10 bg-black/[0.04] text-muted transition-all hover:bg-black/[0.08] hover:text-ink">
                   {shown[field.key] ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                 </button>
               )}
             </div>
-            <p className="mt-1.5 font-mono text-[10px] text-slate-500">e.g. {field.example}</p>
+            <p className="mt-1.5 font-mono text-[10px] text-muted2">e.g. {field.example}</p>
           </div>
         ))}
       </div>
 
-      <footer className="mt-5 flex items-center gap-3 border-t border-white/10 pt-4">
-        <span className="flex-1 font-mono text-xs text-slate-400">
+      <footer className="mt-5 flex items-center gap-3 border-t border-black/10 pt-4">
+        <span className="flex-1 font-mono text-xs text-muted">
           {needed ? `${filled}/${needed} filled in` : 'Nothing to fill in'}
         </span>
         <button disabled={Boolean(sending)}
                 title="The build carries on and writes the names into .env.example for you to fill in"
                 onClick={() => onAnswer({ decision: 'later' })}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.1] hover:text-white transition-all disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-black/[0.05] px-4 py-2 text-xs font-semibold text-ink hover:bg-black/[0.1] hover:text-ink transition-all disabled:opacity-40">
           {sending === 'later' ? <Loader2 className="size-3.5 animate-spin" />
                                : <SkipForward className="size-3.5" />}
           Not now
         </button>
         <button disabled={Boolean(sending) || (Boolean(fields.length) && !anything)}
                 onClick={() => onAnswer({ decision: 'save', choice, values })}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-500 transition-all disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-ink shadow-lg shadow-emerald-500/25 hover:bg-emerald-500 transition-all disabled:opacity-40">
           {sending === 'save' ? <Loader2 className="size-3.5 animate-spin" />
                               : <Check className="size-3.5" />}
           Save and continue
@@ -212,19 +204,19 @@ function PlanDecision({ question, left, sending, onAnswer }) {
   return (
     <Modal onClose={() => { }} className="max-w-[820px]">
       <header className="flex items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-2xl border border-[#1877F2]/25 bg-[#1877F2]/10 text-[#1877F2] shadow-[0_0_20px_rgba(24,119,242,0.18)]">
+        <span className="grid size-9 place-items-center rounded-2xl border border-accent/25 bg-accent text-ink shadow-[0_0_20px_rgba(191, 185, 255,0.18)]">
           <Search className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-[17px] font-bold tracking-tight text-white">The plan</h2>
-          <p className="mt-0.5 text-xs text-slate-400 leading-relaxed max-w-xl truncate">
+          <h2 className="text-[17px] font-bold tracking-tight text-ink">The plan</h2>
+          <p className="mt-0.5 text-xs text-muted leading-relaxed max-w-xl truncate">
             {question.goal}
           </p>
         </div>
         <Countdown left={left} />
       </header>
 
-      <div className="mt-5 max-h-[55vh] overflow-auto rounded-2xl border border-line bg-[#1C252E] p-5 shadow-2xl">
+      <div className="mt-5 max-h-[55vh] overflow-auto rounded-2xl border border-line bg-panel p-5 shadow-2xl">
         <PlanReading plan={question.plan} />
       </div>
 
@@ -232,11 +224,11 @@ function PlanDecision({ question, left, sending, onAnswer }) {
         <textarea value={feedback} autoFocus rows={3}
                   placeholder="What should it do differently? Leave empty to let it reconsider on its own."
                   onChange={e => setFeedback(e.target.value)}
-                  className="mt-4 w-full resize-y rounded-xl border border-line bg-[#1C252E] px-4 py-3 text-xs leading-relaxed text-white outline-none placeholder:text-slate-500 focus:border-[#1877F2]/60 focus:ring-1 focus:ring-[#1877F2]/50 shadow-inner" />
+                  className="mt-4 w-full resize-y rounded-xl border border-line bg-panel px-4 py-3 text-xs leading-relaxed text-ink outline-none placeholder:text-muted2 focus:border-accent/60 focus:ring-1 focus:ring-accent/50 shadow-inner" />
       )}
 
       <footer className="mt-5 flex items-center gap-3 border-t border-line pt-4">
-        <span className="flex-1 font-mono text-xs text-slate-400">
+        <span className="flex-1 font-mono text-xs text-muted">
           {round >= rounds
             ? 'Last round — the build starts after this.'
             : `Revision ${round + 1} of ${rounds + 1}`}
@@ -245,7 +237,7 @@ function PlanDecision({ question, left, sending, onAnswer }) {
           <button disabled={Boolean(sending)}
                   onClick={() => revising ? onAnswer({ decision: 'revise', feedback })
                                           : setRevising(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.1] hover:text-white transition-all disabled:opacity-40">
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-black/[0.05] px-4 py-2 text-xs font-semibold text-ink hover:bg-black/[0.1] hover:text-ink transition-all disabled:opacity-40">
             {sending === 'revise' ? <Loader2 className="size-3.5 animate-spin" />
                                   : <RotateCcw className="size-3.5" />}
             {revising ? 'Send it back' : 'Revise'}
@@ -253,7 +245,7 @@ function PlanDecision({ question, left, sending, onAnswer }) {
         )}
         <button disabled={Boolean(sending)}
                 onClick={() => onAnswer({ decision: 'accept' })}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1877F2] px-6 py-2.5 text-xs font-bold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] hover:bg-[#0C44AE] transition-all disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-6 py-2.5 text-xs font-bold text-ink shadow-[0_8px_16px_0_rgba(191, 185, 255,0.24)] hover:bg-press transition-all disabled:opacity-40">
           {sending === 'accept' ? <Loader2 className="size-3.5 animate-spin" />
                                 : <Check className="size-3.5" />}
           Build this
@@ -286,12 +278,12 @@ function DesignDecision({ question, left, sending, onAnswer }) {
   return (
     <Modal onClose={() => { }} className="max-w-[1240px]">
       <header className="flex items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-2xl border border-purple-500/25 bg-purple-500/10 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.18)]">
+        <span className="grid size-9 place-items-center rounded-2xl border border-accent/25 bg-accent text-ink shadow-[0_0_20px_rgba(168,85,247,0.18)]">
           <Palette className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-[17px] font-bold tracking-tight text-white">How should it look?</h2>
-          <p className="mt-0.5 text-xs text-slate-400 leading-relaxed">
+          <h2 className="text-[17px] font-bold tracking-tight text-ink">How should it look?</h2>
+          <p className="mt-0.5 text-xs text-muted leading-relaxed">
             Every choice here shows on the page beside it, and the build follows
             it exactly. Nothing is decided for you that you cannot change.
           </p>
@@ -308,15 +300,15 @@ function DesignDecision({ question, left, sending, onAnswer }) {
                         title={option.mood}
                         className={cn('flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all',
                           pick.palette === option.id
-                            ? 'border-[#1877F2] bg-[#1877F2]/15 shadow-[0_0_20px_rgba(24,119,242,0.15)] ring-1 ring-[#1877F2]/40'
-                            : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20')}>
+                            ? 'border-accent bg-accent shadow-[0_0_20px_rgba(191, 185, 255,0.15)] ring-1 ring-accent/40'
+                            : 'border-black/10 bg-black/[0.02] hover:bg-black/[0.06] hover:border-black/20')}>
                   <span className="flex shrink-0 gap-1">
                     {['primary', 'accent', 'background'].map(role => (
                       <span key={role} className="size-3.5 rounded-[5px] ring-1 ring-white/15"
                             style={{ background: option.light?.[role] }} />
                     ))}
                   </span>
-                  <span className="min-w-0 truncate text-xs font-semibold text-white">
+                  <span className="min-w-0 truncate text-xs font-semibold text-ink">
                     {option.name}
                   </span>
                 </button>
@@ -324,7 +316,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
             </div>
           </Field>
 
-          <div className="rounded-2xl border border-line bg-[#1C252E] p-4 shadow-inner">
+          <div className="rounded-2xl border border-line bg-panel p-4 shadow-inner">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Typography">
                 <Choices options={(question.fonts || []).map(f => ({
@@ -380,7 +372,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
           <Field label={question.planned
             ? `Screens in the plan (${pick.pages.length} of ${(question.pages || []).length})`
             : `Optional screen additions (${pick.pages.length})`}>
-            <p className="mb-2.5 text-xs leading-relaxed text-slate-400">
+            <p className="mb-2.5 text-xs leading-relaxed text-muted">
               {question.planned
                 ? 'These are the screens the approved plan describes. Every one is included; turn off any you do not want built.'
                 : 'The approved plan already defines your screens. Select only additions you want.'}
@@ -392,21 +384,21 @@ function DesignDecision({ question, left, sending, onAnswer }) {
                   <button key={page.id} onClick={() => togglePage(page.id)}
                           aria-pressed={on}
                           className={cn('flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all',
-                            on ? 'border-[#1877F2]/50 bg-[#1877F2]/10'
-                               : 'border-white/10 bg-white/[0.02] opacity-60 hover:opacity-100')}>
+                            on ? 'border-accent/50 bg-accent'
+                               : 'border-black/10 bg-black/[0.02] opacity-60 hover:opacity-100')}>
                     <span className={cn('mt-0.5 grid size-4 shrink-0 place-items-center rounded-md border transition-all',
-                      on ? 'border-[#1877F2] bg-[#1877F2] text-white' : 'border-white/20 bg-white/[0.04]')}>
+                      on ? 'border-accent bg-accent text-ink' : 'border-black/20 bg-black/[0.04]')}>
                       {on && <Check className="size-3" />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline gap-2">
-                        <span className="text-xs font-bold text-white">{page.label}</span>
+                        <span className="text-xs font-bold text-ink">{page.label}</span>
                         {page.route && (
-                          <code className="font-mono text-[10px] text-[#1877F2]">{page.route}</code>
+                          <code className="font-mono text-[10px] text-accent">{page.route}</code>
                         )}
                       </span>
                       {page.what && (
-                        <span className="mt-0.5 block text-[11px] leading-relaxed text-slate-400">
+                        <span className="mt-0.5 block text-[11px] leading-relaxed text-muted">
                           {page.what}
                         </span>
                       )}
@@ -420,23 +412,23 @@ function DesignDecision({ question, left, sending, onAnswer }) {
 
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400">
+            <p className="text-[11px] font-bold uppercase tracking-[.15em] text-muted">
               Live Application Preview
             </p>
-            <div className="flex items-center gap-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-[#22C55E] shadow-sm">
-              <span className="size-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+            <div className="flex items-center gap-1.5 rounded-full border border-ok/30 bg-ok/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-ink shadow-sm">
+              <span className="size-1.5 rounded-full bg-ok animate-pulse" />
               Live Preview
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] shadow-2xl">
-            <div className="flex items-center gap-2 border-b border-white/10 bg-white/[0.03] px-3.5 py-2">
+          <div className="overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
+            <div className="flex items-center gap-2 border-b border-black/10 bg-black/[0.03] px-3.5 py-2">
               <div className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-[#FF5630]" />
-                <span className="size-2 rounded-full bg-[#FFAB00]" />
-                <span className="size-2 rounded-full bg-[#22C55E]" />
+                <span className="size-2 rounded-full bg-bad" />
+                <span className="size-2 rounded-full bg-warn" />
+                <span className="size-2 rounded-full bg-ok" />
               </div>
-              <div className="mx-auto flex h-4 max-w-[180px] flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-2 font-mono text-[9px] text-slate-400 truncate">
+              <div className="mx-auto flex h-4 max-w-[180px] flex-1 items-center justify-center rounded-full border border-black/10 bg-black/[0.04] px-2 font-mono text-[9px] text-muted truncate">
                 {question.goal || 'scaffold-preview'}
               </div>
             </div>
@@ -446,22 +438,22 @@ function DesignDecision({ question, left, sending, onAnswer }) {
             </div>
           </div>
 
-          <p className="text-center text-[11px] leading-relaxed text-slate-400 mt-2">
+          <p className="text-center text-[11px] leading-relaxed text-muted mt-2">
             Every choice on the left updates this canvas live. This is your product scaffold, not a swatch.
           </p>
         </div>
       </div>
 
       <footer className="mt-5 flex items-center gap-3 border-t border-line pt-4">
-        <span className="flex-1 text-xs text-slate-400 italic truncate">{palette?.mood}</span>
+        <span className="flex-1 text-xs text-muted italic truncate">{palette?.mood}</span>
         <button disabled={Boolean(sending)}
                 onClick={() => onAnswer({ decision: 'skip' })}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.1] hover:text-white transition-all disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-black/[0.05] px-4 py-2 text-xs font-semibold text-ink hover:bg-black/[0.1] hover:text-ink transition-all disabled:opacity-40">
           <SkipForward className="size-3.5" /> Let it decide
         </button>
         <button disabled={Boolean(sending)}
                 onClick={() => onAnswer({ decision: 'apply', selection: pick })}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1877F2] px-6 py-2.5 text-xs font-bold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] hover:bg-[#0C44AE] transition-all disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-6 py-2.5 text-xs font-bold text-ink shadow-[0_8px_16px_0_rgba(191, 185, 255,0.24)] hover:bg-press transition-all disabled:opacity-40">
           {sending === 'apply' ? <Loader2 className="size-3.5 animate-spin" />
                                : <Check className="size-3.5" />}
           Use this
@@ -473,7 +465,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
 
 const Field = ({ label, children }) => (
   <div>
-    <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[.15em] text-slate-400">
+    <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[.15em] text-muted">
       {label}
     </p>
     {children}
@@ -488,8 +480,8 @@ const Choices = ({ options, value, onChange }) => (
       <button key={option.id} onClick={() => onChange(option.id)} title={option.hint || ''}
               className={cn('rounded-xl border px-2.5 py-1.5 text-[11px] font-medium capitalize transition-all',
                 value === option.id
-                  ? 'border-[#1877F2] bg-[#1877F2]/20 text-white shadow-sm ring-1 ring-[#1877F2]/40'
-                  : 'border-white/10 bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.07]')}>
+                  ? 'border-accent bg-accent text-ink shadow-sm ring-1 ring-accent/40'
+                  : 'border-black/10 bg-black/[0.03] text-muted hover:text-ink hover:bg-black/[0.07]')}>
         {option.label}
       </button>
     ))}

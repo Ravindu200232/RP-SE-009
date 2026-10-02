@@ -16,11 +16,11 @@ export function Button({ variant = 'ghost', size = 'md', className, ...rest }) {
         { sm: 'h-[28px] px-2.5 text-[11px]', md: 'h-[34px] px-3.5 text-[12.5px]',
           lg: 'h-[40px] px-4 text-[13.5px]', icon: 'size-[34px] p-0',
           'icon-sm': 'size-[28px] p-0' }[size],
-        { solid: 'border border-accent bg-accent text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] '
+        { solid: 'border border-accent bg-accent text-ink shadow-[0_8px_16px_0_rgba(191, 185, 255,0.24)] '
                + 'hover:bg-press hover:border-press active:bg-deep',
           outline: 'border border-line2 text-ink hover:bg-ink/[.06]',
           ghost: 'border border-transparent text-muted hover:bg-ink/[.06] hover:text-ink',
-          accent: 'border border-transparent bg-accent/10 text-accent hover:bg-accent/20',
+          accent: 'border border-transparent bg-accent text-ink hover:bg-accent',
           subtle: 'border border-line bg-panel text-ink hover:bg-raised shadow-sm',
         }[variant],
         className)}
@@ -34,10 +34,10 @@ export function Tag({ tone = 'mute', className, children }) {
     <span className={cn(
       'inline-flex items-center rounded-full px-2.5 py-[2px]',
       'text-[10.5px] font-bold uppercase tracking-[.06em]',
-      { mute: 'bg-panel2 text-muted', ok: 'bg-emerald-500/15 text-emerald-400',
-        bad: 'bg-rose-500/15 text-rose-400', warn: 'bg-amber-500/15 text-amber-400',
-        accent: 'bg-accent/15 text-accent',
-        solid: 'bg-accent text-white shadow-sm' }[tone],
+      { mute: 'bg-panel2 text-muted', ok: 'border border-ok/35 bg-transparent text-ok',
+        bad: 'border border-bad/35 bg-transparent text-bad', warn: 'border border-warn/35 bg-transparent text-warn',
+        accent: 'border border-accent/35 bg-transparent text-deep',
+        solid: 'border border-accent/35 bg-transparent text-deep' }[tone],
       className)}>
       {children}
     </span>
@@ -49,9 +49,9 @@ export function Badge({ tone = 'mute', className, children }) {
   return (
     <span className={cn(
       'inline-flex items-center rounded-full font-mono text-[10.5px] px-2 py-0.5 font-semibold',
-      { mute: 'bg-panel2 text-muted2', ok: 'bg-emerald-500/15 text-emerald-400',
-        bad: 'bg-rose-500/15 text-rose-400', warn: 'bg-amber-500/15 text-amber-400',
-        accent: 'bg-accent text-white shadow-sm' }[tone],
+      { mute: 'bg-panel2 text-muted2', ok: 'border border-ok/35 bg-transparent text-ok',
+        bad: 'border border-bad/35 bg-transparent text-bad', warn: 'border border-warn/35 bg-transparent text-warn',
+        accent: 'border border-accent/35 bg-transparent text-deep' }[tone],
       className)}>
       {children}
     </span>
@@ -69,37 +69,11 @@ export function SectionLabel({ children, right, className }) {
   )
 }
 
-/** Segmented choice control. */
-export function Seg({ block, className, children }) {
-  return (
-    // Space between the options, not a rule.
-    <div className={cn('flex gap-1',
-      block ? 'w-full rounded-xl bg-panel2 p-1' : 'w-fit rounded-xl border border-line bg-panel2 p-1', className)}>
-      {children}
-    </div>
-  )
-}
-
-export function SegOpt({ on, block, className, children, ...rest }) {
-  return (
-    <button {...rest}
-      className={cn('inline-flex items-center gap-1.5 font-display font-extrabold',
-        'transition-colors disabled:pointer-events-none disabled:opacity-45',
-        block ? 'flex-1 justify-start py-[7px] pl-3 pr-2 text-[11px]'
-              : 'px-[11px] py-[6px] text-[12px]',
-        on ? 'rounded-lg bg-white text-ink shadow-sm dark:bg-white/10'
-           : 'text-label hover:bg-ink/[.07] hover:text-ink',
-        className)}>
-      {children}
-    </button>
-  )
-}
-
 /** Secondary tab row. */
 export function SubTabs({ className, children }) {
   return (
     <div className={cn('flex shrink-0 items-stretch overflow-x-auto',
-      'border-b border-line/70 bg-white/35 backdrop-blur-xl dark:bg-white/[.015]', className)}>
+      'border-b border-line/70 bg-black/35 backdrop-blur-xl dark:bg-black/[.015]', className)}>
       {children}
     </div>
   )
@@ -111,8 +85,8 @@ export function SubTab({ on, className, children, ...rest }) {
       className={cn('inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap',
         'm-1 rounded-xl border border-transparent px-[12px] py-[7px]',
         'font-display text-[11px] transition-colors',
-        on ? 'border-line bg-white font-semibold text-ink shadow-sm dark:bg-white/8'
-           : 'font-medium text-label hover:bg-white/50 hover:text-ink dark:hover:bg-white/5',
+        on ? 'border-line bg-white font-semibold text-ink shadow-sm dark:bg-black/8'
+           : 'font-medium text-label hover:bg-black/50 hover:text-ink dark:hover:bg-black/5',
         className)}>
       {children}
     </button>
@@ -231,7 +205,3 @@ export const TH = ({ className, children }) => (
 export const TD = ({ className, children }) => (
   <td className={cn('px-3 py-2.5 align-middle', className)}>{children}</td>
 )
-
-export function ThemeToggle() {
-  return null
-}

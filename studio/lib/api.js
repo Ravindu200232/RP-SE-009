@@ -21,6 +21,15 @@ export function getAuthToken() {
 
 let onSignedOut = null
 
+const NETWORK_MESSAGE = 'Unable to reach AgentForge right now. Your project is saved; check the connection and try again.'
+
+function networkError(cause) {
+  const error = new Error(NETWORK_MESSAGE)
+  error.code = 'network'
+  error.cause = cause
+  return error
+}
+
 /** Called when the server says this session is over, from wherever it happens. */
 export function whenSignedOut(fn) {
   onSignedOut = fn
@@ -32,7 +41,15 @@ async function req(path, opts = {}) {
   if (token && !headers['Authorization']) {
     headers['Authorization'] = `Bearer ${token}`
   }
-  const r = await fetch(API + path, { ...opts, headers })
+  let r
+  try {
+    r = await fetch(API + path, { ...opts, headers })
+  } catch (cause) {
+    // Browser fetch rejects without a response for offline, proxy and server
+    // restart failures.  Give every screen the same actionable message rather
+    // than exposing an unhelpful browser-specific "Failed to fetch".
+    throw networkError(cause)
+  }
   const text = await r.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = { raw: text } }
@@ -47,6 +64,35 @@ async function req(path, opts = {}) {
   return data
 }
 
+/**
+ * Download an authenticated API artifact without exposing the session token in
+ * a URL. A normal <a href> cannot attach the Bearer header, so protected PDFs
+ * otherwise open as the API's "sign in to continue" JSON response.
+ */
+async function download(path, filename) {
+  const token = getAuthToken()
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  let r
+  try { r = await fetch(API + path, { headers }) } catch (cause) { throw networkError(cause) }
+  if (!r.ok) {
+    const text = await r.text()
+    let data = null
+    try { data = text ? JSON.parse(text) : null } catch { }
+    if (r.status === 401 && data?.auth === 'required' && token === getAuthToken()) onSignedOut?.()
+    throw new Error((data && (data.error || data.detail)) || `HTTP ${r.status}`)
+  }
+  const url = URL.createObjectURL(await r.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // The browser has consumed the object URL by now; defer revocation one turn
+  // so downloads remain reliable in Chromium and Firefox alike.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
 const post = (path, body) => req(path, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -54,6 +100,9 @@ const post = (path, body) => req(path, {
 })
 
 export const api = {
+  // Lightweight Studio API readiness check. It stays available even when
+  // Ollama, previews, or cloud integrations are still starting up.
+  health: () => req('/health'),
   auth: {
     signup: (data) => post('/auth/signup', data),
     login: (data) => post('/auth/login', data),
@@ -63,19 +112,17 @@ export const api = {
   // A project belongs to whoever built it, from the moment it is created;
   // there is nothing for the studio to assign.
   projects: () => req('/projects'),
+  chooseWorkspace: () => post('/workspace/pick', {}),
   models: () => req('/models'),
-  mongo: () => req('/mongo'),
   settings: () => req('/settings'),
   saveSettings: (s) => post('/settings', s),
-  imageCheck: () => req('/image-check'),
-  // Draws one design theme's own page. Kept afterwards, so the second
-  // person to open that theme waits for a file read, not for a model.
-  drawThemePreview: (slug, model) => post('/design-theme-preview', { slug, model }),
-  imageStart: () => post('/image-start', {}),
+  mcpProbe: (server) => post('/mcp/probe', server),
+  setPlanMode: (project, enabled) => post(`/projects/${encodeURIComponent(project)}/plan-mode`, { enabled }),
   files: (project, agent = 'developer') => req(`/files/${encodeURIComponent(project)}?agent=${agent}`),
   saveFile: (project, path, content, changeSummary = '') => post('/save-file', { project, path, content, change_summary: changeSummary }),
   open: (project) => post(`/open/${encodeURIComponent(project)}`, {}),
   runtime: (project) => req(`/runtime/${encodeURIComponent(project)}`),
+  stopPreview: (project) => post(`/runtime/${encodeURIComponent(project)}/stop`, {}),
 
   // An address for this project's app that works away from this machine.
   previewLink: (project) => post('/preview-link', { project }),
@@ -88,21 +135,27 @@ export const api = {
   // Answer a question the run is waiting on: the plan, or the design.
   decide: (body) => post('/decision', body),
 
+  // The project's versions: every update approved in the chat, newest first.
+  versions: (project) => req(`/versions/${encodeURIComponent(project)}`),
+
+  // The buttons on a plan shown in the chat: approve, revise (with their words), cancel.
+  changeDecide: (project, id, body) =>
+    post(`/change/${encodeURIComponent(project)}/${encodeURIComponent(id)}/decide`, body),
+
   // What a run is waiting on right now, for a studio that missed the message.
   decisions: () => req('/decisions'),
-
-  // What a project's conversation is already holding, for the status line.
-  session: (project) => req(`/session/${encodeURIComponent(project)}`),
 
   // Everything that has happened to a project, so a reload does not lose it.
   stream: (project) => req(`/stream/${encodeURIComponent(project)}`),
   retrySync: project => post('/sync/retry', { project }),
 
-  // A change typed into the specification, carried down into whichever of the
-  // prototype and the build the user chose.
-  specChange: (project, prompt, targets) => post('/spec-change', { project, prompt, targets }),
+  // Every user-approved update is retained before a run starts. The execution
+  // still uses the existing SRS transaction; this adds the company audit trail.
+  createChangeRequest: body => post('/change-requests/draft', body),
+  approveChangeRequest: (project, id, targets) =>
+    post(`/change-requests/${encodeURIComponent(id)}/approve`, { project, targets }),
   workflow: (project) => req(`/workflow/${encodeURIComponent(project)}`),
-  saveStream: (project, logs, chat) => post('/stream', { project, logs, chat }),
+  lifecycle: (project) => req(`/lifecycle/${encodeURIComponent(project)}`),
 
   // Throw away a specification that has not been approved.
   discardSrs: (srs_id) => post('/discard-srs', { srs_id }),
@@ -126,11 +179,15 @@ export const api = {
     ? api.srs(`/projects/${encodeURIComponent(owner)}/wireframes`)
     : req(`/project-wireframes/${encodeURIComponent(owner)}`)),
   // Queue asynchronous prototype drawing jobs for specific routes or entire specifications.
-  drawWireframeHtml: (srsId, route = '') =>
-    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html`, { route }),
+  drawWireframeHtml: (srsId, route = '', quiet = true) =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html`, { route, quiet }),
   // What the tools editor rearranged, as the page itself.
   saveWireframeHtml: (srsId, route, html) =>
     api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html/edit`, { route, html }),
+  // A direct, page-scoped request: it skips planning and replaces only this
+  // wireframe's saved HTML with the AI's revised low-fidelity page.
+  aiEditWireframeHtml: (srsId, route, prompt) =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html/ai-edit`, { route, prompt }),
   // Read straight from the agent rather than through a job: it is one page of
   // HTML and it is what the <iframe> loads.
   wireframeHtmlUrl: (srsId, route) =>
@@ -138,25 +195,22 @@ export const api = {
       + `?route=${encodeURIComponent(route)}`,
 
   siteImages: (project) => req(`/site-images/${encodeURIComponent(project)}`),
-  siteImageUrl: (project, file) =>
-    `${API}/site-image/${encodeURIComponent(project)}/${encodeURIComponent(file)}`,
   siteImageSave: (project, file, purpose = '') => Promise.resolve(tooBig(file)).then(big => {
     if (big) throw big
     return fileToBase64(file).then(data_base64 =>
       post('/site-image-save', { project, filename: file.name, purpose, data_base64 }))
   }),
-  siteImageDescribe: (project, file, purpose) =>
-    post('/site-image-describe', { project, file, purpose }),
   siteImageDrop: (project, file) => post('/site-image-drop', { project, file }),
 
   // Photograph what the user pointed at, so it can travel with the message.
   shot: (body) => post('/shot', body),
 
-  // Read one attachment for an editing chat.
+  // Save one chat attachment in the output project's media folder.
   attach: (file, body) => Promise.resolve(tooBig(file)).then(big => {
     if (big) throw big
     return fileToBase64(file).then(data_base64 =>
-      post('/attach', { ...body, filename: file.name, data_base64 }))
+      post('/attach', { ...body, filename: file.name, mode: uploadMode(file),
+                        content_type: file.type || '', data_base64 }))
   }),
 
   // Hold one file for a build that has no project yet. Over HTTP on purpose:
@@ -174,13 +228,24 @@ export const api = {
   qa: (project) => req(`/qa/${encodeURIComponent(project)}`),
   qaScreenshotUrl: (project, path, at = '') => `${API}/qa-screenshot/${encodeURIComponent(project)}?path=${encodeURIComponent(path)}&v=${encodeURIComponent(at)}`,
   qaPdfUrl: (project) => `${API}/qa-pdf/${encodeURIComponent(project)}`,
+  downloadQaPdf: (project) => download(`/qa-pdf/${encodeURIComponent(project)}`,
+    `${project}-test-report.pdf`),
 
   srsResults: (project) => req(`/srs-results/${encodeURIComponent(project)}`),
 
+  designSpec: srsId => api.srs(`/projects/${encodeURIComponent(srsId)}/design-spec`),
+  draftDesignSpec: (srsId, spec, direction = '') => api.srs(`/projects/${encodeURIComponent(srsId)}/design-spec/draft`, {
+    spec, direction, source: 'design-customizer',
+  }),
+  approveDesignSpec: (srsId, version) =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/design-spec/${encodeURIComponent(version)}/approve`, {}),
+
   srsPdfUrl: (project) => `${API}/srs-pdf/${encodeURIComponent(project)}`,
-  srsStatus: () => req('/srs-status'),
+  downloadProjectSrsPdf: (project) => download(`/srs-pdf/${encodeURIComponent(project)}`,
+    'SRS.pdf'),
+  downloadSrsPdf: (srsId, name = 'SRS.pdf') =>
+    download(`/srs/projects/${encodeURIComponent(srsId)}/download/pdf`, name),
   integrations: (project) => req(`/srs/projects/${encodeURIComponent(project)}/integrations`),
-  saveIntegrations: (project, answers) => post(`/srs/projects/${encodeURIComponent(project)}/integrations`, { answers }),
 
   resumeSrs: path => resumeSrsJob(path),
   srs: (path, body) => body === undefined
@@ -200,7 +265,6 @@ export const api = {
       }, opts))
   }),
 
-  deployStatus: () => req('/deploy-status'),
   deployResults: (project) => req(`/deploy-results/${encodeURIComponent(project)}`),
   deployStart: (body) => post('/deploy-start', body),
 
@@ -215,19 +279,46 @@ export const api = {
   githubDeviceStart: (clientId = '') => post('/github/device/start', { client_id: clientId }),
   githubDevicePoll: (flowId) => post('/github/device/poll', { flow_id: flowId }),
 
-  // Vercel, Netlify and Azure have no device flow, so their own `login`
-  // command drives the browser and the server reads what it leaves behind.
-  cliSigninAvailable: () => post('/cli-signin/available', {}),
-  cliSigninStart: (provider) => post('/cli-signin/start', { provider }),
+  // Every deployment provider's own command line tool signs in (`gh`, `aws`, `vercel`, `netlify`, `az`):
+  // the server runs its login, shows what it prints, and reads what it leaves behind. `available` also says
+  // whether the tool is installed and who it is signed in as; `useExisting` keeps that account with no browser.
+  // What a deployment's own command line tools can show, run when opened and read back as it is written.
+  // `scope: 'database'` is the same thing for the project's databases: the Supabase CLI and the MongoDB driver.
+  cliMonitorList: (project, scope = 'deploy') => post('/cli-monitor/list', { project, scope }),
+  cliMonitorStart: (project, command, scope = 'deploy') => post('/cli-monitor/start', { project, command, scope }),
+  cliMonitorPoll: (job, since) => post('/cli-monitor/poll', { job, since }),
+  cliMonitorStop: (job) => post('/cli-monitor/stop', { job }),
+
+  // A few rows of one table (`{source: 'supabase', schema, table}`) or collection (`{source: 'mongodb', collection}`),
+  // credential-like fields masked; and the Atlas cluster behind the MongoDB connection.
+  databaseRows: (project, body, opts) => localJob('/database/rows', { project, ...body }, opts),
+  databaseAtlas: () => post('/database/atlas', {}),
+
+  // The terminal: what the running app printed (from byte `since`; -1 = its current run), and a command typed in the
+  // project folder, read back with cliMonitorPoll / stopped with cliMonitorStop.
+  previewLog: (project, since = -1) => post('/preview/log', { project, since }),
+  // Every part of the running app and whether it listens; a part that does not is started with
+  // send({ type: 'preview_start', project, part }).
+  previewPorts: (project) => post('/preview/ports', { project }),
+  terminalRun: (project, command) => post('/terminal/run', { project, command }),
+
+  cliSigninAvailable: (provider = '', fresh = false) => post('/cli-signin/available', { provider, fresh }),
+  cliSigninStart: (provider, region = '') => post('/cli-signin/start', { provider, region }),
   cliSigninPoll: (flowId) => post('/cli-signin/poll', { flow_id: flowId }),
+  cliSigninUseExisting: (provider, region = '') => post('/cli-signin/use-existing', { provider, region }),
   cliSigninCancel: (flowId) => post('/cli-signin/cancel', { flow_id: flowId }),
+
+  supabaseOauthStatus: () => post('/supabase/oauth/status', {}),
+  supabaseOauthStart: () => post('/supabase/oauth/start', {}),
+  supabaseOauthPoll: (flowId) => post('/supabase/oauth/poll', { flow_id: flowId }),
+  supabaseOauthCancel: (flowId) => post('/supabase/oauth/cancel', { flow_id: flowId }),
 
   // The providers this person has an account with. `plugins()` answers with the
   // catalogue and, for each one, which settings are saved and the last four
   // characters of each — never a value, because a browser that can read a key
   // back is a browser that can leak one.
   plugins: () => req('/plugins'),
-  savePlugin: (plugin, mode, values) => post('/plugins/save', { plugin, mode, values }),
+  savePlugin: (plugin, mode, values, project = '') => post('/plugins/save', { plugin, mode, values, project }),
   forgetPlugin: (plugin) => post('/plugins/forget', { plugin }),
 
   // Which plugins one app uses. Saving this is the whole opt-in: the next run
@@ -387,4 +478,5 @@ export const HTTP_FALLBACK = {
   agent_resume: '/resume',
   feature: '/feature',
   element_edit: '/element-edit',
+  preview_start: '/preview-start',
 }

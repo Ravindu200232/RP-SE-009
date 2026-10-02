@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowRight, Check, ChevronDown, CloudUpload, FileText, FlaskConical, Languages, Layers,
-  PencilLine, Rocket, Search, Sparkles,
+  ArrowRight, Check, CloudUpload, FileText, FlaskConical, FolderOpen, Languages, PencilLine, Rocket, Search,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { send } from '@/lib/ws'
@@ -16,45 +15,16 @@ import LogoPanel from './LogoPanel'
 import BuildSetup from './BuildSetup'
 import PluginAccounts from './PluginAccounts'
 import DesignCustomize from './DesignCustomize'
+import AgentChat from './AgentChat'
 import Interview from './srs/Interview'
 import PlanReview from './srs/PlanReview'
 import SrsReview from './srs/SrsReview'
 import SrsActivity from './srs/SrsActivity'
 import { displaySrsLanguages, SRS_LANGUAGES } from '@/lib/languages'
 import { TIERS, tierDisplayName } from '@/lib/models'
+import { DEFAULT_STACK, stackNeeds } from '@/lib/stacks'
 
-const EXAMPLES = [
-  {
-    label: 'Darkroom co-op',
-    blurb: 'Three roles — member, technician, manager. Benches, chemicals, money.',
-    text: 'A community darkroom with three roles. MEMBER: browses sessions with '
-        + 'photos, filters by film type, books a bench for a session on a date, '
-        + 'and sees their own bookings with any balance owed. TECHNICIAN: sees '
-        + 'only their own bench — today\u2019s jobs in time order, marks one done '
-        + 'with a form, and records the chemicals used. MANAGER: the only role '
-        + 'that sees money and stock. Each screen is its own page under its '
-        + 'role\u2019s section. Seed enough data that every screen has something on '
-        + 'it, and one demo user of each role.',
-  },
-  {
-    label: 'Bike workshop',
-    blurb: 'Rider bookings, a mechanic’s day, dues and the parts bin.',
-    text: 'A neighbourhood bicycle workshop. RIDER: browses repair slots, books '
-        + 'one, and sees their bookings. MECHANIC: today\u2019s repairs in time '
-        + 'order, marks a repair done, records the parts used, and has a page '
-        + 'for warranty claims. TREASURER: dues paid and unpaid this month, and '
-        + 'the parts bin with reorder levels. Seed real data and a demo user for '
-        + 'each role.',
-  },
-  {
-    label: 'Small hotel',
-    blurb: 'Rooms with photos, availability by date, an admin who sees every booking.',
-    text: 'A boutique hotel site. A guest browses rooms with photos, checks '
-        + 'availability for a date range and books one. An admin sees every '
-        + 'booking, can change a room\u2019s price and mark a booking paid. Seed a '
-        + 'handful of rooms and bookings, and a demo user of each role.',
-  },
-]
+const CONNECTION_NAMES = { supabase: 'Supabase', mongodb: 'MongoDB' }
 
 function attachToken() {
   const raw = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
@@ -69,9 +39,11 @@ export default function Home({
   onRequireAuth = null,
   onSignIn = null,
   onSignUp = null,
+  onSettings = null,
+  connectionsVersion = 0,
 }) {
   const s = useStore()
-  const { images, think, models, srsId, srsPhase } = s
+  const { think, models, srsId, srsPhase } = s
   const [prompt, setPrompt] = useState('')
   const [logoFor, setLogoFor] = useState(null)
   const [srsError, setSrsError] = useState('')
@@ -79,6 +51,10 @@ export default function Home({
   const [langOpen, setLangOpen] = useState(false)
   const [langSearch, setLangSearch] = useState('')
   const [stack, setStack] = useState('')
+  const [locationDialog, setLocationDialog] = useState(false)
+  const [workspacePath, setWorkspacePath] = useState('')
+  const [pickingWorkspace, setPickingWorkspace] = useState(false)
+  const [workspaceError, setWorkspaceError] = useState('')
   // Providers this build should start with. Held here because the app they
   // belong to does not exist yet, and the sheet is here rather than in
   // BuildSetup because that row opens no dialog of its own.
@@ -86,6 +62,23 @@ export default function Home({
   const [pluginsOpen, setPluginsOpen] = useState(false)
   const [languageOptions, setLanguageOptions] = useState(SRS_LANGUAGES)
   const box = useRef(null)
+
+  // The account connections a build of the chosen stack needs (`stacks.js` `needs`). Start waits
+  // for them, the way the Deploy panel waits for its accounts. null = still being checked. They are
+  // made in Settings › Integrations, so they are read again when Settings closes and on focus.
+  const [connections, setConnections] = useState({ supabase: null, mongodb: null })
+  useEffect(() => {
+    let live = true
+    const check = () => Promise.all([
+      api.supabaseOauthStatus().then(d => Boolean(d?.connected)).catch(() => false),
+      api.settings().then(d => Boolean(d?.deploy?.deploy_mongodb_uri_set)).catch(() => false),
+    ]).then(([supabase, mongodb]) => { if (live) setConnections({ supabase, mongodb }) })
+    check()
+    window.addEventListener('focus', check)
+    return () => { live = false; window.removeEventListener('focus', check) }
+  }, [connectionsVersion])
+  const needs = stackNeeds(stack)
+  const missing = needs.filter(need => connections[need] !== true)
   const langRef = useRef(null)
   const planning = useRef(false)
   const attach = useAttachments()
@@ -94,6 +87,19 @@ export default function Home({
   const designModel = models.design || models.agent || builderModel
 
   useEffect(() => { setLanguageOptions(displaySrsLanguages()) }, [])
+  // The interview is a project stage, not a temporary chat. Make its project
+  // active early and restore the durable stream that continues through SRS,
+  // wireframe, prototype, build, QA and deploy.
+  useEffect(() => {
+    if (!srsId) return
+    const current = useStore.getState()
+    if (current.project !== srsId) current.reset(srsId)
+    let live = true
+    api.workflow(srsId).then(snapshot => {
+      if (live && useStore.getState().project === srsId) useStore.getState().restoreProject(snapshot)
+    }).catch(() => {})
+    return () => { live = false }
+  }, [srsId])
   useEffect(() => {
     if (!user || srsPhase !== 'planning' || planning.current) return
     planning.current = true
@@ -130,7 +136,6 @@ export default function Home({
     return () => { live = false }
   }, [srsId])
 
-
   useEffect(() => {
     function handleClickOutside(e) {
       if (langRef.current && !langRef.current.contains(e.target)) {
@@ -155,29 +160,24 @@ export default function Home({
     )
   }, [languageOptions, langSearch])
 
-  function begin(p, srs = '', prototypeOnly = false) {
-    if (!p || !builderModel.trim()) return
-    const config = { model: builderModel.trim(), stack, think }
-    chooseModel(config.model)
-    if (images && !prototypeOnly) return setLogoFor({ idea: p, srs, config })
-    startBuild(p, '', srs, null, config, prototypeOnly)
-  }
-
   // One implementation, shared with Settings, so a model chosen in either
   // place reaches the same set of agents.
   const chooseModel = model => useStore.getState().applyModel(model)
 
   function chooseThinking(value) {
-    useStore.setState({ think: value })
-    s.persist(KEYS.think, value ? '1' : '0')
+    const level = ['low', 'high', 'xhigh'].includes(value) ? value : value ? 'high' : 'low'
+    useStore.getState().setThinkingLevel(level)
+    s.persist(KEYS.think, level === 'low' ? '0' : '1')
   }
 
   function submit() {
-    planFirst()
-  }
-
-  function submitPrototype() {
-    planFirst()
+    const hasBrief = prompt.trim() || attach.items.length
+    if (!hasBrief) return box.current?.focus()
+    // Ctrl/Cmd+Enter reaches here without the Start button, so the same rule holds here.
+    if (missing.length) return
+    setWorkspacePath('')
+    setWorkspaceError('')
+    setLocationDialog(true)
   }
 
   async function startBuild(p, logo, srs = '', uploads = null, config = null, prototypeOnly = false) {
@@ -188,7 +188,10 @@ export default function Home({
     s.setBusy(true)
 
     let token = ''
-    if (attach.items.length) {
+    // Files already uploaded during the SRS interview live in this project's
+    // workspace. Do not re-stage them under a throwaway token when the build
+    // starts; the first agent turn has already received their real locations.
+    if (attach.items.length && !srs) {
       const wanted = attachToken()
       s.setProgress(attach.items.length === 1
         ? 'Sending your attachment…' : `Sending your ${attach.items.length} attachments…`, 0)
@@ -200,6 +203,8 @@ export default function Home({
         token = wanted
         s.addLog('INFO', `${staged} attachment(s) go into the build`)
       }
+    } else if (attach.items.length && srs) {
+      s.addLog('INFO', `${attach.items.length} attachment(s) are available in the project workspace`)
     }
 
     s.setProgress('Starting…', 0)
@@ -218,6 +223,7 @@ export default function Home({
       design_model: config?.model || designModel,
       stack: config?.stack || stack,
       think: config?.think ?? think,
+      thinking_level: config?.thinking_level || s.thinkingLevel,
       qa_model: models.qa,
       logo,
       srs_id: srs || '',
@@ -231,7 +237,20 @@ export default function Home({
     })
   }
 
-  async function planFirst() {
+  async function chooseWorkspace() {
+    setPickingWorkspace(true)
+    setWorkspaceError('')
+    try {
+      const result = await api.chooseWorkspace()
+      if (result?.path) setWorkspacePath(result.path)
+    } catch (error) {
+      setWorkspaceError(error.message)
+    } finally {
+      setPickingWorkspace(false)
+    }
+  }
+
+  async function planFirst(workspace = '') {
     const idea = prompt.trim()
     const files = attach.items.length
     if (!idea && !files) return box.current?.focus()
@@ -244,10 +263,15 @@ export default function Home({
       const created = await api.srs('/projects', {
         idea: idea || 'See the attached files.',
         language: languageOptions.find(item => item.code === srsLanguage)?.name || srsLanguage,
-        stack: stack || 'nextjs-mongo',
+        stack: stack || DEFAULT_STACK,
+        workspace_path: workspace || undefined,
+        // What is picked beside this input is what the interview and the specification run on.
+        model: builderModel,
+        thinking_level: s.thinkingLevel,
       })
       const id = created.project.id
       if (useStore.getState().accountEpoch !== epoch || useStore.getState().srsPhase !== 'planning') return
+      s.reset(id)
       s.setSrs({ srsId: id })
 
       if (files) {
@@ -283,15 +307,20 @@ export default function Home({
 
   if (srsPhase === 'design' && srsId) {
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] text-white">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-panel text-ink">
         <DesignCustomize key={srsId} projectId={srsId}
           onBack={() => s.setSrs({ srsPhase: 'review' })}
-          onContinue={async direction => {
+          onContinue={async ({ direction, designSpec }) => {
+            // The customizer's concise visual summary is persisted with the
+            // Design Spec and becomes part of the prototype agent's prompt.
+            const design = await api.draftDesignSpec(srsId, designSpec, direction)
+            await api.approveDesignSpec(srsId, design.version)
             // Keep the operation ID across transport retries and reloads.
             const key = `agentforge-design-change-${srsId}`
             let saved
             try { saved = JSON.parse(localStorage.getItem(key) || 'null') } catch { }
-            if (saved?.summary !== direction) saved = { change_id: `design-${crypto.randomUUID()}`, summary: direction }
+            const summary = `${direction}\n\nApproved Design Spec v${design.version}.`
+            if (saved?.summary !== summary) saved = { change_id: `design-${crypto.randomUUID()}`, summary }
             localStorage.setItem(key, JSON.stringify(saved))
             await api.srs(`/projects/${srsId}/changes`, { ...saved, source: 'design-customizer' })
             localStorage.removeItem(key)
@@ -308,6 +337,7 @@ export default function Home({
       <SrsReview key={srsId} projectId={srsId}
                  onApproved={acceptSrs}
                  onKept={(project) => { s.resetSrs(); setPrompt(''); onKept?.(project) }}
+                 onNewProject={() => { s.resetSrs(); setPrompt('') }}
                  onBack={() => s.setSrs({ srsPhase: 'plan' })} />
     )
   }
@@ -322,47 +352,51 @@ export default function Home({
 
   if (srsPhase === 'plan' && srsId) {
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-3.5 sm:px-6 py-6 sm:py-10 text-white">
-        <PlanReview key={srsId} projectId={srsId}
-                    onGenerated={() => s.setSrs({ srsPhase: 'review' })}
-                    onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-panel text-ink">
+        <AgentChat projectTitle="Plan conversation" readOnly className="hidden lg:flex lg:w-[360px]" />
+        <div className="min-h-0 flex-1 overflow-y-auto px-3.5 py-6 sm:px-6 sm:py-10">
+          <PlanReview key={srsId} projectId={srsId}
+                      onGenerated={() => s.setSrs({ srsPhase: 'review' })}
+                      onGenerating={(project) => { s.resetSrs(); setPrompt(''); onKept?.(project) }}
+                      onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-3.5 sm:px-6 py-6 sm:py-10 text-white">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-panel px-3.5 sm:px-6 py-6 sm:py-10 text-ink">
       {/* Bolt.new Public Top Navigation (When signed out, matching media_1789153650649.png) */}
       {!user && (
-        <header className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 md:px-10 border-b border-white/[.07] bg-[#0c0f17]/60 backdrop-blur-md">
+        <header className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 md:px-10 border-b border-black/[.07] bg-panel/60 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 ring-1 ring-blue-500/30">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent ring-1 ring-accent/30">
               <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" className="size-5 object-contain" />
             </div>
-            <span className="font-display text-[17px] font-bold italic tracking-tight text-white">
-              agentforge<span className="text-blue-500 font-normal">.ai</span>
+            <span className="font-display text-[17px] font-bold italic tracking-tight text-ink">
+              agentforge<span className="text-accent font-normal">.ai</span>
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-white/70">
-            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Solutions</button>
-            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Resources</button>
-            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Careers</button>
-            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Pricing</button>
+          <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-muted">
+            <button type="button" onClick={onSignIn} className="hover:text-ink transition-colors">Solutions</button>
+            <button type="button" onClick={onSignIn} className="hover:text-ink transition-colors">Resources</button>
+            <button type="button" onClick={onSignIn} className="hover:text-ink transition-colors">Careers</button>
+            <button type="button" onClick={onSignIn} className="hover:text-ink transition-colors">Pricing</button>
           </nav>
 
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onSignIn}
-              className="px-3.5 py-1.5 text-[13px] font-medium text-white/80 hover:text-white transition-colors"
+              className="px-3.5 py-1.5 text-[13px] font-medium text-ink hover:text-ink transition-colors"
             >
               Sign in
             </button>
             <button
               type="button"
               onClick={onSignUp}
-              className="rounded-xl bg-blue-600 px-3.5 sm:px-4 py-1.5 sm:py-2 font-display text-[12px] sm:text-[13px] font-semibold text-white shadow-md shadow-blue-500/25 hover:bg-blue-500 transition-all active:scale-95"
+              className="rounded-xl bg-accent px-3.5 sm:px-4 py-1.5 sm:py-2 font-display text-[12px] sm:text-[13px] font-semibold text-ink shadow-md shadow-accent/25 hover:bg-accent transition-all active:scale-95"
             >
               Get Started
             </button>
@@ -390,7 +424,7 @@ export default function Home({
         {srsPhase === 'idle' && (
           <>
             {/* Main Central Prompt Box */}
-            <div className="mt-8 relative z-30 rounded-[26px] border border-line bg-panel shadow-2xl backdrop-blur-2xl transition-all focus-within:border-accent/60 focus-within:shadow-[0_20px_60px_rgba(24,119,242,.2)]">
+            <div className="mt-8 relative z-30 rounded-[26px] border border-line bg-panel shadow-2xl backdrop-blur-2xl transition-all focus-within:border-accent/60 focus-within:shadow-[0_20px_60px_rgba(191, 185, 255,.2)]">
               <TextArea
                 value={prompt}
                 autoFocus
@@ -416,39 +450,37 @@ export default function Home({
                 className="min-h-[130px] w-full resize-none rounded-t-[26px] bg-transparent p-5 text-[15px] leading-[1.6] text-ink caret-accent outline-none placeholder:text-muted2"
               />
 
-              {/* Build Setup Configurations */}
-              <div className="relative z-30 border-t border-line px-5 pt-3 pb-2">
-                <BuildSetup
-                  model={builderModel}
-                  stack={stack}
-                  think={think}
-                  options={modelOptions}
-                  onModelChange={chooseModel}
-                  onStackChange={setStack}
-                  onThinkChange={chooseThinking}
-                  plugins={plugins}
-                  onPluginsOpen={() => setPluginsOpen(true)}
-                />
-              </div>
-
               <AttachList attach={attach} className="mx-5 mb-2" />
 
-              {/* Bottom Action Row with Attachments, Prettified Language Selector & Submit */}
-              <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 rounded-b-[26px] border-t border-line bg-panel2/40 p-2.5">
+              {/* All composer controls live in one quiet, icon-only rail. */}
+              <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 rounded-b-[26px] bg-panel2/40 p-2.5">
                 <div className="flex flex-wrap items-center gap-2">
+                  <BuildSetup
+                    compact
+                    model={builderModel}
+                    stack={stack}
+                    think={think}
+                    thinkingLevel={s.thinkingLevel}
+                    options={modelOptions}
+                    onModelChange={chooseModel}
+                    onStackChange={setStack}
+                    onThinkChange={chooseThinking}
+                    onThinkingLevelChange={chooseThinking}
+                    plugins={plugins}
+                    onPluginsOpen={() => setPluginsOpen(true)}
+                  />
                   <AttachButtons attach={attach} cell />
 
-                  {/* Custom Prettified Language Select Dropdown */}
+                  {/* Language stays available without adding another text label. */}
                   <div className="relative" ref={langRef}>
                     <button
                       type="button"
                       onClick={() => setLangOpen(!langOpen)}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-line bg-panel2 px-2.5 text-[11px] font-medium text-muted shadow-sm transition-all hover:bg-raised hover:border-line2 hover:text-ink"
-                      title="Interview language. SRS and builder handoff stay in English."
+                      aria-label={`Interview language: ${currentLangLabel}`}
+                      className="grid size-8 place-items-center rounded-xl border border-line bg-panel2 text-muted shadow-sm transition-all hover:bg-raised hover:border-line2 hover:text-ink"
+                      title={`Interview language: ${currentLangLabel}. SRS and builder handoff stay in English.`}
                     >
-                      <Languages className="size-2.5 shrink-0 text-accent" aria-hidden="true" />
-                      <span>{currentLangLabel}</span>
-                      <ChevronDown className={cn("size-2.5 shrink-0 text-muted2 transition-transform duration-200", langOpen && "rotate-180 text-ink")} />
+                      <Languages className="size-3 shrink-0 text-accent" aria-hidden="true" />
                     </button>
 
                     {/* Hidden contract select */}
@@ -498,7 +530,7 @@ export default function Home({
                                 className={cn(
                                   "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-[11.5px] transition-colors",
                                   isSelected
-                                    ? "bg-accent/15 text-accent font-semibold border border-accent/30"
+                                    ? "bg-accent text-ink font-semibold border border-accent/30"
                                     : "text-muted hover:bg-ink/[.06] hover:text-ink border border-transparent"
                                 )}
                               >
@@ -508,17 +540,35 @@ export default function Home({
                             )
                           })}
                           {filteredLanguages.length === 0 && (
-                            <p className="px-2 py-3 text-center text-[11px] text-white/40">No languages found</p>
+                            <p className="px-2 py-3 text-center text-[11px] text-muted2">No languages found</p>
                           )}
                         </div>
                       </div>
                     )}
                   </div>
+
+                  {/* What this stack builds on: connected, or one click from Settings › Integrations. */}
+                  {needs.map(need => {
+                    const name = CONNECTION_NAMES[need] || need
+                    const state = connections[need]
+                    return state ? (
+                      <span key={need} className="inline-flex h-8 items-center gap-1 rounded-xl border border-ok/35 px-2.5 text-[11px] font-medium text-ok">
+                        <Check className="size-3 shrink-0" aria-hidden="true" /> {name} connected
+                      </span>
+                    ) : (
+                      <button key={need} type="button" disabled={state === null}
+                              onClick={() => onSettings?.('integrations')}
+                              title={`Connect ${name} in Settings › Integrations`}
+                              className="inline-flex h-8 items-center gap-1 rounded-xl border border-bad/35 px-2.5 text-[11px] font-medium text-bad transition-colors hover:bg-bad/10 disabled:opacity-60">
+                        {state === null ? `Checking ${name}…` : <>{name} not connected · <span className="underline">Connect</span></>}
+                      </button>
+                    )
+                  })}
                 </div>
 
                 {/* Right Action: Clean Bolt-style Submit Button */}
                 <button
-                  disabled={!prompt.trim() || !builderModel.trim()}
+                  disabled={!prompt.trim() || !builderModel.trim() || missing.length > 0}
                   onClick={() => {
                     if (!user && onRequireAuth) {
                       onRequireAuth()
@@ -527,7 +577,7 @@ export default function Home({
                     submit()
                   }}
                   title="Start SRS planning and specification"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 font-display text-[12px] font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-accent px-3.5 font-display text-[12px] font-medium text-ink shadow-lg shadow-accent/25 transition-all hover:bg-accent active:scale-95 disabled:pointer-events-none disabled:opacity-40"
                 >
                   <span>Start</span>
                   <ArrowRight className="size-3 shrink-0" />
@@ -535,14 +585,62 @@ export default function Home({
               </div>
             </div>
 
+            {locationDialog && (
+              <Modal onClose={() => !pickingWorkspace && setLocationDialog(false)} className="max-w-md">
+                <div className="flex items-start gap-3">
+                  <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-accent/35 bg-transparent text-accent">
+                    <FolderOpen className="size-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-[17px] font-bold text-ink">Where should this project be saved?</h2>
+                    <p className="mt-1 text-[12px] leading-relaxed text-muted">
+                      Choose a new empty folder in Explorer, or let AgentForge create it in its own workspace.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-line bg-panel2/60 p-3">
+                  {workspacePath ? (
+                    <>
+                      <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-muted2">Selected folder</p>
+                      <p className="mt-1 break-all font-mono text-[11px] leading-relaxed text-ink">{workspacePath}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[12px] font-semibold text-ink">AgentForge workspace</p>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-muted">A separate project folder will be created automatically.</p>
+                    </>
+                  )}
+                </div>
+
+                {workspaceError && <p className="mt-3 text-[11.5px] text-bad">{workspaceError}</p>}
+
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button type="button" disabled={pickingWorkspace} onClick={chooseWorkspace}
+                          className="inline-flex h-9 items-center gap-2 rounded-xl border border-line px-3 text-[12px] font-semibold text-ink transition-colors hover:bg-raised disabled:opacity-50">
+                    <FolderOpen className="size-3.5 text-accent" />
+                    {pickingWorkspace ? 'Opening Explorer…' : workspacePath ? 'Choose another folder' : 'Choose folder'}
+                  </button>
+                  <button type="button" disabled={pickingWorkspace} onClick={() => {
+                    const chosen = workspacePath
+                    setLocationDialog(false)
+                    planFirst(chosen)
+                  }}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-accent bg-accent px-3.5 text-[12px] font-semibold text-ink shadow-sm transition-all hover:bg-press disabled:opacity-50">
+                    Start project <ArrowRight className="size-3" />
+                  </button>
+                </div>
+              </Modal>
+            )}
+
             {srsError && srsPhase === 'idle' && (
               <p className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-[12px] text-red-300">
                 The SRS could not start — {srsError}
               </p>
             )}
 
-            {/* Visual Workflow Pipeline Stages: SRS Generate | Prototype Build | App Build | Deployment */}
-            <div className="mt-7 relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[660px] w-full mx-auto">
+            {/* Visual Workflow Pipeline Stages */}
+            <div className="mt-7 relative z-10 grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 max-w-[820px] w-full mx-auto">
               {[
                 {
                   id: 'srs',
@@ -554,12 +652,21 @@ export default function Home({
                   border: 'border-line bg-panel',
                 },
                 {
+                  id: 'wireframe',
+                  label: 'Wireframe Build',
+                  desc: 'Page editing',
+                  Icon: PencilLine,
+                  iconColor: 'text-ink',
+                  iconBg: 'bg-panel2 ring-1 ring-line2',
+                  border: 'border-line bg-panel',
+                },
+                {
                   id: 'prototype',
                   label: 'Prototype Build',
                   desc: 'Fast UI Preview',
                   Icon: FlaskConical,
-                  iconColor: 'text-purple-400',
-                  iconBg: 'bg-purple-500/15 ring-1 ring-purple-500/25',
+                  iconColor: 'text-ink',
+                  iconBg: 'bg-accent ring-1 ring-accent/25',
                   border: 'border-line bg-panel',
                 },
                 {
@@ -567,8 +674,8 @@ export default function Home({
                   label: 'App Build',
                   desc: 'Full-Stack Code',
                   Icon: Rocket,
-                  iconColor: 'text-accent',
-                  iconBg: 'bg-accent/15 ring-1 ring-accent/25',
+                  iconColor: 'text-ink',
+                  iconBg: 'bg-accent ring-1 ring-accent/25',
                   border: 'border-line bg-panel',
                 },
                 {
@@ -576,7 +683,7 @@ export default function Home({
                   label: 'Deployment',
                   desc: 'Cloud & CI/CD',
                   Icon: CloudUpload,
-                  iconColor: 'text-emerald-400',
+                  iconColor: 'text-ink',
                   iconBg: 'bg-emerald-500/15 ring-1 ring-emerald-500/25',
                   border: 'border-line bg-panel',
                 },
@@ -604,28 +711,6 @@ export default function Home({
               ))}
             </div>
 
-            {/* Starter Briefs / Inspirations */}
-            <div className="mt-8">
-              <div className="text-center text-[12px] font-semibold text-muted mb-3">
-                or start from one of these
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                {EXAMPLES.map(e => (
-                  <button
-                    key={e.label}
-                    onClick={() => setPrompt(e.text)}
-                    className="rounded-2xl border border-line bg-panel p-4 text-left shadow-sm transition-all hover:border-line2 hover:bg-raised hover:shadow-md cursor-pointer"
-                  >
-                    <div className="font-display text-[13.5px] font-bold text-ink">
-                      {e.label}
-                    </div>
-                    <div className="mt-1 text-[11px] leading-[1.5] text-muted">
-                      {e.blurb}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
           </>
         )}
       </div>
@@ -639,7 +724,7 @@ export default function Home({
           <header className="mb-4">
             <h2 className="text-[14px] font-bold tracking-tight text-ink">Plugins</h2>
             <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
-              Set a provider up once and tick it for this build. Their settings are
+              Set providers up once and select every plugin this build needs. Their settings are
               written into the new app’s environment before it is written, and the
               agent is given each provider’s own page to build against.
             </p>

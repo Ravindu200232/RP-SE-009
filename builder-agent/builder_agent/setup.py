@@ -1,211 +1,148 @@
-"""The account settings a build needs, asked before it plans anything.
+"""Before a build is planned: settle with the customer everything it will need from them.
 
-Some of what an application needs cannot be read out of a repository: a Stripe
-secret, a Cloudinary cloud name, whether the payments being built are real ones
-or test ones. Asking during the build is late — by then the plan has already
-been written, and it was written without knowing which provider it was for.
-
-So the questions come first. A skill that needs settings ships a `setup.json`
-beside its SKILL.md declaring what to ask; the questions belong to the skill
-because the skill is what knows the answer's shape, and because adding a new
-integration should be a new directory rather than a new branch in here.
-
-A question is only asked when its skill was selected, and a skill is only
-selected when the request asks for it. A todo list is never asked about Stripe.
-
-The value never enters the model's context. It goes from the browser to the
-run to `.env.local` and stops there; what the plan and the build are told is
-which provider was chosen and which names were set, never what they were set
-to.
+The questions are the model's own, written for this project from its specification and from what the connected
+accounts already have — nothing here knows what to ask. This module only gathers those facts, checks the model's
+reply, and carries out the one part that must be exact: where the data lives (keep or create the project's
+Supabase project, use or create the MongoDB cluster), from the structured `database` the model settles on.
 """
 from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
+from typing import Any
 
-from .errors import ToolError
-from .skills import SKILL_ROOT
+from server_modules import auth_guide, changes, mongo_connect, prompts, supabase_connect
 
-# An environment variable name, which is what every one of these becomes.
-ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
-MAX_FIELDS = 12
-
-# Long enough to find a key in someone else's dashboard, short enough that a
-# closed browser does not hold a build open for the afternoon.
-ASK_TIMEOUT = 900.0
-
-# A question about the product is answered in seconds or not at all, so waiting
-# a quarter of an hour only stalls a run nobody is in front of.
-QUESTION_TIMEOUT = 240.0
+MAX_QUESTIONS = 20
+_REGION = re.compile(r"^[A-Za-z0-9_-]{2,40}$")
 
 
-def read_fields(raw, *, source: str = "") -> list[dict]:
-    """Read requested fields, refusing anything that cannot honestly be asked."""
-    where = f" in {source}" if source else ""
-    if not isinstance(raw, list) or not raw:
-        raise ToolError(f"Name at least one setting to ask for{where}.")
-    if len(raw) > MAX_FIELDS:
-        raise ToolError(f"Ask for at most {MAX_FIELDS} settings at a time{where}.")
-
-    out, seen = [], set()
-    for item in raw:
-        if not isinstance(item, dict):
-            raise ToolError(f"Each field{where} is an object with key, label and example.")
-        key = str(item.get("key") or "").strip().upper()
-        if not ENV_NAME.match(key):
-            raise ToolError(f"{key or '(empty)'} is not an environment variable name{where}. "
-                            "Use upper case with underscores, such as STRIPE_SECRET_KEY.")
-        if key in seen:
-            raise ToolError(f"{key} was asked for twice{where}.")
-        seen.add(key)
-        example = str(item.get("example") or "").strip()
-        if not example:
-            # Told only "API key", people paste an account id or a publishable
-            # key where a secret belongs, so an example is the difference.
-            raise ToolError(f"{key} needs an example value{where}. Someone who has never seen "
-                            "this setting cannot tell a key from an account id without one.")
-        out.append({
-            "key": key,
-            "label": str(item.get("label") or key).strip()[:80],
-            "hint": str(item.get("hint") or "").strip()[:240],
-            "example": example[:120],
-            "secret": bool(item.get("secret", True)),
-            "required": bool(item.get("required", True)),
-        })
-    return out
+def uses_mongodb(stack: str) -> bool:
+    return "mongo" in stack or stack.startswith("mern")
 
 
-def read_choices(raw, *, source: str = "") -> list[dict]:
-    """The options for a question, each able to carry its own fields.
+def facts(project: str, stack: str, earlier: dict | None = None) -> dict[str, Any]:
+    """What this project and the connected accounts already have. Never a key, a password or a connection string.
 
-    Stripe and PayHere do not ask for the same things, so the fields belong to
-    the option rather than to the question: choose one and you are asked for
-    what that one needs, and never for the other's.
+    The Supabase account is read through its command line tool, which takes seconds, so one setup reads it once
+    (`earlier`); everything else is read again each turn, because an answer can change it.
     """
-    if not isinstance(raw, list):
-        return []
-    out = []
-    for item in raw[:8]:
-        if not isinstance(item, dict):
-            continue
-        ident = str(item.get("id") or "").strip()[:40]
-        if not ident:
-            continue
-        option = {"id": ident, "label": str(item.get("label") or ident).strip()[:60],
-                  "hint": str(item.get("hint") or "").strip()[:200]}
-        if item.get("fields"):
-            option["fields"] = read_fields(item["fields"], source=source)
-        out.append(option)
-    return out
-
-
-def merge_env(path: Path, values: dict) -> None:
-    """Set these names in an env file, leaving every other line alone."""
+    found: dict[str, Any] = {}
+    this = supabase_connect.status(project)
+    account = ((earlier or {}).get("supabase") or {}).get("account")
     try:
-        existing = path.read_text(encoding="utf-8") if path.is_file() else ""
-    except OSError:
-        existing = ""
-
-    lines = existing.splitlines()
-    for key, value in values.items():
-        # A value with a newline in it would silently become two settings.
-        clean = str(value).replace("\n", " ").replace("\r", " ")
-        line = f"{key}={clean}"
-        for index, current in enumerate(lines):
-            if current.strip().startswith(f"{key}="):
-                lines[index] = line
-                break
-        else:
-            lines.append(line)
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
-
-
-def questions_for(skills) -> list[dict]:
-    """What the selected skills need asked, in the order they were selected."""
-    out = []
-    for name in skills or []:
-        declaration = SKILL_ROOT / str(name) / "setup.json"
-        if not declaration.is_file():
-            continue
+        account = account or supabase_connect.account_facts()
+    except Exception as exc:  # noqa: BLE001 - a fact that cannot be read is said, not fatal
+        account = {"connected": False, "unreadable": str(exc)[:200]}
+    found["supabase"] = {"this_project": {k: this.get(k, "") for k in ("ref", "name", "url")} if this.get("connected")
+                         else None, "account": account}
+    if uses_mongodb(stack):
         try:
-            body = json.loads(declaration.read_text(encoding="utf-8"))
-            purpose = str(body.get("purpose") or "").strip()
-            if len(purpose) < 4:
-                raise ToolError("a setup declaration needs a purpose")
-            question = {
-                "skill": str(name),
-                "purpose": purpose[:200],
-                "question": str(body.get("question") or "").strip()[:200],
-                "choices": read_choices(body.get("choices"), source=f"{name}/setup.json"),
-                "fields": (read_fields(body["fields"], source=f"{name}/setup.json")
-                           if body.get("fields") else []),
-            }
-        except (OSError, ValueError, ToolError) as error:
-            # A broken declaration must not stop a build; it stops its question.
-            out.append({"skill": str(name), "error": f"{error}"})
-            continue
-        if question["choices"] or question["fields"]:
-            out.append(question)
-    return out
+            found["mongodb"] = mongo_connect.account_facts()
+        except Exception as exc:  # noqa: BLE001
+            found["mongodb"] = {"unreadable": str(exc)[:200]}
+    return found
 
 
-def fields_of(question: dict, choice: str) -> list[dict]:
-    """Everything the answer to this question could have filled in."""
-    fields = list(question.get("fields") or [])
-    for option in question.get("choices") or []:
-        if option.get("id") == choice:
-            fields += list(option.get("fields") or [])
-    return fields
+def database_shape(stack: str) -> str:
+    supabase = ('{"use": "this" (keep this project\'s Supabase project) or "new", '
+                '"organization": "<an organization id from the facts, for new>", '
+                '"region": "<a Supabase region code, for new>"}')
+    if not uses_mongodb(stack):
+        return '{"supabase": ' + supabase + "}"
+    return ('{"supabase": ' + supabase + ', "mongodb": {"use": "atlas" (the connected Atlas account\'s cluster, '
+            'or a new free cluster there), "saved" (a connection string the customer gave), or "local" '
+            '(this computer\'s MongoDB, for now), "region": "<an Atlas region name, when a new cluster is created>"}}')
 
 
-def all_fields(question: dict) -> list[dict]:
-    """Every field the question mentions, whichever option is taken."""
-    fields = list(question.get("fields") or [])
-    for option in question.get("choices") or []:
-        fields += list(option.get("fields") or [])
-    return fields
+def prompt(project: str, session: Any, stack: str, found: dict, state: dict, left: int) -> str:
+    reading = ["the stack's build guide at `.agentforge/build/guides/`"]
+    if (session.workspace / ".agentforge" / "PLUGIN.md").is_file():
+        reading.append("`.agentforge/PLUGIN.md` (the integrations already chosen)")
+    if (session.workspace / auth_guide.PATH).is_file():
+        reading.append(f"`{auth_guide.PATH}`")
+    answers = state.get("answers") or []
+    earlier = state.get("previous") or []
+    parts = []
+    if earlier:
+        parts.append("## Settled for an earlier build of this project\n\nStill true unless the specification "
+                     "changed it; do not ask these again:\n\n"
+                     + "\n".join(f"- {line}" for line in earlier))
+    if answers:
+        parts.append("## Answered so far\n\n" + "\n".join(f"- Q: {row['question']}\n  A: {row['answer']}"
+                                                         for row in answers))
+    if str(state.get("problem") or "").strip():
+        parts.append("## What went wrong just now\n\n" + str(state["problem"]).strip() + "\n\nAsk the customer how "
+                     "to go on, with the ways forward you see and what each one costs or changes — or, when one way is "
+                     "clearly right and costs them nothing, settle it yourself.")
+    return prompts.load(
+        "builder/setup", stack=stack, facts=json.dumps(found, ensure_ascii=False, indent=2),
+        reading="; ".join(reading) + ".",
+        direction=(f"What the customer asked for on this build: {state['direction'].strip()}"
+                   if str(state.get("direction") or "").strip() else ""),
+        questions_left=(prompts.load("changes/questions-left", count=left).strip() if left > 0
+                        else prompts.load("changes/no-questions").strip()),
+        answers="\n\n".join(parts), database_shape=database_shape(stack))
 
 
-def apply_answer(root: Path, question: dict, answer: dict) -> dict:
-    """Write what was supplied, record what was not, and say so in one line.
+def check(data: Any, may_ask: bool, stack: str, found: dict) -> dict:
+    """The model's reply as a clean question or a settled, carry-out-able `database`. What is wrong is the repair."""
+    if not isinstance(data, dict):
+        raise ValueError("return one JSON object")
+    if data.get("kind") == "question":
+        return changes.check_question(data, may_ask)
+    if data.get("kind") != "ready":
+        raise ValueError('"kind" must be "question" or "ready"')
+    database = data.get("database")
+    if not isinstance(database, dict):
+        raise ValueError('a "ready" needs "database"')
+    supabase = database.get("supabase")
+    if not isinstance(supabase, dict) or supabase.get("use") not in ("this", "new"):
+        raise ValueError('"database.supabase.use" must be "this" or "new"')
+    if supabase["use"] == "this" and not (found.get("supabase") or {}).get("this_project"):
+        raise ValueError('this project has no Supabase project yet, so "database.supabase.use" must be "new"')
+    if supabase["use"] == "new":
+        account = (found.get("supabase") or {}).get("account") or {}
+        organizations = {str(o.get("id")) for o in account.get("organizations") or [] if isinstance(o, dict)}
+        if organizations and str(supabase.get("organization") or "") not in organizations:
+            raise ValueError('"database.supabase.organization" must be one of the organization ids in the facts')
+        if supabase.get("region") and not _REGION.match(str(supabase["region"])):
+            raise ValueError('"database.supabase.region" must be a Supabase region code such as the facts show')
+    settled = {"supabase": {key: str(supabase.get(key) or "") for key in ("use", "organization", "region")}}
+    if uses_mongodb(stack):
+        mongodb = database.get("mongodb")
+        if not isinstance(mongodb, dict) or mongodb.get("use") not in ("atlas", "saved", "local"):
+            raise ValueError('"database.mongodb.use" must be "atlas", "saved" or "local"')
+        mongo_facts = found.get("mongodb") or {}
+        if mongodb["use"] == "atlas" and not mongo_facts.get("atlas_connected"):
+            raise ValueError("no Atlas account is connected, so the cluster cannot be made there: ask for a connection "
+                             'string ("saved") or use this computer\'s MongoDB ("local")')
+        if mongodb["use"] == "saved" and not mongo_facts.get("connection_string_saved"):
+            raise ValueError('no connection string is saved yet: ask for it first (variable MONGODB_URI, secret, '
+                             'check "mongodb"), or choose another way')
+        if mongodb.get("region") and not _REGION.match(str(mongodb["region"])):
+            raise ValueError('"database.mongodb.region" must be an Atlas region name')
+        settled["mongodb"] = {key: str(mongodb.get(key) or "") for key in ("use", "region")}
+    decisions = [str(line).strip() for line in data.get("decisions") or [] if str(line).strip()]
+    return {"kind": "ready", "database": settled, "decisions": decisions}
 
-    The example file is always written, whether or not anybody answered: it is
-    the list of what this project needs, it is safe to commit, and it is what
-    someone reads when the app says a setting is missing.
-    """
-    root = Path(root)
-    answer = answer or {}
-    choice = str(answer.get("choice") or "").strip()[:40]
-    # An option that needs nothing needs nothing, since falling back put Resend
-    # and Twilio keys into a project whose author had just said "send nothing".
-    chosen = fields_of(question, choice) if choice else all_fields(question)
 
-    merge_env(root / ".env.example",
-              {field["key"]: field["example"] for field in chosen})
+def apply(project: str, name: str, database: dict, say: Any) -> None:
+    """Carry out where the data lives, exactly as settled. A no-op for what already exists."""
+    supabase = database.get("supabase") or {}
+    supabase_connect.ensure_project(project, name=name, log=say, region=supabase.get("region", ""),
+                                    org_id=supabase.get("organization", ""),
+                                    fresh=supabase.get("use") == "new" and bool(supabase_connect.record(project)))
+    mongodb = database.get("mongodb") or {}
+    if mongodb.get("use") == "atlas":
+        mongo_connect.ensure_cluster(log=say, region=mongodb.get("region", ""))
 
-    values = answer.get("values") if answer.get("decision") == "save" else None
-    wanted = {field["key"]: field for field in chosen}
-    saved = ({key: str(value) for key, value in values.items()
-              if key in wanted and str(value).strip()}
-             if isinstance(values, dict) else {})
-    if saved:
-        merge_env(root / ".env.local", saved)
 
-    missing = sorted(key for key, field in wanted.items()
-                     if key not in saved and field["required"])
-    label = next((option["label"] for option in question.get("choices") or []
-                  if option["id"] == choice), choice)
-
-    note = question["purpose"]
-    if label:
-        note += f": {label}"
-    if saved:
-        note += f". Configured: {', '.join(sorted(saved))} (read from process.env)"
-    if missing:
-        note += (f". Not supplied: {', '.join(missing)} — build against process.env and fail "
-                 f"loudly when one is absent")
-    return {"skill": question.get("skill", ""), "choice": choice, "label": label,
-            "saved": sorted(saved), "missing": missing, "note": note + "."}
+def settled_block(state: dict) -> str:
+    """What the build request is told was settled before it, so it never asks any of it again."""
+    rows = [f"- Q: {row['question']}\n  A: {row['answer']}" for row in state.get("answers") or []]
+    rows += [f"- {line}" for line in state.get("decisions") or []]
+    if not rows:
+        return ""
+    return ("\n\n## Settled with the customer before this build\n\nThese were asked and answered before the plan. "
+            "Build on them and do not ask any of them again:\n\n" + "\n".join(rows))

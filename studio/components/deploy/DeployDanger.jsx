@@ -8,7 +8,7 @@ import { Button, Modal } from '../ui'
 
 const ACTIVE = new Set(['BOOTSTRAPPING', 'CI_RUNNING', 'DEPLOYING', 'VALIDATING'])
 
-export function DeployDanger({ runId, state, running, onDone }) {
+export function DeployDanger({ runId, state, running, onDone, compact = false }) {
   const [ask, setAsk] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -38,19 +38,12 @@ export function DeployDanger({ runId, state, running, onDone }) {
   return (
     <>
       {running && (
-        <Button size="sm" variant="ghost" onClick={() => setAsk('cancel')}
+        <Button size={compact ? 'icon-sm' : 'sm'} variant="ghost" onClick={() => setAsk('cancel')}
                 className="text-muted hover:bg-tint hover:text-deep"
                 title="Stop this deployment. Cloud resources are not deleted.">
-          <Square className="size-3" /> Cancel
+          <Square className="size-3" /> {!compact && 'Cancel'}
         </Button>
       )}
-      <Button size="sm" variant="ghost" onClick={() => setAsk('teardown')}
-              className="text-muted hover:bg-tint hover:text-deep"
-              title={active
-                ? 'Stop this deployment and delete every cloud resource it created.'
-                : 'Delete every cloud resource this deployment created.'}>
-        <Trash2 className="size-3" /> Delete
-      </Button>
 
       {ask && (
         <Modal onClose={() => { if (!busy) { setAsk(''); setError('') } }}>
@@ -64,11 +57,12 @@ export function DeployDanger({ runId, state, running, onDone }) {
 
           {ask === 'cancel' ? (
             <div className="mt-3 space-y-2 text-[12.5px] leading-relaxed text-muted">
-              <p>AgentForge stops advancing this run, and the GitHub Actions run
-                 still deploying for it is stopped too.</p>
+              <p>AgentForge stops this run where it is: a plan not yet approved is dropped, and a
+                 deployment being carried out is interrupted.</p>
               <p className="text-ink">
-                Nothing in AWS is deleted. Anything this run already created
-                keeps running — and keeps billing — until you delete it.
+                Nothing is deleted. Anything this run already created (a repository, a project on
+                the host, cloud resources) stays, and keeps billing where it bills, until you remove it
+                with the way back the plan and the run record name.
               </p>
               <p>You can deploy this project again afterwards.</p>
             </div>

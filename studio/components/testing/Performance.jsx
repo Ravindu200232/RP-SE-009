@@ -1,53 +1,39 @@
 'use client'
 
-import { Empty, Table, TR, TH, TD } from '../ui'
-import { cn } from '@/lib/utils'
+import { Badge, Empty, Table, TR, TH, TD } from '../ui'
 
 export default function Performance({ qa }) {
-  const p = qa?.performance
-  if (!p || !Object.keys(p.scores || {}).length) {
-    return <Empty>Performance metrics have not been recorded for this project yet.</Empty>
-  }
-  if (p.runtimeError) {
-    return <Empty bad>Performance measurement error — {p.runtimeError}</Empty>
-  }
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-3">
-        {Object.entries(p.scores).map(([k, n]) => (
-          <div key={k}
-               className={cn('min-w-[120px] rounded-2xl border bg-panel2/80 px-5 py-3.5 text-center shadow-xl backdrop-blur-xl transition-all duration-200 hover:border-line',
-                 n >= 90 ? 'border-emerald-500/30' : n >= 50 ? 'border-amber-500/30' : 'border-rose-500/30')}>
-            <div className={cn('font-display text-[28px] font-black leading-none tracking-tight',
-              n >= 90 ? 'text-emerald-400' : n >= 50 ? 'text-amber-400' : 'text-rose-400')}>
-              {n}
-            </div>
-            <div className="mt-1.5 text-[11px] font-medium capitalize text-muted">
-              {k.replace(/-/g, ' ')}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {Object.keys(p.metrics || {}).length > 0 && (
-        <Table>
-          <thead><TR><TH>metric</TH><TH>value</TH></TR></thead>
-          <tbody>
-            {Object.entries(p.metrics).map(([k, v]) => (
-              <TR key={k}>
-                <TD className="capitalize text-muted">{k.replace(/-/g, ' ')}</TD>
-                <TD><b className="font-mono text-ink">{v}</b></TD>
-              </TR>
-            ))}
-          </tbody>
-        </Table>
-      )}
-
-      <p className="mt-3 text-[10.5px] text-muted">
-        {p.measured_on ? `Measured via ${p.measured_on}.` : 'Measured against the running application.'}
-        {' The performance score is computed from real browser and server timings.'}
-        {p.fetchTime && ` Recorded at ${new Date(p.fetchTime).toLocaleString()}.`}
-      </p>
-    </div>
-  )
+  const load = qa?.load
+  const browser = qa?.performance
+  const hasBrowser = Object.keys(browser?.scores || {}).length > 0
+  if (!load && !hasBrowser) return <Empty>No performance measurement has been recorded yet.</Empty>
+  return <div className="space-y-5">
+    <section className="rounded-none border border-line bg-panel p-4">
+      <div className="flex flex-wrap items-center gap-2"><h3 className="text-sm font-semibold text-ink">HTTP load sample</h3>
+        <Badge tone={load?.status === 'completed' ? 'ok' : load?.status === 'failed' ? 'bad' : 'mute'}>{load?.status || 'not run'}</Badge></div>
+      {load?.reason && <p className="mt-2 text-xs text-muted">{load.reason}</p>}
+      {!load && <p className="mt-2 text-xs text-muted">A separate HTTP load sample was not part of this saved verification. The browser performance audit below did run; it measures page experience, not concurrent-user capacity.</p>}
+      {load?.requests != null && <>
+        <p className="mt-2 break-all font-mono text-[11px] text-muted">GET {load.url}</p>
+        <Table><thead><TR><TH>measurement</TH><TH>result</TH></TR></thead><tbody>
+          <TR><TD>Tool and scope</TD><TD>{load.tool} · {load.scope}</TD></TR>
+          <TR><TD>Sample</TD><TD>{load.durationSeconds}s · {load.connections} connections · {load.requests} requests</TD></TR>
+          <TR><TD>Throughput</TD><TD>{load.requestsPerSecond} requests/s</TD></TR>
+          <TR><TD>Latency p50 / p97.5 / p99</TD><TD>{load.latencyMs?.p50 ?? '—'} / {load.latencyMs?.p97_5 ?? '—'} / {load.latencyMs?.p99 ?? '—'} ms</TD></TR>
+          <TR><TD>Errors / timeouts</TD><TD>{load.errors} / {load.timeouts}</TD></TR>
+          <TR><TD>HTTP status counts</TD><TD>{Object.entries(load.statusCodeStats || {}).map(([code, value]) => `${code}: ${value?.count ?? value}`).join(', ') || 'none recorded'}</TD></TR>
+        </tbody></Table>
+        <p className="mt-2 text-[11px] text-muted">A short local endpoint sample, not proof of peak capacity or an end-to-end user load test. {load.measuredAt && `Recorded ${new Date(load.measuredAt).toLocaleString()}.`}</p>
+      </>}
+    </section>
+    {hasBrowser && <section className="rounded-none border border-line bg-panel p-4">
+      <h3 className="mb-2 text-sm font-semibold text-ink">Browser performance</h3>
+      {browser.runtimeError && <p className="text-xs text-bad">{browser.runtimeError}</p>}
+      <Table><thead><TR><TH>metric</TH><TH>value</TH></TR></thead><tbody>
+        {Object.entries(browser.scores).map(([key, value]) => <TR key={key}><TD>{key}</TD><TD>{value}</TD></TR>)}
+        {Object.entries(browser.metrics || {}).map(([key, value]) => <TR key={key}><TD>{key}</TD><TD>{String(value)}</TD></TR>)}
+      </tbody></Table>
+      {browser.measured_on && <p className="mt-2 text-[11px] text-muted">Measured via {browser.measured_on}.</p>}
+    </section>}
+  </div>
 }

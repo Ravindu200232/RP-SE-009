@@ -7,6 +7,7 @@ import { Badge, Button, Empty, Modal } from '../ui'
 /** Displays UI usability and quality findings recorded during journey execution. */
 function UiQuality({ qa }) {
   const rows = []
+  const recordedSummary = qa?.uiQualitySummary
   for (const flow of (qa?.report?.e2e || {}).flows || []) {
     // Newer runs carry the checks beside the stages; older ones left them
     // inline among the steps, so both are read.
@@ -17,15 +18,12 @@ function UiQuality({ qa }) {
       if (found) rows.push({ journey: flow.title, page: found[1], note: found[2] })
     }
   }
-  // Every page the specification names, read after the build on the runtime
-  // that was already up. Without this the panel only ever described the pages
-  // a journey happened to write a navigate step for — which on a thirteen-page
-  // specification is a minority of the application.
+  // Declared pages read on the running preview.
   for (const row of qa?.ui_sweep || []) {
-    rows.push({ journey: 'every page',
+    rows.push({ journey: 'declared-route sample',
                 page: row.route || row.page,
                 note: row.error ? `could not be opened — ${row.error}`
-                                : (row.note || 'clean') })
+                                : [row.note || 'not checked', row.mobileNote && row.mobileNote !== 'clean' ? `mobile: ${row.mobileNote}` : ''].filter(Boolean).join(' · ') })
   }
   // One row per page: a page opened by four journeys was checked four times and
   // is still one page. A finding anywhere outranks a clean reading elsewhere.
@@ -38,30 +36,34 @@ function UiQuality({ qa }) {
   const flagged = pages.filter(row => row.note !== 'clean')
   if (!pages.length) {
     return (
-      <p className="rounded-panel border border-line bg-panel px-4 py-3 text-[11.5px] text-muted">
-        No page was read for usability — no journey recorded a check, and the
-        page sweep found no routes to open.
-      </p>
+      <div className="rounded-none border border-line bg-panel px-4 py-3 text-[11.5px] text-muted">
+        {recordedSummary ? <>
+          <p className="font-semibold text-ink">Visual quality check recorded</p>
+          <p className="mt-1">{recordedSummary.detail || `${recordedSummary.count || 0} public screens were checked.`} Detailed per-page usability notes were not saved by that earlier build, so this view cannot honestly invent them.</p>
+        </> : <>
+          No page-level usability notes were saved. Screenshots are still available below; run the Testing stage to record a fresh page-by-page usability sweep.
+        </>}
+      </div>
     )
   }
   return (
     <div className="space-y-2">
       <p className="text-[11.5px] text-muted">
-        {pages.length} page{pages.length === 1 ? '' : 's'} read — every page the
-        specification names, plus whatever the journeys had open — {flagged.length
+        {pages.length} page{pages.length === 1 ? '' : 's'} read — declared routes
+        plus whatever the journeys had open; parameterized routes need fixtures — {flagged.length
           ? `${flagged.length} with findings, ${pages.length - flagged.length} clean`
           : 'all clean: no unnamed control, missing alt text, broken image, dead link or sideways scroll'}.
       </p>
       <div className="space-y-1.5">
         {pages.map((row, i) => (
-          <div key={i} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-panel
+          <div key={i} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-none
                                   border border-line bg-panel px-4 py-2.5">
             <Badge tone={row.note === 'clean' ? 'ok' : 'warn'}>
               {row.note === 'clean' ? 'clean' : 'findings'}
             </Badge>
             <code className="font-mono text-[11px] text-ink">{row.page}</code>
             <span className="text-[10px] text-muted2">{row.journey}</span>
-            {row.note !== 'clean' && <span className="text-[11.5px] text-[#FFAB00]">{row.note}</span>}
+            {row.note !== 'clean' && <span className="text-[11.5px] text-warn">{row.note}</span>}
           </div>
         ))}
       </div>
@@ -85,7 +87,7 @@ function Timeline({ frames, url, onPick }) {
   return (
     <div className="space-y-3">
       {suites.map(([suite, rows]) => (
-        <section key={suite} className="rounded-panel border border-line bg-panel p-3">
+        <section key={suite} className="rounded-none border border-line bg-panel p-3">
           <p className="mb-2 flex items-baseline gap-2">
             <span className="text-[12px] font-semibold text-ink">{suite}</span>
             <span className="text-[10.5px] text-muted2">
@@ -96,7 +98,7 @@ function Timeline({ frames, url, onPick }) {
             {rows.map(frame => (
               <button key={frame.path} onClick={() => onPick(frame)}
                       title={`Step ${frame.step} — ${frame.action}`}
-                      className="group w-[132px] shrink-0 overflow-hidden rounded-lg border border-line bg-panel2 text-left hover:border-accent">
+                      className="group w-[132px] shrink-0 overflow-hidden rounded-none border border-line bg-panel2 text-left hover:border-accent">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url(frame)} alt={`step ${frame.step}`} loading="lazy"
                      className="h-[80px] w-full border-b border-line object-cover object-top" />
@@ -138,7 +140,7 @@ export default function Screenshots({ qa }) {
       )}
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))]">
         {shots.map(shot => (
-          <button key={shot.path} onClick={() => setSelected(shot)} className="overflow-hidden rounded-panel border border-line bg-panel text-left hover:border-accent">
+          <button key={shot.path} onClick={() => setSelected(shot)} className="overflow-hidden rounded-none border border-line bg-panel text-left hover:border-accent">
             {/* Captured local artifacts have dynamic project paths and dimensions. */}
             <img src={url(shot)} alt={shot.name} loading="lazy" className="h-44 w-full border-b border-line bg-panel2 object-contain object-top" />
             <div className="space-y-2 p-3">

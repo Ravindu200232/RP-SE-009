@@ -15,8 +15,8 @@
 
 // Every action is its own row. Grouping consecutive reads under one icon
 // saved space and made three separate steps look like one, which is the
-// opposite of what a step-by-step feed is for.
-const MAX_TURNS = 160
+// opposite of what a step-by-step feed is for. Do not cap the list: the chat
+// panel pages older rows in rather than silently dropping them.
 
 const KINDS = [
   // [pattern, kind, how to title it]
@@ -40,7 +40,6 @@ const KINDS = [
   [/^\s*\$\s+(.+)$/i, 'run', m => m[1]],
   [/^\s*Design contract:\s*(.+)$/i, 'design', m => `Design: ${m[1]}`],
   [/^\s*Scaffolded\s+(.+)$/i, 'setup', m => `Scaffolded ${m[1]}`],
-  [/^\s*Prepared project skills:\s*(.+)$/i, 'setup', m => 'Prepared the project skills'],
   [/^\s*Context checkpoint/i, 'setup', () => 'Summarised older context to make room'],
 ]
 
@@ -49,6 +48,7 @@ const MUTED = [
   /^\s*\$\s/,                       // the echoed command; the "Ran …" line covers it
   /^\s*(?:HTTP|WS|connection)\b/i,
   /^\s*type:\s/i,
+  /\btool error\s*:/i,              // internal tool retries; the agent recovers or reports a real failure
   /fast refresh|webpack|destination stream closed/i,
 ]
 
@@ -59,6 +59,11 @@ const MUTED = [
 // preview is up, and anything the server itself called a problem.
 const SERVER_LINE = /^\[[^\]]{1,24}\]\s*/
 const SERVER_READY = /\bready in\b|- local:|listening on/i
+
+// The engine polls a long-running command every few seconds and logs a fresh
+// "still running" line each time, identical but for the elapsed seconds. Read
+// as a conversation that is one command ticking, not a new event every poll.
+const STILL_RUNNING = /^Command still running \((\d+)s\):\s*(.+)$/i
 
 /**
  * The badge a backend line wears, turned into the row's own icon.
@@ -121,6 +126,11 @@ function classify(row) {
     if (!SERVER_READY.test(line)) return null
     return { kind: 'run', title: plainly(line.replace(SERVER_LINE, '')), detail: '' }
   }
+  const stillRunning = STILL_RUNNING.exec(line)
+  if (stillRunning) {
+    return { kind: 'run', title: `Command still running (${stillRunning[1]}s)`,
+             detail: stillRunning[2].slice(0, 200), runKey: stillRunning[2] }
+  }
   // Completed file events already carry a path. Keep that information for
   // the clickable file cards instead of inferring success from row order.
   const changed = /^(written|created|patched|edited|updated|removed|deleted)\s+(.+?)(?:\s+\(\d+ lines\))?$/i.exec(line)
@@ -137,6 +147,10 @@ function classify(row) {
   if (readMatched && !/^(?:the|a|from|into|about)\s+/i.test(readMatched[1])) {
     const path = readMatched[1].replace(/^[`'"]|[`'"]$/g, '').replace(/\\/g, '/')
     return { kind: 'read', title: `Read ${path}`, detail: '', file: path, action: 'read' }
+  }
+  const effortMatched = /^\[effort:(low|medium|high|ultra)\]\s*(.*)$/i.exec(line)
+  if (effortMatched) {
+    return { kind: 'effort', title: effortMatched[2] || 'Model call', detail: '', level: effortMatched[1].toLowerCase() }
   }
   for (const [pattern, kind, title] of KINDS) {
     const match = pattern.exec(line)
@@ -161,10 +175,8 @@ function classify(row) {
  */
 const remembered = new WeakMap()
 
-// A name a row keeps for as long as it exists. The feed shows the last 160
-// turns, so once a run is longer than that every arriving line shifts every
-// position - and a key built from a position would change for every row on
-// screen, which is a remount of the whole history to append one line.
+// A name a row keeps for as long as it exists. A key built from position would
+// change for every row as new lines arrive and remount the history.
 let counted = 0
 
 function turnFor(row) {
@@ -181,6 +193,9 @@ export function chatTurns(logs = [], chat = []) {
   // Track in-progress file operations so that when the completed event arrives,
   // it supersedes the in-progress card rather than rendering a duplicate row.
   const pendingFileTurns = new Map()
+  // Same idea for a command being polled: each "still running" tick updates
+  // the one row in place instead of piling up a new row every few seconds.
+  const pendingRunTurns = new Map()
 
   for (const row of logs) {
     const turn = row && typeof row === 'object' ? turnFor(row) : null
@@ -188,6 +203,17 @@ export function chatTurns(logs = [], chat = []) {
     // The engine echoes a command as both "Ran x" and "$ x"; one row, not two.
     if (turn.title === previous) continue
     previous = turn.title
+
+    if (turn.kind === 'run' && turn.runKey) {
+      if (pendingRunTurns.has(turn.runKey)) {
+        const targetIndex = pendingRunTurns.get(turn.runKey)
+        turns[targetIndex] = { ...turn, id: turns[targetIndex].id }
+      } else {
+        pendingRunTurns.set(turn.runKey, turns.length)
+        turns.push(turn)
+      }
+      continue
+    }
 
     if (turn.kind === 'write' && turn.file) {
       const fileKey = turn.file.replace(/\\/g, '/').replace(/^\.\//, '')
@@ -220,23 +246,5 @@ export function chatTurns(logs = [], chat = []) {
     turns.push(remembered.get(entry))
   }
   turns.sort((a, b) => (a.at || 0) - (b.at || 0))
-  return turns.slice(-MAX_TURNS)
-}
-
-/** A one-line verdict for a finished run, from the evidence it produced. */
-export function verdictOf(qa) {
-  const unit = qa?.vitest
-  const e2e = qa?.report?.e2e
-  const bits = []
-  if (unit) {
-    const cases = (unit.testResults || []).flatMap(s => s.assertionResults || [])
-    const passed = cases.filter(c => c.status === 'passed').length
-    if (cases.length) bits.push(`${passed}/${cases.length} unit tests passing`)
-  }
-  if (e2e?.stage_total) {
-    bits.push(`${e2e.stage_passed}/${e2e.stage_total} browser stages passing`)
-  }
-  const findings = qa?.report?.security?.findings || []
-  if (findings.length) bits.push(`${findings.length} security finding(s)`)
-  return bits.join(' · ')
+  return turns
 }

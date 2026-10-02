@@ -19,7 +19,7 @@ function tone(state, ok) {
   if (state === 'step' || state === 'step_done' || state === 'journey_start') {
     return 'border-blue-500/30 bg-blue-500/5 shadow-blue-500/5'
   }
-  return 'border-white/10 bg-[#121622]/80'
+  return 'border-black/10 bg-panel/80'
 }
 
 function label(state) {
@@ -42,9 +42,9 @@ export default function E2ELiveLanes() {
   return (
     <div className="flex h-full min-h-0 flex-col p-4">
       <div className="mb-3 flex shrink-0 items-center gap-2.5">
-        <span className="size-2 animate-pulse rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
-        <span className="text-[13px] font-bold text-white tracking-wide">Parallel E2E</span>
-        <span className="font-mono text-[11px] text-slate-400">
+        <span className="size-2 animate-pulse rounded-full bg-accent shadow-[0_0_8px_rgba(191, 185, 255,0.8)]" />
+        <span className="text-[13px] font-bold text-ink tracking-wide">Parallel E2E</span>
+        <span className="font-mono text-[11px] text-muted">
           {workers} lanes{e2e?.waves ? ` · wave ${e2e.wave || 1}/${e2e.waves}` : ''}
         </span>
       </div>
@@ -54,26 +54,26 @@ export default function E2ELiveLanes() {
           const pct = lane.total ? Math.min(100, Math.round((lane.index / lane.total) * 100)) : 0
           return (
             <section key={lane.lane || i + 1}
-                     className={`flex min-h-0 flex-col overflow-hidden rounded-2xl border shadow-xl backdrop-blur-xl transition-all duration-200 ${tone(lane.state, lane.ok)}`}>
-              <div className="flex shrink-0 items-center gap-2.5 border-b border-white/5 px-4 py-2.5">
-                <b className="font-mono text-[11px] font-bold text-blue-400">LANE {lane.lane || i + 1}</b>
-                <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-white">
+                     className={`flex min-h-0 flex-col overflow-hidden rounded-none border shadow-xl backdrop-blur-xl transition-all duration-200 ${tone(lane.state, lane.ok)}`}>
+              <div className="flex shrink-0 items-center gap-2.5 border-b border-black/5 px-4 py-2.5">
+                <b className="font-mono text-[11px] font-bold text-accent">LANE {lane.lane || i + 1}</b>
+                <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-ink">
                   {lane.title || 'Waiting for a journey'}
                 </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-slate-400">{label(lane.state)}</span>
+                <span className="rounded-full border border-black/10 bg-black/5 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-muted">{label(lane.state)}</span>
               </div>
 
               <div className="space-y-2.5 px-4 py-3">
-                <p className={`text-[12px] leading-relaxed ${lane.message ? 'text-rose-400' : 'text-slate-200'}`}>
+                <p className={`text-[12px] leading-relaxed ${lane.message ? 'text-rose-400' : 'text-ink'}`}>
                   {lane.message || lane.label || 'Waiting for a browser lane'}
                 </p>
-                <div className="flex items-center gap-2 text-[10.5px] text-slate-400">
+                <div className="flex items-center gap-2 text-[10.5px] text-muted">
                   <span className="truncate">{lane.role || 'browser'}</span>
                   <span>·</span>
-                  <code className="min-w-0 flex-1 truncate font-mono text-slate-300">{lane.route || '/'}</code>
-                  <span className="tabular-nums font-semibold text-white">{lane.total ? `${lane.index}/${lane.total}` : ''}</span>
+                  <code className="min-w-0 flex-1 truncate font-mono text-ink">{lane.route || '/'}</code>
+                  <span className="tabular-nums font-semibold text-ink">{lane.total ? `${lane.index}/${lane.total}` : ''}</span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div className="h-1.5 overflow-hidden rounded-full bg-black/10">
                   <div className={`h-full rounded-full transition-[width] duration-300 ${
                     lane.ok === false ? 'bg-rose-500' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]'}`}
                        style={{ width: `${pct}%` }} />

@@ -1,230 +1,189 @@
 'use strict'
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
-const { spawn } = require('node:child_process')
-const path = require('node:path')
+/**
+ * AgentForge as a desktop app. One window, the studio in it, its backend a hidden child process, and no port:
+ *
+ *   agentforge://app/__agentforge/...        the studio's own files (a static build)
+ *   agentforge://app/__agentforge/api/...    the API, answered by the backend over its stdin/stdout (bridge.js)
+ *   window.agentforgeDesktop                 the live feed, in place of the WebSocket (preload.js)
+ *
+ * Every process the app starts (the backend, the previews and commands it runs) is its child, so Windows shows
+ * them together as one "AgentForge" in Task Manager, and quitting ends them all.
+ */
 const fs = require('node:fs')
+const path = require('node:path')
+const { pathToFileURL } = require('node:url')
+const { app, BrowserWindow, ipcMain, net, protocol, shell } = require('electron')
 
-const { pythonCommand, portOpen, reclaimPort } = require('./runtime')
+const paths = require('./paths')
+const { Backend } = require('./bridge')
 
-const STUDIO_PORT = 3000
-// The backend's own listeners.
-const BACKEND_PORTS = [7824, 7825, 7826, 7834]
-const STUDIO_URL = `http://localhost:${STUDIO_PORT}/__agentforge`
-const APP_ID = 'com.agentforge.studio'
-const APP_ICON = path.join(
-  __dirname,
-  'assets',
-  process.platform === 'win32' ? 'icon.ico' : 'icon.png',
-)
+const SCHEME = 'agentforge'
+const HOME = `${SCHEME}://app/__agentforge/`
+const BASE = '/__agentforge'
+const API = `${BASE}/api`
 
-app.setName('AgentForge')
-if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
+protocol.registerSchemesAsPrivileged([{
+  scheme: SCHEME,
+  privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true },
+}])
 
-let shellWindow = null
-const children = []
-
-/** Backend and Studio locations. */
-async function roots() {
-  const base = path.join(__dirname, '..')
-  return { backend: base, studio: path.join(base, 'studio') }
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.setAppUserModelId('ai.agentforge.desktop')
+  start()
 }
 
-function waitForPort(port, { timeout = 240000, every = 700 } = {}) {
-  const deadline = Date.now() + timeout
-  return new Promise((resolve) => {
-    const tick = async () => {
-      if (await portOpen(port)) return resolve(true)
-      if (Date.now() > deadline) return resolve(false)
-      setTimeout(tick, every)
-    }
-    tick()
+let win = null
+let backend = null
+
+function logFile() {
+  const folder = path.join(paths.dataRoot(), 'logs')
+  fs.mkdirSync(folder, { recursive: true })
+  const file = path.join(folder, 'backend.log')
+  try { if (fs.statSync(file).size > 10 * 1024 * 1024) fs.renameSync(file, `${file}.1`) } catch { /* none yet */ }
+  return fs.createWriteStream(file, { flags: 'a' })
+}
+
+function backendEnv() {
+  const env = { ...process.env }
+  delete env.ELECTRON_RUN_AS_NODE
+  const tools = path.join(paths.installRoot(), 'tools')
+  Object.assign(env, {
+    AGENTFORGE_TRANSPORT: 'stdio',
+    AGENTFORGE_DATA: paths.dataRoot(),
+    AGENTFORGE_WORKSPACES: paths.workspacesRoot(),
+    PYTHONUTF8: '1',
+    PYTHONIOENCODING: 'utf-8',
+    PATH: [...paths.toolPaths(), env.PATH || env.Path || ''].join(path.delimiter),
   })
-}
-
-function track(child) {
-  if (child) children.push(child)
-  return child
-}
-
-/** Stop every process started by the app. */
-function stopChildren() {
-  while (children.length) {
-    const c = children.pop()
-    try {
-      if (process.platform === 'win32') {
-        // The npm and py launchers spawn their own children.
-        spawn('taskkill', ['/pid', String(c.pid), '/f', '/t'], { windowsHide: true })
-      } else {
-        process.kill(-c.pid, 'SIGTERM')
-      }
-    } catch { /* already gone */ }
+  delete env.Path                                      // one PATH, not two spellings of it
+  if (fs.existsSync(path.join(tools, 'ms-playwright'))) env.PLAYWRIGHT_BROWSERS_PATH = path.join(tools, 'ms-playwright')
+  if (!paths.installed()) {
+    // A checkout keeps its Python packages in .deps (studio.ps1 does the same).
+    env.PYTHONPATH = [path.join(paths.backendRoot(), '.deps'), path.join(paths.backendRoot(), 'src')].join(path.delimiter)
   }
+  return env
 }
 
-const send = (line) => {
-  if (shellWindow && !shellWindow.isDestroyed()) {
-    shellWindow.webContents.send('app:log', String(line))
+/** A file of the studio's static build, by its URL path. */
+function staticFile(urlPath) {
+  const root = paths.studioRoot()
+  let relative = decodeURIComponent(urlPath.startsWith(BASE) ? urlPath.slice(BASE.length) : urlPath)
+  relative = relative.replace(/^\/+/, '')
+  const candidates = relative
+    ? [relative, `${relative}.html`, path.join(relative, 'index.html')]
+    : ['index.html']
+  for (const candidate of candidates) {
+    const file = path.resolve(root, candidate)
+    if (!file.startsWith(path.resolve(root))) break             // never outside the build
+    if (fs.existsSync(file) && fs.statSync(file).isFile()) return file
   }
+  return path.join(root, 'index.html')                          // the studio is one page
 }
 
-const step = (text, pct) => {
-  if (shellWindow && !shellWindow.isDestroyed()) {
-    shellWindow.webContents.send('app:step', { text, pct })
+async function answerApi(request, url) {
+  let body = {}
+  if (request.method === 'POST') {
+    const text = await request.text()
+    try { body = text ? JSON.parse(text) : {} } catch { body = {} }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) body = { body }
   }
+  const reply = await backend.request({
+    method: request.method,
+    path: url.pathname.slice(API.length) || '/',
+    query: Object.fromEntries(url.searchParams.entries()),
+    body,
+  })
+  const headers = { 'content-type': reply.contentType || 'application/json', 'cache-control': 'no-store' }
+  if (reply.filename) headers['content-disposition'] = `attachment; filename="${reply.filename}"`
+  const payload = reply.base64 !== undefined ? Buffer.from(reply.base64, 'base64') : JSON.stringify(reply.json ?? null)
+  return new Response(payload, { status: reply.status || 200, headers })
 }
 
-async function startBackend() {
-  const { backend } = await roots()
-  const py = await pythonCommand()
-  if (!py) throw new Error('Python could not be found on this machine.')
-
-  step('Starting the AgentForge backend…', 20)
-  const child = track(spawn(py.cmd, [...py.prefix, 'server.py'], {
-    cwd: backend,
-    env: {
-      ...process.env,
-      // The backend already reads these.
-      AGENTFORGE_NODE: process.env.AGENTFORGE_NODE || '',
-      AGENTFORGE_NPM: process.env.AGENTFORGE_NPM || '',
-      PYTHONUNBUFFERED: '1',
-    },
-    shell: process.platform === 'win32',
-    windowsHide: true,
-    detached: process.platform !== 'win32',
-  }))
-  child.stdout?.on('data', d => send(String(d).trimEnd()))
-  child.stderr?.on('data', d => send(String(d).trimEnd()))
-  return child
-}
-
-async function startStudio() {
-  const { studio } = await roots()
-
-    // npm writes `next.cmd` only on Windows.
-  const shim = process.platform === 'win32' ? 'next.cmd' : 'next'
-  if (!fs.existsSync(path.join(studio, 'node_modules', '.bin', shim))) {
-    step('Preparing the Studio — first run only, a few minutes…', 35)
-    const installArgs = fs.existsSync(path.join(studio, 'package-lock.json'))
-      ? ['ci', '--no-audit', '--no-fund']
-      : ['install', '--no-audit', '--no-fund']
-    const install = track(spawn('npm', installArgs, {
-      cwd: studio, shell: true, windowsHide: true,
-    }))
-    install.stdout?.on('data', d => send(String(d).trimEnd()))
-    install.stderr?.on('data', d => send(String(d).trimEnd()))
-    const ok = await new Promise(r => install.on('close', c => r(c === 0)))
-    if (!ok) throw new Error('The Studio dependencies did not install.')
-  }
-
-  step('Starting the Studio…', 55)
-  const child = track(spawn('npm', ['run', 'dev'], {
-    cwd: studio, shell: true, windowsHide: true,
-    detached: process.platform !== 'win32',
-  }))
-  child.stdout?.on('data', d => send(String(d).trimEnd()))
-  child.stderr?.on('data', d => send(String(d).trimEnd()))
-  return child
+function serveProtocol() {
+  protocol.handle(SCHEME, async request => {
+    const url = new URL(request.url)
+    if (url.pathname === API || url.pathname.startsWith(`${API}/`)) return answerApi(request, url)
+    if (!url.pathname.startsWith(BASE)) return Response.redirect(HOME, 302)
+    return net.fetch(pathToFileURL(staticFile(url.pathname)).toString())
+  })
 }
 
 function createWindow() {
-  shellWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1080,
-    minHeight: 680,
-    backgroundColor: '#eef3fb',
-    show: true,
-    autoHideMenuBar: true,
-    title: 'AgentForge',
-    icon: APP_ICON,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
+  win = new BrowserWindow({
+    width: 1440, height: 920, minWidth: 1000, minHeight: 640,
+    title: 'AgentForge', backgroundColor: '#ffffff', show: false, autoHideMenuBar: true,
+    icon: path.join(__dirname, 'build', 'icon.png'),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   })
+  win.once('ready-to-show', () => win.show())
 
-  // Anything that is not the studio opens in the real browser.
-  shellWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
+  // Links leave the app for the system browser. "Open in a new tab" opens a blank window and then sends it
+  // somewhere: that window is kept hidden, and where it is sent goes to the browser instead.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url === 'about:blank') return { action: 'allow', overrideBrowserWindowOptions: { show: false } }
+    if (/^https?:/i.test(url)) shell.openExternal(url)
     return { action: 'deny' }
   })
-  shellWindow.webContents.on('will-navigate', (e, url) => {
-    if (!url.startsWith(`http://localhost:${STUDIO_PORT}`)) {
-      e.preventDefault()
-      shell.openExternal(url)
+  win.webContents.on('did-create-window', child => {
+    const leave = (event, target) => {
+      if (!/^https?:/i.test(target)) return
+      event.preventDefault?.()
+      shell.openExternal(target)
+      setTimeout(() => { if (!child.isDestroyed()) child.close() }, 0)
     }
+    child.webContents.on('will-navigate', leave)
+    child.webContents.on('did-start-navigation', details => leave({}, details.url))
   })
-  shellWindow.on('closed', () => { shellWindow = null })
-  return shellWindow
+  win.webContents.on('will-navigate', (event, target) => {
+    if (!target.startsWith(`${SCHEME}://`)) { event.preventDefault(); if (/^https?:/i.test(target)) shell.openExternal(target) }
+  })
+
+  win.loadFile(path.join(__dirname, 'starting.html'))
+  const open = () => { if (win && !win.isDestroyed() && !win.webContents.getURL().startsWith(SCHEME)) win.loadURL(HOME) }
+  if (backend.lastStatus === 'ready') open()
+  backend.on('status', status => {
+    if (!win || win.isDestroyed()) return
+    if (status === 'ready') open()
+    win.webContents.send('feed:status', status)
+  })
+  win.on('closed', () => { win = null })
 }
 
-/** Click the icon, get a fresh backend and Studio. */
-async function reclaimPorts() {
-  const stale = []
-  for (const port of [STUDIO_PORT, ...BACKEND_PORTS]) {
-    const what = await reclaimPort(port, '', { force: true })
-    if (what === 'reclaimed') stale.push(port)
-    if (what === 'busy') {
-      const service = port === STUDIO_PORT ? 'Studio' : 'backend'
-      return { ok: false, note: `The old ${service} server on port ${port} could not be stopped.` }
-    }
-  }
-  if (stale.length) {
-    send(`Stopped ${stale.length} leftover server(s) from a previous run: ${stale.join(', ')}.`)
-  }
-  return { ok: true }
+function start() {
+  app.on('second-instance', () => {
+    if (!win) return
+    if (win.isMinimized()) win.restore()
+    win.focus()
+  })
+
+  app.whenReady().then(() => {
+    const log = logFile()
+    backend = new Backend({
+      python: paths.findPython(),
+      root: paths.backendRoot(),
+      env: backendEnv(),
+      log: text => log.write(text.endsWith('\n') ? text : `${text}\n`),
+    })
+    backend.on('event', event => { if (win && !win.isDestroyed()) win.webContents.send('feed:event', event) })
+    backend.start()
+
+    ipcMain.on('feed:send', (_event, message) => { if (message && typeof message === 'object') backend.feed(message) })
+    ipcMain.on('app:version', event => { event.returnValue = app.getVersion() })
+
+    serveProtocol()
+    createWindow()
+  })
+
+  app.on('window-all-closed', () => app.quit())
+
+  let stopping = false
+  app.on('before-quit', event => {
+    if (stopping || !backend) return
+    event.preventDefault()
+    stopping = true
+    backend.stop().finally(() => app.exit(0))
+  })
 }
-
-async function launch() {
-  try {
-    const { studio } = await roots()
-
-    step('Checking for leftovers from the last run…', 12)
-    const clear = await reclaimPorts()
-    if (!clear.ok) return clear
-
-    await startBackend()
-    await startStudio()
-    step('Waiting for the Studio to answer…', 75)
-    const up = await waitForPort(STUDIO_PORT)
-    if (!up) return { ok: false, note: 'The Studio did not answer on port 3000.' }
-
-    step('Opening…', 100)
-    await shellWindow.loadURL(STUDIO_URL)
-    return { ok: true }
-  } catch (e) {
-    return { ok: false, note: e.message }
-  }
-}
-
-function boot() {
-  createWindow()
-  shellWindow.loadFile(path.join(__dirname, 'splash.html'))
-}
-
-ipcMain.handle('app:launch', launch)
-
-app.whenReady().then(boot)
-
-/** Nothing this app started outlives the window. */
-async function shutDown() {
-  stopChildren()
-  try {
-    for (const port of [STUDIO_PORT, ...BACKEND_PORTS]) {
-      await reclaimPort(port, '', { force: true })
-    }
-  } catch { /* Shutdown errors have nowhere useful to go. */ }
-}
-
-app.on('window-all-closed', async () => {
-  await shutDown()
-  if (process.platform !== 'darwin') app.quit()
-})
-app.on('before-quit', stopChildren)
-process.on('exit', stopChildren)
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) boot()
-})

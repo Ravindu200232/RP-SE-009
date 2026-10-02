@@ -1,14 +1,10 @@
-"""The QA agent: proves a generated application and records what it proved.
+"""The QA agent.
 
-Runs the builder engine at the deep verification profile - the one place that
-profile is spent - and writes the studio's Testing record.
-
-    from qa_agent import QAAgent
-    outcome = QAAgent(project="hotel", project_dir="./hotel", model="…").run()
+Verifies the built application against its own specification and leaves the
+evidence on disk. Runs in the project's one shared model context, so it tests
+what was actually agreed rather than what a report says was agreed.
 """
-from .agent import QAAgent, QAOutcome
-from .report import build_pdf, read as read_results, write as write_results
 
-__all__ = ["QAAgent", "QAOutcome", "build_pdf", "read_results", "write_results"]
+from . import verify  # noqa: F401
 
-__version__ = "1.0.0"
+__all__ = ["verify"]

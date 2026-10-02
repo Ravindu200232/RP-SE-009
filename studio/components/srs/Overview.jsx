@@ -84,10 +84,10 @@ function groupBy(items, key, fallback) {
 /** A neutral label. Colour is reserved for the three things that mean something. */
 const Chip = ({ children, tone = 'mute' }) => {
   const tones = {
-    mute: 'border-white/10 bg-white/[.04] text-white/60',
-    id: 'border-white/10 bg-white/[.04] text-white/70 font-mono',
+    mute: 'border-black/10 bg-black/[.04] text-muted',
+    id: 'border-black/10 bg-black/[.04] text-muted font-mono',
     warn: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-    good: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    good: 'border-emerald-500/30 bg-emerald-500/10 text-ink',
     bad: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
   }
   return (
@@ -100,27 +100,27 @@ const Chip = ({ children, tone = 'mute' }) => {
 
 function Block({ n, title, icon: Icon, count, hint, children }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#0d1220] p-5 sm:p-6">
-      <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-white/10 pb-3">
-        {Icon && <Icon className="size-4 shrink-0 self-center text-white/35" />}
-        <span className="font-mono text-[11px] text-white/35">{n}</span>
-        <h3 className="text-[15px] font-bold tracking-tight text-white">{title}</h3>
+    <section className="rounded-none border border-black/10 bg-panel p-5 sm:p-6">
+      <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-black/10 pb-3">
+        {Icon && <Icon className="size-4 shrink-0 self-center text-muted2" />}
+        <span className="font-mono text-[11px] text-muted2">{n}</span>
+        <h3 className="text-[15px] font-bold tracking-tight text-ink">{title}</h3>
         <span className="flex-1" />
-        {count != null && <span className="font-mono text-[11px] text-white/35">{count}</span>}
+        {count != null && <span className="font-mono text-[11px] text-muted2">{count}</span>}
       </header>
-      {hint && <p className="mt-3 text-[12px] leading-relaxed text-white/45">{hint}</p>}
+      {hint && <p className="mt-3 text-[12px] leading-relaxed text-muted2">{hint}</p>}
       <div className="mt-3">{children}</div>
     </section>
   )
 }
 
 const Nothing = ({ what }) => (
-  <p className="py-2 text-[12px] text-white/35">The specification records no {what}.</p>
+  <p className="py-2 text-[12px] text-muted2">The specification records no {what}.</p>
 )
 
 /** A paragraph that renders only when the document actually has one. */
 const Prose = ({ children }) => (
-  children ? <p className="text-[13px] leading-[1.75] text-white/85">{children}</p> : null
+  children ? <p className="text-[13px] leading-[1.75] text-ink">{children}</p> : null
 )
 
 /* ── the page ────────────────────────────────────────────────────────────── */
@@ -168,11 +168,11 @@ export default function Overview({ srs, onSelectView }) {
   const auth = doc.authentication_requirement || {}
 
   return (
-    <div className="mx-auto max-w-[1040px] space-y-5 pb-16 text-white">
+    <div className="mx-auto max-w-[1040px] space-y-5 pb-16 text-ink">
 
       {/* Header — identity only. Every chip is a field. */}
-      <header className="rounded-2xl border border-white/10 bg-[#0d1220] p-6">
-        <h2 className="text-[24px] font-black tracking-tight text-white">
+      <header className="rounded-none border border-black/10 bg-panel p-6">
+        <h2 className="text-[24px] font-black tracking-tight text-ink">
           {text(doc.document_title) || `${projectName} — Software Requirements Specification`}
         </h2>
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -197,14 +197,14 @@ export default function Overview({ srs, onSelectView }) {
         <div className="space-y-3">
           <Prose>{blurb}</Prose>
           {goal && goal !== blurb && (
-            <p className="text-[13px] leading-[1.75] text-white/70">
-              <span className="font-semibold text-white">Business goal.</span> {goal}
+            <p className="text-[13px] leading-[1.75] text-muted">
+              <span className="font-semibold text-ink">Business goal.</span> {goal}
             </p>
           )}
           {!blurb && !goal && <Nothing what="summary" />}
           {list(summary.target_users).length > 0 && (
             <div>
-              <p className="mb-1.5 text-[11px] uppercase tracking-wide text-white/35">Intended users</p>
+              <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted2">Intended users</p>
               <div className="flex flex-wrap gap-1.5">
                 {list(summary.target_users).map((u, i) => <Chip key={i}>{sentence(u)}</Chip>)}
               </div>
@@ -212,7 +212,7 @@ export default function Overview({ srs, onSelectView }) {
           )}
           {list(doc.main_modules).length > 0 && (
             <div>
-              <p className="mb-1.5 text-[11px] uppercase tracking-wide text-white/35">Modules</p>
+              <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted2">Modules</p>
               <div className="flex flex-wrap gap-1.5">
                 {list(doc.main_modules).map((m, i) => <Chip key={i}>{sentence(m)}</Chip>)}
               </div>
@@ -232,17 +232,17 @@ export default function Overview({ srs, onSelectView }) {
                 ? Object.entries(row).filter(([k, v]) => !/^role(_name)?$/.test(k) && v)
                 : []
               return (
-                <li key={i} className="border-b border-white/[.07] pb-3 last:border-0 last:pb-0">
-                  <p className="text-[13px] font-semibold text-white">{name}</p>
+                <li key={i} className="border-b border-black/[.07] pb-3 last:border-0 last:pb-0">
+                  <p className="text-[13px] font-semibold text-ink">{name}</p>
                   {text(role?.description) && (
-                    <p className="mt-1 text-[12.5px] leading-relaxed text-white/70">{role.description}</p>
+                    <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{role.description}</p>
                   )}
                   {permissions.length > 0 && (
                     <dl className="mt-2 space-y-1">
                       {permissions.map(([k, v]) => (
                         <div key={k} className="flex flex-wrap gap-x-2 text-[12px] leading-relaxed">
-                          <dt className="text-white/40">{k.replace(/_/g, ' ')}</dt>
-                          <dd className="text-white/75">{v === true ? 'yes' : oneLine(v)}</dd>
+                          <dt className="text-muted2">{k.replace(/_/g, ' ')}</dt>
+                          <dd className="text-ink">{v === true ? 'yes' : oneLine(v)}</dd>
                         </div>
                       ))}
                     </dl>
@@ -253,7 +253,7 @@ export default function Overview({ srs, onSelectView }) {
           </ul>
         )}
         {(auth.login_required || text(auth.registration_mode) || text(auth.sign_in_route)) && (
-          <p className="mt-4 border-t border-white/[.07] pt-3 text-[12.5px] leading-relaxed text-white/70">
+          <p className="mt-4 border-t border-black/[.07] pt-3 text-[12.5px] leading-relaxed text-muted">
             {auth.login_required
               ? 'Signing in is required to reach the protected pages.'
               : 'The application can be used without signing in.'}
@@ -270,13 +270,13 @@ export default function Overview({ srs, onSelectView }) {
         {reqs.length === 0 ? <Nothing what="functional requirements" /> : (
           groupBy(reqs, 'module', 'General').map(([module, items]) => (
             <div key={module} className="mb-4 last:mb-0">
-              <p className="mb-2 text-[11px] uppercase tracking-wide text-white/35">
-                {module} <span className="font-mono text-white/25">· {items.length}</span>
+              <p className="mb-2 text-[11px] uppercase tracking-wide text-muted2">
+                {module} <span className="font-mono text-muted2">· {items.length}</span>
               </p>
               <ul className="space-y-2">
                 {items.map((r, i) => (
-                  <li key={i} className="rounded-xl border border-white/[.07] bg-white/[.02] p-3">
-                    <p className="text-[12.5px] leading-relaxed text-white/90">{sentence(r)}</p>
+                  <li key={i} className="rounded-none border border-black/[.07] bg-black/[.02] p-3">
+                    <p className="text-[12.5px] leading-relaxed text-ink">{sentence(r)}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {text(r?.id) && <Chip tone="id">{r.id}</Chip>}
                       {text(r?.priority) && <Chip>{r.priority}</Chip>}
@@ -297,15 +297,15 @@ export default function Overview({ srs, onSelectView }) {
         {nfrs.length === 0 ? <Nothing what="non-functional requirements" /> : (
           groupBy(nfrs, 'category', 'General').map(([category, items]) => (
             <div key={category} className="mb-4 last:mb-0">
-              <p className="mb-2 text-[11px] uppercase tracking-wide text-white/35">{category}</p>
+              <p className="mb-2 text-[11px] uppercase tracking-wide text-muted2">{category}</p>
               <ul className="space-y-1.5">
                 {items.map((n, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-[12.5px] leading-relaxed text-white/85">
+                  <li key={i} className="flex items-start gap-2.5 text-[12.5px] leading-relaxed text-ink">
                     {text(n?.id) && <span className="mt-[3px]"><Chip tone="id">{n.id}</Chip></span>}
                     <span>
                       {sentence(n)}
                       {text(n?.verification_method) && (
-                        <span className="ml-1.5 text-white/40">· verify by {n.verification_method}</span>
+                        <span className="ml-1.5 text-muted2">· verify by {n.verification_method}</span>
                       )}
                     </span>
                   </li>
@@ -321,8 +321,8 @@ export default function Overview({ srs, onSelectView }) {
         {security.length === 0 ? <Nothing what="security requirements" /> : (
           <ol className="space-y-1.5">
             {security.map((s, i) => (
-              <li key={i} className="grid grid-cols-[26px_1fr] gap-2 text-[12.5px] leading-relaxed text-white/85">
-                <span className="font-mono text-[11px] text-white/35">{i + 1}.</span>
+              <li key={i} className="grid grid-cols-[26px_1fr] gap-2 text-[12.5px] leading-relaxed text-ink">
+                <span className="font-mono text-[11px] text-muted2">{i + 1}.</span>
                 <span>{sentence(s)}</span>
               </li>
             ))}
@@ -335,16 +335,16 @@ export default function Overview({ srs, onSelectView }) {
         {workflows.length === 0 ? <Nothing what="business workflows" /> : (
           <div className="space-y-4">
             {workflows.map((w, i) => (
-              <div key={i} className="border-b border-white/[.07] pb-4 last:border-0 last:pb-0">
-                <p className="text-[13px] font-semibold text-white">
+              <div key={i} className="border-b border-black/[.07] pb-4 last:border-0 last:pb-0">
+                <p className="text-[13px] font-semibold text-ink">
                   {text(w?.workflow_name) || text(w?.name) || `Workflow ${i + 1}`}
-                  {text(w?.who) && <span className="ml-2 font-normal text-white/45">— {w.who}</span>}
+                  {text(w?.who) && <span className="ml-2 font-normal text-muted2">— {w.who}</span>}
                 </p>
                 {list(w?.steps).length > 0 && (
                   <ol className="mt-2 space-y-1">
                     {list(w.steps).map((step, j) => (
-                      <li key={j} className="grid grid-cols-[26px_1fr] gap-2 text-[12.5px] leading-relaxed text-white/80">
-                        <span className="font-mono text-[11px] text-white/35">{j + 1}.</span>
+                      <li key={j} className="grid grid-cols-[26px_1fr] gap-2 text-[12.5px] leading-relaxed text-ink">
+                        <span className="font-mono text-[11px] text-muted2">{j + 1}.</span>
                         <span>{sentence(step)}</span>
                       </li>
                     ))}
@@ -362,25 +362,25 @@ export default function Overview({ srs, onSelectView }) {
           <>
             <ul className="space-y-2">
               {tables.map((table, i) => (
-                <li key={i} className="rounded-xl border border-white/[.07] bg-white/[.02] p-3">
-                  <p className="text-[12.5px] font-semibold text-white">
+                <li key={i} className="rounded-none border border-black/[.07] bg-black/[.02] p-3">
+                  <p className="text-[12.5px] font-semibold text-ink">
                     {text(table?.table_name) || text(table?.name) || `Table ${i + 1}`}
-                    <span className="ml-2 font-mono text-[11px] font-normal text-white/35">
+                    <span className="ml-2 font-mono text-[11px] font-normal text-muted2">
                       {list(table?.fields).length} field{list(table?.fields).length === 1 ? '' : 's'}
                     </span>
                   </p>
                   {text(table?.description) && (
-                    <p className="mt-1 text-[12px] leading-relaxed text-white/60">{table.description}</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-muted">{table.description}</p>
                   )}
                 </li>
               ))}
             </ul>
             {relationships.length > 0 && (
-              <div className="mt-4 border-t border-white/[.07] pt-3">
-                <p className="mb-1.5 text-[11px] uppercase tracking-wide text-white/35">Relationships</p>
+              <div className="mt-4 border-t border-black/[.07] pt-3">
+                <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted2">Relationships</p>
                 <ul className="space-y-1">
                   {relationships.map((r, i) => (
-                    <li key={i} className="text-[12.5px] leading-relaxed text-white/75">{sentence(r)}</li>
+                    <li key={i} className="text-[12.5px] leading-relaxed text-ink">{sentence(r)}</li>
                   ))}
                 </ul>
               </div>
@@ -398,8 +398,8 @@ export default function Overview({ srs, onSelectView }) {
                 <button key={i} type="button" onClick={() => setActiveDiagram(i)}
                   className={`rounded-full border px-3 py-1 text-[11px] transition
                     ${i === activeDiagram
-                      ? 'border-white/25 bg-white/10 text-white'
-                      : 'border-white/10 text-white/50 hover:text-white/80'}`}>
+                      ? 'border-black/25 bg-black/10 text-ink'
+                      : 'border-black/10 text-muted2 hover:text-ink'}`}>
                   {d.title || d.name}
                 </button>
               ))}
@@ -415,41 +415,41 @@ export default function Overview({ srs, onSelectView }) {
                 )}
                 {current.svg
                   ? <button type="button" onClick={() => setZoomed(true)}
-                      className="block w-full cursor-zoom-in rounded-xl border border-white/10 bg-white p-2"
+                      className="block w-full cursor-zoom-in rounded-none border border-black/10 bg-white p-2"
                       title="Open full size">
                       <div className="srs-diagram flex justify-center [&_svg]:h-auto [&_svg]:max-h-[380px] [&_svg]:max-w-full"
                         dangerouslySetInnerHTML={{ __html: current.svg }} />
                     </button>
-                  : <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-3
-                                    font-mono text-[11px] leading-relaxed text-white/60">{current.mermaid}</pre>}
+                  : <pre className="overflow-x-auto rounded-none border border-black/10 bg-black/40 p-3
+                                    font-mono text-[11px] leading-relaxed text-muted">{current.mermaid}</pre>}
 
                 {current.businessSummary && (
-                  <p className="text-[12.5px] leading-relaxed text-white/80">{current.businessSummary}</p>
+                  <p className="text-[12.5px] leading-relaxed text-ink">{current.businessSummary}</p>
                 )}
                 {list(current.flowExplanation).length > 0 ? (
                   <ol className="space-y-1">
                     {list(current.flowExplanation).map((step, i) => (
-                      <li key={i} className="grid grid-cols-[26px_1fr] gap-2 text-[12.5px] leading-relaxed text-white/75">
-                        <span className="font-mono text-[11px] text-white/35">{i + 1}.</span>
+                      <li key={i} className="grid grid-cols-[26px_1fr] gap-2 text-[12.5px] leading-relaxed text-ink">
+                        <span className="font-mono text-[11px] text-muted2">{i + 1}.</span>
                         <span>{String(step).replace(/^\d+\.\s*/, '')}</span>
                       </li>
                     ))}
                   </ol>
                 ) : (
-                  <p className="text-[12px] text-white/35">No walkthrough was recorded for this diagram.</p>
+                  <p className="text-[12px] text-muted2">No walkthrough was recorded for this diagram.</p>
                 )}
                 {list(current.keyTakeaways).length > 0 && (
-                  <ul className="space-y-1 border-t border-white/[.07] pt-3">
+                  <ul className="space-y-1 border-t border-black/[.07] pt-3">
                     {list(current.keyTakeaways).map((t, i) => (
-                      <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-white/70">
-                        <CheckCircle2 className="mt-[2px] size-3.5 shrink-0 text-white/30" />
+                      <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-muted">
+                        <CheckCircle2 className="mt-[2px] size-3.5 shrink-0 text-muted2" />
                         <span>{sentence(t)}</span>
                       </li>
                     ))}
                   </ul>
                 )}
                 <button type="button" onClick={() => setZoomed(true)}
-                  className="inline-flex items-center gap-1.5 text-[11.5px] text-white/50 hover:text-white">
+                  className="inline-flex items-center gap-1.5 text-[11.5px] text-muted2 hover:text-ink">
                   <Maximize2 className="size-3.5" /> Open full size
                 </button>
               </div>
@@ -472,12 +472,12 @@ export default function Overview({ srs, onSelectView }) {
               if (!items.length) return null
               return (
                 <div key={key}>
-                  <p className="mb-1.5 text-[11px] uppercase tracking-wide text-white/35">
-                    {label} <span className="font-mono text-white/25">· {items.length}</span>
+                  <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted2">
+                    {label} <span className="font-mono text-muted2">· {items.length}</span>
                   </p>
                   <ul className="space-y-1">
                     {items.map((item, i) => (
-                      <li key={i} className="text-[12.5px] leading-relaxed text-white/80">{sentence(item)}</li>
+                      <li key={i} className="text-[12.5px] leading-relaxed text-ink">{sentence(item)}</li>
                     ))}
                   </ul>
                 </div>
@@ -498,11 +498,11 @@ export default function Overview({ srs, onSelectView }) {
               {ambiguities.length > 0 && (
                 <ul className="space-y-2">
                   {ambiguities.map((a, i) => (
-                    <li key={i} className="rounded-xl border border-white/[.07] bg-white/[.02] p-3">
-                      <p className="text-[12.5px] leading-relaxed text-white/85">{sentence(a)}</p>
+                    <li key={i} className="rounded-none border border-black/[.07] bg-black/[.02] p-3">
+                      <p className="text-[12.5px] leading-relaxed text-ink">{sentence(a)}</p>
                       {text(a?.assumption_made) && (
-                        <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
-                          <span className="text-white/70">Assumed:</span> {a.assumption_made}
+                        <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
+                          <span className="text-muted">Assumed:</span> {a.assumption_made}
                         </p>
                       )}
                       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -517,10 +517,10 @@ export default function Overview({ srs, onSelectView }) {
               {[['assumptions', 'Assumptions'], ['constraints', 'Constraints']].map(([key, label]) => (
                 list(doc[key]).length > 0 && (
                   <div key={key}>
-                    <p className="mb-1.5 text-[11px] uppercase tracking-wide text-white/35">{label}</p>
+                    <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted2">{label}</p>
                     <ul className="space-y-1">
                       {list(doc[key]).map((item, i) => (
-                        <li key={i} className="text-[12.5px] leading-relaxed text-white/75">{sentence(item)}</li>
+                        <li key={i} className="text-[12.5px] leading-relaxed text-ink">{sentence(item)}</li>
                       ))}
                     </ul>
                   </div>
@@ -538,16 +538,16 @@ export default function Overview({ srs, onSelectView }) {
               const severity = text(r?.severity) || text(r?.priority) || text(r?.impact)
               const high = /high|critical|severe/i.test(severity)
               return (
-                <li key={i} className="rounded-xl border border-white/[.07] bg-white/[.02] p-3">
-                  <p className="text-[12.5px] leading-relaxed text-white/85">{sentence(r)}</p>
+                <li key={i} className="rounded-none border border-black/[.07] bg-black/[.02] p-3">
+                  <p className="text-[12.5px] leading-relaxed text-ink">{sentence(r)}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {text(r?.id) && <Chip tone="id">{r.id}</Chip>}
                     {severity && <Chip tone={high ? 'bad' : 'mute'}>{severity}</Chip>}
                     {text(r?.mitigation) && <Chip>mitigated</Chip>}
                   </div>
                   {text(r?.mitigation) && (
-                    <p className="mt-1.5 text-[12px] leading-relaxed text-white/55">
-                      <span className="text-white/70">Mitigation:</span> {r.mitigation}
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
+                      <span className="text-muted">Mitigation:</span> {r.mitigation}
                     </p>
                   )}
                 </li>
@@ -561,17 +561,17 @@ export default function Overview({ srs, onSelectView }) {
       <Block n="12" title="What has been verified" icon={CheckCircle2} count={trace.length || null}>
         {trace.length === 0 ? <Nothing what="traceability" /> : (
           <>
-            <div className={'mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-3 py-2 '
+            <div className={'mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-none border px-3 py-2 '
               + (untraced > 0 ? 'border-amber-400/30 bg-amber-400/10'
-                              : 'border-white/[.07] bg-white/[.02]')}>
-              <span className="text-[12.5px] text-white/85">
-                <b className="font-semibold text-white">{reqs.length}</b> requirements
+                              : 'border-black/[.07] bg-black/[.02]')}>
+              <span className="text-[12.5px] text-ink">
+                <b className="font-semibold text-ink">{reqs.length}</b> requirements
               </span>
-              <span className="text-[12.5px] text-white/70">
-                <b className="font-semibold text-white">{trace.length}</b> traced
+              <span className="text-[12.5px] text-muted">
+                <b className="font-semibold text-ink">{trace.length}</b> traced
               </span>
-              <span className="text-[12.5px] text-white/70">
-                <b className="font-semibold text-white">{verified}</b> verified
+              <span className="text-[12.5px] text-muted">
+                <b className="font-semibold text-ink">{verified}</b> verified
               </span>
               {untraced > 0 && (
                 <span className="text-[12.5px] font-semibold text-amber-300">
@@ -590,14 +590,14 @@ export default function Overview({ srs, onSelectView }) {
                 const status = text(row?.verification_status)
                 const ok = /verified|passed/i.test(status)
                 return (
-                  <li key={i} className="flex flex-wrap items-center gap-1.5 border-b border-white/[.07]
+                  <li key={i} className="flex flex-wrap items-center gap-1.5 border-b border-black/[.07]
                                          py-2 text-[12px] last:border-0">
-                    {ok ? <CheckCircle2 className="size-3.5 shrink-0 text-emerald-400" />
-                        : <XCircle className="size-3.5 shrink-0 text-white/25" />}
+                    {ok ? <CheckCircle2 className="size-3.5 shrink-0 text-ink" />
+                        : <XCircle className="size-3.5 shrink-0 text-muted2" />}
                     <Chip tone="id">{text(row?.requirement_id) || `#${i + 1}`}</Chip>
-                    {oneLine(row?.pages) && <span className="text-white/55">pages: {oneLine(row.pages)}</span>}
-                    {oneLine(row?.tables) && <span className="text-white/55">data: {oneLine(row.tables)}</span>}
-                    {oneLine(row?.test_case) && <span className="text-white/55">test: {oneLine(row.test_case)}</span>}
+                    {oneLine(row?.pages) && <span className="text-muted">pages: {oneLine(row.pages)}</span>}
+                    {oneLine(row?.tables) && <span className="text-muted">data: {oneLine(row.tables)}</span>}
+                    {oneLine(row?.test_case) && <span className="text-muted">test: {oneLine(row.test_case)}</span>}
                     {status && <Chip tone={ok ? 'good' : 'mute'}>{status}</Chip>}
                   </li>
                 )
@@ -611,7 +611,7 @@ export default function Overview({ srs, onSelectView }) {
       {(reviewer || list(review.items_needing_human_review).length > 0) && (
         <Block n="13" title="Quality review" icon={Lock}>
           {reviewer && (
-            <div className="mb-3 space-y-1.5 text-[12.5px] text-white/75">
+            <div className="mb-3 space-y-1.5 text-[12.5px] text-ink">
               <p>
                 The draft went through {reviewer.iterations_used ?? 0} review
                 round{reviewer.iterations_used === 1 ? '' : 's'}
@@ -637,9 +637,9 @@ export default function Overview({ srs, onSelectView }) {
             </div>
           )}
           {list(review.items_needing_human_review).length > 0 && (
-            <ul className="space-y-1 border-t border-white/[.07] pt-3">
+            <ul className="space-y-1 border-t border-black/[.07] pt-3">
               {list(review.items_needing_human_review).map((item, i) => (
-                <li key={i} className="text-[12px] leading-relaxed text-white/70">{sentence(item)}</li>
+                <li key={i} className="text-[12px] leading-relaxed text-muted">{sentence(item)}</li>
               ))}
             </ul>
           )}
@@ -648,9 +648,9 @@ export default function Overview({ srs, onSelectView }) {
 
       {onSelectView && (
         <button type="button" onClick={() => onSelectView('document')}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10
-                     bg-white/[.03] px-5 py-4 text-[13px] font-semibold text-white/80
-                     transition hover:border-white/25 hover:text-white">
+          className="flex w-full items-center justify-center gap-2 rounded-none border border-black/10
+                     bg-black/[.03] px-5 py-4 text-[13px] font-semibold text-ink
+                     transition hover:border-black/25 hover:text-ink">
           <FileText className="size-4" />
           Read the formal document
           <ArrowRight className="size-4" />

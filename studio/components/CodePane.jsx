@@ -112,9 +112,9 @@ export default function CodePane({ hidden }) {
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col', hidden && 'hidden')}>
-      <div className="flex h-[48px] shrink-0 items-center gap-2.5 border-b border-line/70 bg-white/42 px-4 backdrop-blur-xl dark:bg-white/[.018]">
+      <div className="flex h-[48px] shrink-0 items-center gap-2.5 border-b border-line/70 bg-black/42 px-4 backdrop-blur-xl dark:bg-black/[.018]">
         {badge ? (
-          <span className="shrink-0 rounded-lg border border-line bg-white/65 px-2 py-1 font-mono text-[9px] text-muted shadow-sm dark:bg-white/5">
+          <span className="shrink-0 rounded-lg border border-line bg-black/65 px-2 py-1 font-mono text-[9px] text-muted shadow-sm dark:bg-black/5">
             {badge}
           </span>
         ) : (
@@ -129,7 +129,7 @@ export default function CodePane({ hidden }) {
         <button
           type="button"
           onClick={() => setShowFilesOnMobile(v => !v)}
-          className="sm:hidden flex shrink-0 items-center gap-1 rounded-lg border border-line bg-white/60 px-2.5 py-1 font-mono text-[10.5px] text-muted shadow-sm transition hover:bg-white dark:bg-white/5"
+          className="sm:hidden flex shrink-0 items-center gap-1 rounded-lg border border-line bg-black/60 px-2.5 py-1 font-mono text-[10.5px] text-muted shadow-sm transition hover:bg-white dark:bg-black/5"
         >
           <Folder className="size-3" />
           <span>{showFilesOnMobile ? 'Editor' : 'Files'}</span>
@@ -143,12 +143,12 @@ export default function CodePane({ hidden }) {
         {isDirty && !streaming && (
           <>
             <button onClick={revert} title="Throw the edit away"
-                    className="flex shrink-0 items-center gap-1 rounded-lg border border-line bg-white/60 px-2 py-1 font-mono text-[10px] text-muted shadow-sm transition hover:bg-white dark:bg-white/5">
+                    className="flex shrink-0 items-center gap-1 rounded-lg border border-line bg-black/60 px-2 py-1 font-mono text-[10px] text-muted shadow-sm transition hover:bg-white dark:bg-black/5">
               <Undo2 className="size-2.5" /> revert
             </button>
             <button onClick={save} disabled={!!saving}
                     title="Save to disk (Ctrl+S)"
-                    className="flex shrink-0 items-center gap-1 rounded-lg border border-accent bg-accent px-2 py-1 font-mono text-[10px] text-white shadow-sm transition hover:bg-press disabled:opacity-50">
+                    className="flex shrink-0 items-center gap-1 rounded-lg border border-accent bg-accent px-2 py-1 font-mono text-[10px] text-ink shadow-sm transition hover:bg-press disabled:opacity-50">
               {saving ? <Loader2 className="size-2.5 animate-spin" />
                       : <Save className="size-2.5" />}
               save
@@ -176,7 +176,7 @@ export default function CodePane({ hidden }) {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* File Tree Drawer / Column */}
         <div className={cn(
-          "m-2 sm:m-3 sm:mr-0 w-full sm:w-[238px] shrink-0 flex-col overflow-hidden rounded-[18px] border border-line/80 bg-white/50 shadow-sm dark:bg-white/[.025]",
+          "m-2 sm:m-3 sm:mr-0 w-full sm:w-[238px] shrink-0 flex-col overflow-hidden rounded-[18px] border border-line/80 bg-black/50 shadow-sm dark:bg-black/[.025]",
           showFilesOnMobile ? "flex" : "hidden sm:flex"
         )}>
           <div className="flex shrink-0 items-center justify-between border-b border-line/70 px-3.5 py-3">
@@ -245,7 +245,7 @@ export default function CodePane({ hidden }) {
                     }}
                     className="editor-layer absolute inset-0 size-full resize-none
                                overflow-auto bg-transparent text-transparent
-                               outline-none selection:bg-accent/30"
+                               outline-none selection:bg-accent"
                     style={{ caretColor: 'var(--tk-plain)' }} />
                 </div>
               )}

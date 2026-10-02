@@ -36,26 +36,26 @@ function ProjectVisualThumbnail({ project, name }) {
     return (
       <div className="flex h-full w-full items-center justify-center p-4">
         {/* Project Visual Mockup / Illustration Fallback */}
-        <div className="h-full w-full rounded-xl border border-white/10 bg-white/[.03] p-3 shadow-inner transition-transform duration-300 group-hover:scale-[1.02]">
-          <div className="flex items-center gap-1.5 border-b border-white/5 pb-2">
+        <div className="h-full w-full rounded-xl border border-black/10 bg-black/[.03] p-3 shadow-inner transition-transform duration-300 group-hover:scale-[1.02]">
+          <div className="flex items-center gap-1.5 border-b border-black/5 pb-2">
             <span className="size-2 rounded-full bg-red-500/60" />
             <span className="size-2 rounded-full bg-amber-500/60" />
             <span className="size-2 rounded-full bg-emerald-500/60" />
-            <span className="ml-2 font-mono text-[9px] text-white/30 truncate max-w-[120px]">
+            <span className="ml-2 font-mono text-[9px] text-muted2 truncate max-w-[120px]">
               {name}.app
             </span>
           </div>
           <div className="mt-2.5 grid grid-cols-12 gap-2">
             <div className="col-span-3 space-y-1.5">
-              <div className="h-2 w-full rounded bg-white/10" />
-              <div className="h-2 w-3/4 rounded bg-white/5" />
-              <div className="h-2 w-4/5 rounded bg-white/5" />
+              <div className="h-2 w-full rounded bg-black/10" />
+              <div className="h-2 w-3/4 rounded bg-black/5" />
+              <div className="h-2 w-4/5 rounded bg-black/5" />
             </div>
             <div className="col-span-9 space-y-2">
               <div className="h-3 w-3/4 rounded bg-blue-500/20" />
               <div className="grid grid-cols-2 gap-1.5">
-                <div className="h-10 rounded-md border border-white/5 bg-white/[.04]" />
-                <div className="h-10 rounded-md border border-white/5 bg-white/[.04]" />
+                <div className="h-10 rounded-md border border-black/5 bg-black/[.04]" />
+                <div className="h-10 rounded-md border border-black/5 bg-black/[.04]" />
               </div>
             </div>
           </div>
@@ -65,11 +65,11 @@ function ProjectVisualThumbnail({ project, name }) {
   }
 
   return (
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-[#0c0f17]">
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-panel">
       {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0c0f17]/90 backdrop-blur-sm z-[1]">
-          <div className="flex items-center gap-2 text-[11px] text-white/40">
-            <span className="size-2.5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center bg-panel/90 backdrop-blur-sm z-[1]">
+          <div className="flex items-center gap-2 text-[11px] text-muted2">
+            <span className="size-2.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
             <span>Loading preview…</span>
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function ProjectsView({
           </div>
           <button
             onClick={onCreateNew}
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-3.5 sm:px-4 py-2 sm:py-2.5 text-[12.5px] sm:text-[13px] font-semibold text-white shadow-lg shadow-accent/20 transition-all hover:bg-press active:scale-95 shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-accent px-3.5 sm:px-4 py-2 sm:py-2.5 text-[12.5px] sm:text-[13px] font-semibold text-ink shadow-lg shadow-accent/20 transition-all hover:bg-press active:scale-95 shrink-0 cursor-pointer"
           >
             <Plus className="size-4" />
             Create project
@@ -207,6 +207,25 @@ export default function ProjectsView({
           </div>
 
           <div className="flex items-center justify-between sm:justify-start gap-2.5 overflow-x-auto no-scrollbar">
+            <div className="flex items-center rounded-xl border border-line bg-panel2/40 p-1 text-[12px] shrink-0">
+              {[
+                { id: '', label: 'All projects', count: projects.length },
+                { id: 'starred', label: 'Starred', count: starred.length, Icon: Star },
+                { id: 'recent', label: 'Recent', count: recent.length, Icon: Calendar },
+              ].map(option => {
+                const active = shelf === option.id
+                return (
+                  <button key={option.id || 'all-projects'} type="button" onClick={() => setShelf(option.id)} aria-pressed={active}
+                          className={cn('inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-medium whitespace-nowrap transition-colors',
+                            active ? 'text-deep' : 'text-muted hover:text-ink')}>
+                    {option.Icon && <option.Icon className="size-3.5" />}
+                    <span>{option.label}</span>
+                    <span className="font-mono text-[10px] opacity-60">({option.count})</span>
+                  </button>
+                )
+              })}
+            </div>
+
             {/* Filter Pills */}
             <div className="flex items-center rounded-xl border border-line bg-panel2/40 p-1 text-[12px] shrink-0">
               {[
@@ -265,7 +284,7 @@ export default function ProjectsView({
               </p>
               <button
                 onClick={onCreateNew}
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[12.5px] font-semibold text-white shadow-sm transition hover:bg-press cursor-pointer"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[12.5px] font-semibold text-ink shadow-sm transition hover:bg-press cursor-pointer"
               >
                 <Plus className="size-3.5" />
                 Create project
@@ -299,15 +318,15 @@ export default function ProjectsView({
                       {/* Type Badge */}
                       <div className="absolute left-3 top-3 z-10">
                         {isProto ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/20 px-2 py-0.5 text-[10.5px] font-semibold text-purple-300 backdrop-blur-md border border-purple-500/30">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/45 bg-panel/95 px-2 py-0.5 text-[10.5px] font-semibold text-purple-600 backdrop-blur-md">
                             <Layers className="size-3" /> Prototype
                           </span>
                         ) : isSpec ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/20 px-2 py-0.5 text-[10.5px] font-semibold text-amber-300 backdrop-blur-md border border-amber-500/30">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/45 bg-panel/95 px-2 py-0.5 text-[10.5px] font-semibold text-amber-700 backdrop-blur-md">
                             <FileText className="size-3" /> SRS Spec
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/20 px-2 py-0.5 text-[10.5px] font-semibold text-blue-300 backdrop-blur-md border border-blue-500/30">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-blue-500/45 bg-panel/95 px-2 py-0.5 text-[10.5px] font-semibold text-blue-600 backdrop-blur-md">
                             <Globe className="size-3" /> Full App
                           </span>
                         )}
@@ -327,14 +346,14 @@ export default function ProjectsView({
                       <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
                         <button
                           onClick={e => { e.stopPropagation(); onOpen?.(name, p) }}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-[12px] font-semibold text-black shadow-md transition hover:bg-white/90 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-[12px] font-semibold text-black shadow-md transition hover:bg-black/90 cursor-pointer"
                         >
                           Open <ArrowRight className="size-3" />
                         </button>
                         {(isSpec || isProto) && onBuildProject && (
                           <button
                             onClick={e => { e.stopPropagation(); onBuildProject(name, p) }}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-md transition hover:bg-press cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-1.5 text-[12px] font-semibold text-ink shadow-md transition hover:bg-press cursor-pointer"
                             title="Build full application from this"
                           >
                             <Play className="size-3" /> Build App
@@ -362,7 +381,7 @@ export default function ProjectsView({
                             aria-pressed={starred.includes(name)}
                             className={cn('cursor-pointer p-1 transition-colors',
                               starred.includes(name)
-                                ? 'text-[#FFAB00]'
+                                ? 'text-warn'
                                 : 'text-muted2 opacity-70 hover:text-ink sm:opacity-0 group-hover:opacity-100')}
                           >
                             <Star className={cn('size-3.5', starred.includes(name) && 'fill-current')} />
@@ -381,14 +400,14 @@ export default function ProjectsView({
                             <div className="flex items-center gap-1 bg-red-950/80 px-2 py-0.5 rounded border border-red-500/40">
                               <button
                                 onClick={() => { onDelete?.(name); setConfirmDelete('') }}
-                                className="text-[10px] font-bold text-red-300 hover:text-white cursor-pointer"
+                                className="text-[10px] font-bold text-red-300 hover:text-ink cursor-pointer"
                               >
                                 delete
                               </button>
-                              <span className="text-white/30 text-[10px]">/</span>
+                              <span className="text-muted2 text-[10px]">/</span>
                               <button
                                 onClick={() => setConfirmDelete('')}
-                                className="text-[10px] text-white/60 hover:text-white cursor-pointer"
+                                className="text-[10px] text-muted hover:text-ink cursor-pointer"
                               >
                                 keep
                               </button>

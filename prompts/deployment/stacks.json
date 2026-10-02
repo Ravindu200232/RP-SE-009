@@ -1,0 +1,32 @@
+{
+  "nextjs-supabase": {
+    "name": "Next.js + Supabase",
+    "skill": "stack-nextjs-supabase",
+    "targets": "all"
+  },
+  "nextjs-mongo": {
+    "name": "Next.js + MongoDB",
+    "skill": "stack-nextjs-mongo",
+    "targets": "all"
+  },
+  "vite-supabase": {
+    "name": "Vite + Supabase",
+    "skill": "stack-vite-supabase",
+    "targets": "all"
+  },
+  "vite-mongo": {
+    "name": "Vite + MongoDB",
+    "skill": "stack-vite-mongo",
+    "targets": ["aws_ec2", "aws_ecs", "azure"]
+  },
+  "remix-supabase": {
+    "name": "Remix + Supabase",
+    "skill": "stack-remix-supabase",
+    "targets": "all"
+  },
+  "mern-microservices": {
+    "name": "MERN microservices",
+    "skill": "stack-mern-microservices",
+    "targets": ["aws_ec2", "aws_ecs", "azure"]
+  }
+}

@@ -1,1249 +1,288 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeft, Check, Heart, ImagePlus, Loader2, Sparkles, Upload, X } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Button, Input, Modal, TextArea } from './ui'
-import { Check, Eye, Moon, Search, Sparkles, Sun } from 'lucide-react'
+import { Button, Modal } from './ui'
 
-const ASSETS = '/__agentforge/design-themes'
-const LIVE = '/__agentforge/api/design-theme-preview'
-const RADII = [['Sharp', '0px'], ['Slight', '6px'], ['Rounded', '12px'], ['Pill', '9999px']]
-const DENSITIES = ['Comfortable', 'Compact', 'Spacious']
-const SWATCHES = ['primary', 'secondary', 'surface', 'text']
-// Status colours are their own group: a theme sets brand colour, and a product
-// still has to say what "failed" looks like. Left unset they follow the theme.
-const STATUS_SWATCHES = ['success', 'warning', 'danger']
-const APPEARANCES = ['Light', 'Dark', 'Light and dark']
-const BORDERS = ['None', 'Hairline', 'Bold']
-const SHADOWS = ['Flat', 'Soft', 'Dramatic']
-const ICONS = ['Outline', 'Solid', 'Duotone']
-const WIDTHS = ['Narrow', 'Normal', 'Wide', 'Full width']
-const NAVS = ['Top bar', 'Left sidebar', 'Top bar and sidebar']
-const MOTIONS = ['None', 'Subtle', 'Expressive']
+const PALETTES = [
+  { id: 'pastel', name: 'Pastel', group: 'Pastel', colors: ['#a14646', '#da6556', '#eb895b', '#fdb773'] },
+  { id: 'violet', name: 'Violet bloom', group: 'Popular', colors: ['#8c1cab', '#bd51c8', '#df89d1', '#f7b0d3'] },
+  { id: 'heritage', name: 'Heritage', group: 'Vintage', colors: ['#8f0b14', '#e5d1aa', '#f5f1e8', '#a9c0d1'] },
+  { id: 'gold', name: 'Golden hour', group: 'Warm', colors: ['#ffe8a3', '#f6b000', '#ce7200', '#593000'] },
+  { id: 'garden', name: 'Garden', group: 'Nature', colors: ['#87a66b', '#bf3333', '#ff9d4d', '#fff09b'] },
+  { id: 'berry', name: 'Berry pop', group: 'Popular', colors: ['#e91547', '#dca5bc', '#f1ead2', '#eccf21'] },
+  { id: 'midnight', name: 'Midnight', group: 'Dark', colors: ['#020202', '#8c0505', '#d00000', '#ff1008'] },
+  { id: 'peach', name: 'Peach cream', group: 'Pastel', colors: ['#fff7c8', '#ffd19e', '#ffc0af', '#f8a0a4'] },
+  { id: 'ocean', name: 'Ocean blue', group: 'Cold', colors: ['#102a43', '#1d70a2', '#2f80ed', '#9ed5ff'] },
+  { id: 'clay', name: 'Terracotta', group: 'Earth', colors: ['#5a3020', '#b65f3b', '#df9561', '#f3d3af'] },
+  { id: 'forest', name: 'Forest', group: 'Nature', colors: ['#12372a', '#436850', '#a3bc9f', '#f1f8e8'] },
+  { id: 'neon', name: 'Neon dusk', group: 'Neon', colors: ['#130f40', '#6c2bd9', '#ed3b9d', '#ffbd59'] },
+  { id: 'summer', name: 'Summer punch', group: 'Summer', colors: ['#ff5d5d', '#ff9f1c', '#ffe66d', '#4ecdc4'] },
+  { id: 'seafoam', name: 'Seafoam', group: 'Cold', colors: ['#003049', '#0077b6', '#90e0ef', '#caf0f8'] },
+  { id: 'coffee', name: 'Coffee house', group: 'Earth', colors: ['#38220f', '#7b4f2c', '#b6895b', '#f3e5c8'] },
+  { id: 'lavender', name: 'Lavender sky', group: 'Pastel', colors: ['#5b4b8a', '#8b7fba', '#c8b6e2', '#f4ecff'] },
+  { id: 'citrus', name: 'Citrus pop', group: 'Warm', colors: ['#245501', '#8cc63f', '#f7e733', '#ffb703'] },
+  { id: 'rosewood', name: 'Rosewood', group: 'Vintage', colors: ['#4a0e0e', '#8d2b2b', '#d26a6a', '#f5d0c5'] },
+  { id: 'arctic', name: 'Arctic light', group: 'Light', colors: ['#eaf6ff', '#b9e6ff', '#6cb6e5', '#2b6cb0'] },
+  { id: 'plum', name: 'Plum night', group: 'Dark', colors: ['#1f102f', '#54236e', '#a43ca7', '#f3a9d2'] },
+  { id: 'coral', name: 'Coral reef', group: 'Summer', colors: ['#003b46', '#07575b', '#66a5ad', '#c4dfe6'] },
+  { id: 'spring', name: 'Spring field', group: 'Nature', colors: ['#1b4332', '#52b788', '#b7e4c7', '#f1faee'] },
+  { id: 'retro', name: 'Retro arcade', group: 'Retro', colors: ['#202040', '#543864', '#ff6363', '#ffa600'] },
+  { id: 'sherbet', name: 'Sherbet', group: 'Pastel', colors: ['#f9c5d1', '#f999b7', '#b3e5fc', '#fdfd96'] },
+  { id: 'ink', name: 'Ink and paper', group: 'Dark', colors: ['#0c0c0c', '#313131', '#d0d0d0', '#f6f1e9'] },
+  { id: 'sunset', name: 'Sunset route', group: 'Warm', colors: ['#5e1b89', '#f15bb5', '#fee440', '#00bbf9'] },
+  { id: 'moss', name: 'Moss stone', group: 'Earth', colors: ['#344e41', '#588157', '#a3b18a', '#dad7cd'] },
+  { id: 'galaxy', name: 'Galaxy', group: 'Neon', colors: ['#10002b', '#3c096c', '#7b2cbf', '#c77dff'] },
+  { id: 'blueprint', name: 'Blueprint', group: 'Cold', colors: ['#001f3f', '#0074d9', '#7fdbff', '#ffffff'] },
+  { id: 'cinnamon', name: 'Cinnamon', group: 'Vintage', colors: ['#542f0a', '#9e5a24', '#dba159', '#fff0d2'] },
+  { id: 'aurora', name: 'Aurora', group: 'Popular', colors: ['#001219', '#005f73', '#0a9396', '#94d2bd'] },
+  { id: 'bubblegum', name: 'Bubblegum', group: 'Neon', colors: ['#ff006e', '#fb5607', '#ffbe0b', '#8338ec'] },
+]
 
-const DEFAULT_PALETTE = {
-  primary: '#2563eb',
-  secondary: '#64748b',
-  surface: '#ffffff',
-  text: '#0f172a',
-  button: '#2563eb',
-  success: '#16a34a',
-  warning: '#d97706',
-  danger: '#dc2626',
+const GROUPS = ['All', 'Popular', 'Pastel', 'Vintage', 'Retro', 'Neon', 'Warm', 'Cold', 'Nature', 'Earth', 'Light', 'Dark', 'Summer']
+
+// These families are served on demand through the Google Fonts CSS API. Keeping
+// the popular catalogue locally means the picker is fast and needs no API key.
+const FONT_OPTIONS = [
+  'ABeeZee', 'Abril Fatface', 'Acme', 'Alata', 'Albert Sans', 'Alegreya', 'Alegreya Sans', 'Alex Brush', 'Alfa Slab One', 'Amatic SC',
+  'Anton', 'Archivo', 'Archivo Black', 'Archivo Narrow', 'Arimo', 'Arsenal', 'Asap', 'Assistant', 'B612', 'Bebas Neue',
+  'Bitter', 'Bodoni Moda', 'Cabin', 'Cairo', 'Candal', 'Cardo', 'Chakra Petch', 'Cinzel', 'Comfortaa', 'Cormorant Garamond',
+  'Courier Prime', 'Crimson Pro', 'DM Mono', 'DM Sans', 'DM Serif Display', 'Dancing Script', 'Dela Gothic One', 'Domine', 'EB Garamond', 'Exo 2',
+  'Figtree', 'Fira Code', 'Fira Sans', 'Fjalla One', 'Francois One', 'Fraunces', 'Gabarito', 'Geist', 'Great Vibes', 'IBM Plex Mono',
+  'IBM Plex Sans', 'IBM Plex Serif', 'Inconsolata', 'Indie Flower', 'Instrument Sans', 'Inter', 'Josefin Sans', 'Jost', 'Karla', 'Khand',
+  'Lato', 'League Spartan', 'Lexend', 'Libre Baskerville', 'Libre Franklin', 'Lilita One', 'Lobster', 'Lora', 'Manrope', 'Merriweather',
+  'Merriweather Sans', 'Montserrat', 'Mukta', 'Mulish', 'Noto Sans', 'Noto Serif', 'Nunito', 'Nunito Sans', 'Open Sans', 'Oswald',
+  'Outfit', 'Overpass', 'Pacifico', 'Permanent Marker', 'Playfair Display', 'Plus Jakarta Sans', 'Poppins', 'PT Sans', 'PT Serif', 'Public Sans',
+  'Quicksand', 'Raleway', 'Red Hat Display', 'Red Hat Text', 'Roboto', 'Roboto Condensed', 'Roboto Mono', 'Roboto Slab', 'Rubik', 'Satisfy',
+  'Sen', 'Shadows Into Light', 'Signika', 'Source Code Pro', 'Source Sans 3', 'Space Grotesk', 'Space Mono', 'Spectral', 'Teko', 'Titillium Web',
+  'Ubuntu', 'Ubuntu Mono', 'Unbounded', 'Varela Round', 'Work Sans', 'Yanone Kaffeesatz', 'Zilla Slab',
+]
+const COLOR_LABELS = ['Primary', 'Secondary', 'Accent', 'Surface']
+const EMPTY = { palette: 'pastel', colors: PALETTES[0].colors, headingFont: 'Plus Jakarta Sans', bodyFont: 'DM Sans', prompt: '', images: [] }
+const ACCEPT_IMAGES = '.png,.jpg,.jpeg,.webp,.gif,.svg,image/*'
+
+function paletteFor(id) {
+  return PALETTES.find(item => item.id === id) || PALETTES[0]
 }
 
-const COLOR_PRESETS = [
-  {
-    name: 'Modern SaaS',
-    tag: 'Popular',
-    colors: {
-      primary: '#2563eb',
-      secondary: '#64748b',
-      surface: '#ffffff',
-      text: '#0f172a',
-      button: '#2563eb',
-      success: '#16a34a',
-      warning: '#d97706',
-      danger: '#dc2626',
-    },
-  },
-  {
-    name: 'Fintech Emerald',
-    tag: 'Finance',
-    colors: {
-      primary: '#059669',
-      secondary: '#10b981',
-      surface: '#f8fafc',
-      text: '#064e3b',
-      button: '#059669',
-      success: '#16a34a',
-      warning: '#f59e0b',
-      danger: '#e11d48',
-    },
-  },
-  {
-    name: 'Creative Violet',
-    tag: 'AI / Tech',
-    colors: {
-      primary: '#7c3aed',
-      secondary: '#a855f7',
-      surface: '#faf5ff',
-      text: '#1e1b4b',
-      button: '#7c3aed',
-      success: '#10b981',
-      warning: '#f59e0b',
-      danger: '#ef4444',
-    },
-  },
-  {
-    name: 'Warm Sunset',
-    tag: 'Editorial',
-    colors: {
-      primary: '#d97706',
-      secondary: '#f59e0b',
-      surface: '#fffbeb',
-      text: '#292524',
-      button: '#d97706',
-      success: '#16a34a',
-      warning: '#f59e0b',
-      danger: '#dc2626',
-    },
-  },
-  {
-    name: 'Crimson Bold',
-    tag: 'Energy',
-    colors: {
-      primary: '#e11d48',
-      secondary: '#f43f5e',
-      surface: '#fff1f2',
-      text: '#18181b',
-      button: '#e11d48',
-      success: '#16a34a',
-      warning: '#eab308',
-      danger: '#be123c',
-    },
-  },
-  {
-    name: 'Monochrome',
-    tag: 'Minimal',
-    colors: {
-      primary: '#18181b',
-      secondary: '#71717a',
-      surface: '#ffffff',
-      text: '#09090b',
-      button: '#18181b',
-      success: '#15803d',
-      warning: '#b45309',
-      danger: '#b91c1c',
-    },
-  },
-  {
-    name: 'Cyber Dark',
-    tag: 'Dark Mode',
-    colors: {
-      primary: '#38bdf8',
-      secondary: '#818cf8',
-      surface: '#0f172a',
-      text: '#f8fafc',
-      button: '#38bdf8',
-      success: '#34d399',
-      warning: '#fbbf24',
-      danger: '#f87171',
-    },
-  },
-]
-
-const FIDELITY_OPTIONS = [
-  {
-    value: 'AI Polished',
-    title: 'AI Polished (Recommended)',
-    desc: 'Uses wireframes as blueprints; enhances with modern UI layouts, card grids, badges & responsive polish',
-  },
-  {
-    value: 'Strict Wireframe',
-    title: 'Strict Wireframe (1:1)',
-    desc: 'Follows wireframe component placement and spatial hierarchy strictly without rearranging',
-  },
-]
-
-const POPULAR_FONTS = [
-  'Inter', 'Roboto', 'Poppins', 'Open Sans', 'Montserrat', 'Lato',
-  'Plus Jakarta Sans', 'Outfit', 'Space Grotesk', 'Playfair Display',
-  'Merriweather', 'Lora', 'DM Sans', 'DM Serif Display', 'IBM Plex Sans',
-  'Nunito', 'Work Sans', 'Syne', 'Cinzel', 'JetBrains Mono', 'Fira Code',
-]
-
-// Pairs that are known to sit well together, so the common case is one click
-// rather than remembering two font names and spelling them correctly.
-const PAIRINGS = [
-  ['Theme default', '', ''],
-  ['Inter / Inter', 'Inter', 'Inter'],
-  ['Poppins / Roboto', 'Poppins', 'Roboto'],
-  ['Playfair Display / Lato', 'Playfair Display', 'Lato'],
-  ['Space Grotesk / IBM Plex Sans', 'Space Grotesk', 'IBM Plex Sans'],
-  ['DM Serif Display / DM Sans', 'DM Serif Display', 'DM Sans'],
-  ['Outfit / Outfit', 'Outfit', 'Outfit'],
-]
-
-const BLANK = {
-  slug: '', direction: '', density: 'Comfortable', radius: '12px',
-  colors: {}, headingFont: '', bodyFont: '', custom: false,
-  appearance: '', border: '', shadow: '', icons: '', width: '', nav: '', motion: '',
-  wireframeFidelity: 'AI Polished',
+function isHex(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value || ''))
 }
 
-function loadGoogleFont(fontName) {
-  if (!fontName || typeof document === 'undefined') return
-  const clean = fontName.trim()
-  if (!clean || clean.toLowerCase() === 'system-ui' || clean.toLowerCase() === 'sans-serif') return
-  const id = `gfont-${clean.replace(/\s+/g, '-').toLowerCase()}`
+function colorsFor(value, fallback) {
+  return Array.isArray(value) && value.length === 4 && value.every(isHex) ? value : fallback
+}
+
+function fontStack(font) {
+  return `"${font}", ui-sans-serif, system-ui, sans-serif`
+}
+
+function loadGoogleFont(font) {
+  if (!font || typeof document === 'undefined') return
+  const id = `google-font-${font.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   if (document.getElementById(id)) return
   const link = document.createElement('link')
   link.id = id
   link.rel = 'stylesheet'
-  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(clean)}:wght@400;500;600;700&display=swap`
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font).replace(/%20/g, '+')}&display=swap`
   document.head.appendChild(link)
 }
 
-function getLuminance(hex) {
-  if (!hex || typeof hex !== 'string') return 0.5
-  let c = hex.replace('#', '').trim()
-  if (c.length === 3) c = c.split('').map(x => x + x).join('')
-  if (c.length !== 6) return 0.5
-  const r = parseInt(c.slice(0, 2), 16) / 255
-  const g = parseInt(c.slice(2, 4), 16) / 255
-  const b = parseInt(c.slice(4, 6), 16) / 255
-  const [R, G, B] = [r, g, b].map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)))
-  return 0.2126 * R + 0.7152 * G + 0.0722 * B
-}
-
-function getContrast(hex1, hex2) {
-  const l1 = getLuminance(hex1)
-  const l2 = getLuminance(hex2)
-  const lighter = Math.max(l1, l2)
-  const darker = Math.min(l1, l2)
-  return ((lighter + 0.05) / (darker + 0.05)).toFixed(1)
-}
-
-function getContrastScore(ratio) {
-  const num = parseFloat(ratio)
-  if (num >= 7.0) return { label: 'AAA Pass', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' }
-  if (num >= 4.5) return { label: 'AA Pass', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' }
-  if (num >= 3.0) return { label: 'AA Large', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' }
-  return { label: 'Low Contrast', color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' }
-}
-
-function tokenLines(state, theme) {
-  const colors = { ...(theme?.colors || {}), ...state.colors }
-  const rows = SWATCHES.filter(key => colors[key]).map(key => `${key} ${colors[key]}`)
-  if (state.button) rows.push(`button ${state.button}`)
-  // Status colours come only from the user: an unset one is not an override,
-  // and naming the theme's own value back at it is noise, not instruction.
-  STATUS_SWATCHES.forEach(key => {
-    if (state.colors[key]) rows.push(`${key} ${state.colors[key]}`)
-  })
-  return rows
-}
-
-// Formulate design directions by referencing the base theme and explicitly appending user customizations.
-function composeDirection(state, theme) {
-  const parts = []
-  if (theme) parts.push(`Design theme: ${theme.name} (design-theme:${theme.slug}). ${theme.description}`)
-  const tokens = tokenLines(state, theme)
-  if (tokens.length) parts.push(`Colors: ${tokens.join(', ')}.`)
-  const fonts = [state.headingFont && `headings ${state.headingFont}`,
-                 state.bodyFont && `body ${state.bodyFont}`].filter(Boolean)
-  if (fonts.length) parts.push(`Typography: ${fonts.join(', ')}.`)
-  parts.push(`Button radius: ${state.radius}. Spacing: ${state.density}.`)
-
-  // Wireframe Fidelity directive
-  if (state.wireframeFidelity === 'Strict Wireframe') {
-    parts.push('Wireframe layout fidelity: Strict 1:1. Follow the wireframe layout, component positions, and spatial hierarchy strictly without rearranging.')
-  } else {
-    parts.push('Wireframe layout fidelity: AI Polished. Use wireframes as functional architecture, upgrading with modern UI polish, component hierarchy, and responsive aesthetics.')
+function normalize(raw = {}) {
+  const palette = paletteFor(raw.palette)
+  return {
+    ...EMPTY,
+    palette: PALETTES.some(item => item.id === raw.palette) ? raw.palette : EMPTY.palette,
+    colors: colorsFor(raw.colors, palette.colors),
+    headingFont: FONT_OPTIONS.includes(raw.headingFont) ? raw.headingFont : EMPTY.headingFont,
+    bodyFont: FONT_OPTIONS.includes(raw.bodyFont) ? raw.bodyFont : EMPTY.bodyFont,
+    prompt: typeof raw.prompt === 'string' ? raw.prompt : '',
+    images: Array.isArray(raw.images) ? raw.images : [],
   }
-
-  // Include only explicitly customized controls to avoid conflicting with base theme defaults.
-  const chosen = [
-    state.appearance && `Appearance: ${state.appearance}.`,
-    state.border && `Borders: ${state.border.toLowerCase()}.`,
-    state.shadow && `Shadows: ${state.shadow.toLowerCase()}.`,
-    state.icons && `Icons: ${state.icons.toLowerCase()}.`,
-    state.width && `Content width: ${state.width.toLowerCase()}.`,
-    state.nav && `Navigation: ${state.nav.toLowerCase()}.`,
-    state.motion && `Motion: ${state.motion.toLowerCase()}.`,
-  ].filter(Boolean)
-  if (chosen.length) parts.push(chosen.join(' '))
-  if (state.direction.trim()) parts.push(state.direction.trim())
-  return parts.join('\n')
 }
 
-function Swatch({ label, value, fallback, onChange }) {
-  const shown = value || fallback || DEFAULT_PALETTE[label] || '#2563eb'
-  return (
-    <label className="flex items-center gap-2 text-xs capitalize text-muted">
-      <input
-        type="color"
-        value={shown}
-        onChange={e => onChange(e.target.value)}
-        aria-label={label}
-        className="h-7 w-7 cursor-pointer rounded border border-line bg-transparent p-0"
-      />
-      <span className="min-w-14 font-medium">{label}</span>
-      <code className="text-[11px] text-ink/70 font-mono">{shown}</code>
-    </label>
-  )
+function directionFor(state) {
+  const palette = paletteFor(state.palette)
+  const note = state.prompt.trim()
+  return [
+    `Use the selected ${palette.name} colour theme: ${state.colors.join(', ')}.`,
+    `Use ${state.headingFont} for headings and ${state.bodyFont} for body text.`,
+    note && `Customer design direction: ${note}`,
+    state.images.length && `Use the ${state.images.length} uploaded reference image${state.images.length === 1 ? '' : 's'} where appropriate.`,
+  ].filter(Boolean).join('\n')
 }
 
-function Choice({ label, options, value, onPick }) {
-  return (
-    <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-        {label} {!value && <span className="font-normal normal-case text-muted2">theme default</span>}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {options.map(option => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onPick(value === option ? '' : option)}
-            className={`rounded-ctl border px-3 py-1.5 text-xs transition cursor-pointer
-              ${value === option ? 'border-accent bg-accent/15 text-ink font-medium shadow-sm'
-                                 : 'border-line text-muted hover:text-ink hover:bg-panel2'}`}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/** Searchable Google Fonts Combobox with real-time CDN query */
-function FontPicker({ label, value, placeholder, catalog, onChange }) {
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return catalog.slice(0, 50)
-    return catalog.filter(f => f.toLowerCase().includes(q)).slice(0, 50)
-  }, [catalog, query])
-
-  return (
-    <div className="relative">
-      <div className="flex items-center justify-between mb-1">
-        <label className="text-xs font-semibold uppercase tracking-wide text-muted">
-          {label}
-        </label>
-        {value && (
-          <span className="font-normal normal-case text-accent text-[11px] truncate max-w-[140px]">
-            {value}
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-1.5">
-        <Input
-          value={value}
-          onChange={e => {
-            onChange(e.target.value)
-            setQuery(e.target.value)
-            loadGoogleFont(e.target.value)
-          }}
-          onFocus={() => setOpen(true)}
-          placeholder={placeholder}
-          className="w-full rounded-lg border border-line bg-panel p-2 text-sm font-normal text-ink"
-        />
-        <button
-          type="button"
-          onClick={() => setOpen(o => !o)}
-          className="shrink-0 rounded-lg border border-line bg-panel px-2.5 py-2 text-xs text-muted hover:text-ink hover:border-accent transition cursor-pointer"
-          title="Browse 1,900+ Google Fonts"
-        >
-          <Search className="size-3.5" />
-        </button>
-      </div>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-40 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-line bg-panel p-2 shadow-2xl backdrop-blur-xl ring-1 ring-black/20">
-            <div className="mb-2 px-1">
-              <input
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search Google fonts…"
-                className="w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-xs text-ink outline-none"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-0.5">
-              {filtered.map(font => (
-                <button
-                  key={font}
-                  type="button"
-                  onClick={() => {
-                    onChange(font)
-                    loadGoogleFont(font)
-                    setOpen(false)
-                  }}
-                  className={`w-full rounded-md px-2.5 py-1.5 text-left text-xs transition flex items-center justify-between cursor-pointer ${
-                    value === font ? 'bg-accent/15 text-accent font-semibold' : 'text-ink hover:bg-panel2'
-                  }`}
-                >
-                  <span style={{ fontFamily: font }}>{font}</span>
-                  {value === font && <Check className="size-3 text-accent shrink-0" />}
-                </button>
-              ))}
-              {!filtered.length && (
-                <p className="py-3 text-center text-xs text-muted">No fonts match "{query}"</p>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-/** Real-time Live Interactive Component Sandbox Widget */
-function LiveComponentPreview({ state, theme }) {
-  const [darkPreview, setDarkPreview] = useState(state.appearance === 'Dark')
-
-  useEffect(() => {
-    if (state.appearance === 'Dark') setDarkPreview(true)
-    if (state.appearance === 'Light') setDarkPreview(false)
-  }, [state.appearance])
-
-  const colors = useMemo(() => {
-    const primary = state.colors.primary || theme?.colors?.primary || DEFAULT_PALETTE.primary
-    const secondary = state.colors.secondary || theme?.colors?.secondary || DEFAULT_PALETTE.secondary
-    const surface = darkPreview
-      ? (state.appearance === 'Dark' && state.colors.surface ? state.colors.surface : '#0f172a')
-      : (state.colors.surface || theme?.colors?.surface || DEFAULT_PALETTE.surface)
-    const text = darkPreview
-      ? (state.appearance === 'Dark' && state.colors.text ? state.colors.text : '#f8fafc')
-      : (state.colors.text || theme?.colors?.text || DEFAULT_PALETTE.text)
-    const button = state.button || state.colors.button || primary
-    const success = state.colors.success || DEFAULT_PALETTE.success
-    const warning = state.colors.warning || DEFAULT_PALETTE.warning
-    const danger = state.colors.danger || DEFAULT_PALETTE.danger
-
-    return { primary, secondary, surface, text, button, success, warning, danger }
-  }, [state.colors, state.button, state.appearance, theme, darkPreview])
-
-  const headingFont = state.headingFont || theme?.fonts?.[0] || 'inherit'
-  const bodyFont = state.bodyFont || theme?.fonts?.[1] || theme?.fonts?.[0] || 'inherit'
-  const radius = state.radius || '12px'
-
-  const shadowCss = useMemo(() => {
-    if (state.shadow === 'Flat') return 'none'
-    if (state.shadow === 'Dramatic') return '0 20px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.25)'
-    return '0 4px 16px -2px rgba(0,0,0,0.1), 0 2px 6px -1px rgba(0,0,0,0.06)'
-  }, [state.shadow])
-
-  const borderCss = useMemo(() => {
-    if (state.border === 'None') return 'none'
-    if (state.border === 'Bold') return `2px solid ${darkPreview ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.25)'}`
-    return `1px solid ${darkPreview ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`
-  }, [state.border, darkPreview])
-
-  const densityPadding = useMemo(() => {
-    if (state.density === 'Compact') return 'py-1 px-3 text-xs'
-    if (state.density === 'Spacious') return 'py-2.5 px-5 text-sm'
-    return 'py-2 px-4 text-xs'
-  }, [state.density])
-
-  const btnContrast = getContrast(colors.button, '#ffffff')
-  const btnScore = getContrastScore(btnContrast)
-  const textContrast = getContrast(colors.text, colors.surface)
-  const textScore = getContrastScore(textContrast)
-
-  return (
-    <div className="rounded-2xl border border-line bg-panel overflow-hidden shadow-2xl transition-all">
-      {/* Browser Chrome Bar */}
-      <div className="flex items-center justify-between border-b border-line bg-panel2/80 px-3.5 py-2.5">
-        <div className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-[#ff5f56]" />
-          <span className="size-2.5 rounded-full bg-[#ffbd2e]" />
-          <span className="size-2.5 rounded-full bg-[#27c93f]" />
-          <span className="ml-2 font-mono text-[11px] font-medium text-muted flex items-center gap-1">
-            <Eye className="size-3 text-accent" /> Live Component Preview
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setDarkPreview(d => !d)}
-          className="flex items-center gap-1 rounded-md border border-line bg-panel px-2 py-0.5 text-[10.5px] text-muted hover:text-ink transition cursor-pointer"
-          title="Toggle Light / Dark Preview"
-        >
-          {darkPreview ? <Sun className="size-3 text-amber-400" /> : <Moon className="size-3 text-blue-400" />}
-          <span>{darkPreview ? 'Dark' : 'Light'}</span>
-        </button>
-      </div>
-
-      {/* Mockup Canvas */}
-      <div
-        style={{ backgroundColor: colors.surface, color: colors.text }}
-        className="p-4 sm:p-5 transition-colors duration-200"
-      >
-        {/* Navigation Mockup Header */}
-        <div
-          style={{ borderBottom: borderCss }}
-          className="mb-4 flex items-center justify-between pb-2 text-xs"
-        >
-          <div className="flex items-center gap-2 font-bold" style={{ fontFamily: headingFont }}>
-            <span className="size-3.5 rounded-md shrink-0 shadow-sm" style={{ background: colors.primary }} />
-            <span className="truncate">AgentForge Portal</span>
-          </div>
-          <div className="flex items-center gap-2.5 font-medium opacity-75" style={{ fontFamily: bodyFont }}>
-            <span className="underline decoration-2 font-semibold" style={{ textDecorationColor: colors.primary }}>
-              Overview
-            </span>
-            <span className="opacity-60">Analytics</span>
-            <span className="opacity-60">Settings</span>
-          </div>
-        </div>
-
-        {/* Hero Section */}
-        <div className="space-y-1 mb-4">
-          <h3
-            className="text-lg font-bold leading-tight"
-            style={{ fontFamily: headingFont, color: colors.text }}
-          >
-            Real-time Design Preview
-          </h3>
-          <p
-            className="text-xs leading-relaxed opacity-75"
-            style={{ fontFamily: bodyFont, color: colors.text }}
-          >
-            Review typography, button styles, and contrast before generating the final prototype.
-          </p>
-        </div>
-
-        {/* Sample Component Card */}
-        <div
-          style={{
-            borderRadius: radius,
-            boxShadow: shadowCss,
-            border: borderCss,
-            backgroundColor: darkPreview ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
-          }}
-          className="p-3.5 space-y-3 mb-4"
-        >
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-xs" style={{ fontFamily: headingFont }}>
-              Active Module
-            </span>
-            <span
-              className="px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm"
-              style={{ backgroundColor: colors.success, borderRadius: radius }}
-            >
-              Operational
-            </span>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium opacity-80 block" style={{ fontFamily: bodyFont }}>
-              Sample Input Field
-            </label>
-            <input
-              type="text"
-              readOnly
-              value="user@organization.io"
-              style={{
-                borderRadius: radius,
-                border: borderCss,
-                fontFamily: bodyFont,
-                color: colors.text,
-                backgroundColor: darkPreview ? 'rgba(0,0,0,0.3)' : '#ffffff',
-              }}
-              className="w-full px-2.5 py-1.5 text-xs outline-none shadow-sm"
-            />
-          </div>
-
-          {/* Interactive Buttons Row */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <button
-              type="button"
-              style={{
-                backgroundColor: colors.button,
-                borderRadius: radius,
-                boxShadow: shadowCss,
-                fontFamily: bodyFont,
-              }}
-              className={`font-semibold text-white transition hover:opacity-90 shadow-sm ${densityPadding}`}
-            >
-              Primary Action
-            </button>
-            <button
-              type="button"
-              style={{
-                border: `1.5px solid ${colors.primary}`,
-                color: colors.primary,
-                borderRadius: radius,
-                fontFamily: bodyFont,
-              }}
-              className={`font-semibold bg-transparent transition hover:bg-black/5 ${densityPadding}`}
-            >
-              Outline Action
-            </button>
-          </div>
-        </div>
-
-        {/* Status Badges Row */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <span
-            style={{
-              borderRadius: radius,
-              backgroundColor: `${colors.success}22`,
-              color: colors.success,
-              border: `1px solid ${colors.success}44`,
-            }}
-            className="px-2 py-0.5 text-[10.5px] font-medium"
-          >
-            ✓ Success State
-          </span>
-          <span
-            style={{
-              borderRadius: radius,
-              backgroundColor: `${colors.warning}22`,
-              color: colors.warning,
-              border: `1px solid ${colors.warning}44`,
-            }}
-            className="px-2 py-0.5 text-[10.5px] font-medium"
-          >
-            ⚠ Pending Review
-          </span>
-          <span
-            style={{
-              borderRadius: radius,
-              backgroundColor: `${colors.danger}22`,
-              color: colors.danger,
-              border: `1px solid ${colors.danger}44`,
-            }}
-            className="px-2 py-0.5 text-[10.5px] font-medium"
-          >
-            ✕ Critical Alert
-          </span>
-        </div>
-      </div>
-
-      {/* WCAG Accessibility Rating Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-panel2/70 px-3.5 py-2 text-[10.5px]">
-        <div className="flex items-center gap-2 font-mono">
-          <span className="text-muted2">Button Contrast:</span>
-          <span className={`px-1.5 py-0.5 rounded border font-semibold ${btnScore.color}`}>
-            {btnContrast}:1 ({btnScore.label})
-          </span>
-        </div>
-        <div className="flex items-center gap-2 font-mono">
-          <span className="text-muted2">Text Contrast:</span>
-          <span className={`px-1.5 py-0.5 rounded border font-semibold ${textScore.color}`}>
-            {textContrast}:1 ({textScore.label})
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/**
- * Every picture the finished product should carry — the logo among them.
- *
- * Nothing in this system draws artwork, so an uploaded file is the only real
- * photograph a page can ever show. Each one gets a line saying what it is for,
- * because a folder of files tells the designer nothing about where any of them
- * belongs, and a picture placed at a guess is worse than one left out.
- */
-function SiteImages({ projectId }) {
-  const [rows, setRows] = useState([])
-  const [busy, setBusy] = useState(false)
-  const [problem, setProblem] = useState('')
-  // What is typed, before it is saved: re-rendering from the server on every
-  // keystroke would fight the cursor.
-  const [draft, setDraft] = useState({})
-
-  useEffect(() => {
-    if (!projectId) return
-    let open = true
-    api.siteImages(projectId)
-      .then(answer => { if (open) setRows(answer?.images || []) })
-      .catch(() => { })
-    return () => { open = false }
-  }, [projectId])
-
-  async function add(files) {
-    const picked = [...(files || [])]
-    if (!picked.length || !projectId) return
-    setBusy(true); setProblem('')
-    try {
-      let answer = null
-      // One at a time: a rejected file should not take the rest of the
-      // selection down with it, and the list is rewritten by every reply.
-      for (const file of picked) {
-        try { answer = await api.siteImageSave(projectId, file) }
-        catch (failure) { setProblem(`${file.name}: ${failure?.message || 'could not be uploaded'}`) }
-      }
-      if (answer?.images) setRows(answer.images)
-    } finally {
-      setBusy(false)
-    }
+function specFor(state) {
+  const palette = paletteFor(state.palette)
+  return {
+    mode: 'theme',
+    theme: { slug: palette.id, title: palette.name },
+    summary: [`${palette.name} palette selected`, state.prompt.trim() || 'No extra design direction'],
+    tokens: {
+      colors: { primary: state.colors[0], secondary: state.colors[1], accent: state.colors[2], surface: state.colors[3] },
+      typography: { heading_font: state.headingFont, body_font: state.bodyFont },
+      layout: { source: 'design-customizer-palette' },
+    },
+    customizer_prompt: state.prompt.trim(),
+    reference_images: state.images.map(image => ({ file: image.file, purpose: image.purpose || 'Design reference' })),
   }
-
-  async function describe(file, purpose) {
-    setDraft(prev => ({ ...prev, [file]: undefined }))
-    try {
-      const answer = await api.siteImageDescribe(projectId, file, purpose)
-      if (answer?.images) setRows(answer.images)
-    } catch (failure) {
-      setProblem(failure?.message || 'That note could not be saved.')
-    }
-  }
-
-  async function drop(file) {
-    try {
-      const answer = await api.siteImageDrop(projectId, file)
-      setRows(answer?.images || [])
-    } catch (failure) {
-      setProblem(failure?.message || 'That image could not be removed.')
-    }
-  }
-
-  const unexplained = rows.filter(row => !row.purpose).length
-
-  return (
-    <div className="md:col-span-2">
-      <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Images {!rows.length && <span className="font-normal normal-case text-muted2">optional</span>}
-        </p>
-        <label className={`cursor-pointer rounded-ctl border border-line px-3 py-1 text-xs
-                           text-muted transition hover:text-ink ${busy ? 'opacity-50' : ''}`}>
-          {busy ? 'Uploading…' : rows.length ? 'Add more' : 'Upload images'}
-          <input type="file" accept="image/*" multiple className="hidden" disabled={busy || !projectId}
-            onChange={e => { add(e.target.files); e.target.value = '' }} />
-        </label>
-        <span className="text-[11px] text-muted2">
-          {rows.length
-            ? `${rows.length} image${rows.length === 1 ? '' : 's'}`
-              + (unexplained ? ` · ${unexplained} with no note yet` : '')
-            : 'logo, photographs, anything the pages should show'}
-        </span>
-      </div>
-
-      {rows.length > 0 && (
-        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
-          {rows.map(row => (
-            <div key={row.file} className="overflow-hidden rounded-lg border border-line bg-panel">
-              {/* A stored upload: its dimensions are the customer's, not ours. */}
-              <img src={api.siteImageUrl(projectId, row.file)} alt={row.purpose || row.file}
-                className="h-24 w-full border-b border-line bg-panel2 object-contain" />
-              <div className="space-y-1.5 p-2">
-                <div className="flex items-baseline justify-between gap-2">
-                  <code className="truncate text-[10px] text-ink/70" title={row.file}>{row.file}</code>
-                  <button type="button" onClick={() => drop(row.file)}
-                    className="shrink-0 text-[10px] text-muted underline hover:text-ink">remove</button>
-                </div>
-                <Input
-                  value={draft[row.file] ?? row.purpose}
-                  onChange={e => setDraft(prev => ({ ...prev, [row.file]: e.target.value }))}
-                  onBlur={e => e.target.value !== row.purpose && describe(row.file, e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
-                  placeholder="What is this for?"
-                  aria-label={`What ${row.file} is for`}
-                  className="w-full rounded border border-line bg-panel2 px-2 py-1 text-[11px]" />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {problem && <p role="alert" className="mt-2 text-[11px] text-bad">{problem}</p>}
-    </div>
-  )
 }
 
-function ThemeCard({ theme, selected, onOpen }) {
-  return (
-    <button type="button" onClick={onOpen}
-      className={`group overflow-hidden rounded-xl border text-left transition
-        ${selected ? 'border-[#1877F2] ring-2 ring-[#1877F2] shadow-md' : 'border-line hover:border-[#1877F2]/60'}`}>
-      <span className="block aspect-[16/10] overflow-hidden bg-panel2">
-        {theme.hasPreview
-          ? <img src={`${ASSETS}/${theme.slug}.png`} alt="" loading="lazy"
-              className="h-full w-full object-cover object-top transition group-hover:scale-[1.03]" />
-          : <span className="flex h-full items-center justify-center text-xs text-muted">No preview</span>}
-      </span>
-      <span className="flex items-center justify-between gap-2 px-3 py-2">
-        <span className="truncate text-sm font-medium text-ink">{theme.name}</span>
-        <span className="flex shrink-0 gap-1">
-          {SWATCHES.map(key => theme.colors?.[key] && (
-            <span key={key} className="h-3 w-3 rounded-full border border-line"
-              style={{ background: theme.colors[key] }} />
-          ))}
-        </span>
-      </span>
-    </button>
-  )
+function PaletteCard({ palette, selected, onPick }) {
+  return <button type="button" onClick={() => onPick(palette)} aria-pressed={selected}
+    className={`group overflow-hidden rounded-2xl border text-left transition ${selected ? 'border-accent ring-2 ring-accent/35' : 'border-line hover:-translate-y-0.5 hover:border-line2'}`}>
+    <span className="block overflow-hidden rounded-[14px] bg-panel">
+      {palette.colors.map((color, index) => <i key={color} className="block h-10 sm:h-12" style={{ background: color, borderTop: index ? '1px solid rgba(255,255,255,.08)' : 'none' }} />)}
+    </span>
+    <span className="flex items-center justify-between gap-2 px-2.5 py-2">
+      <span className="truncate text-[11px] font-semibold text-ink">{palette.name}</span>
+      <Heart className={`size-3.5 ${selected ? 'fill-accent text-accent' : 'text-muted2 group-hover:text-accent'}`} />
+    </span>
+  </button>
 }
 
 export default function DesignCustomize({ projectId, onContinue, onBack }) {
-  const [themes, setThemes] = useState([])
-  const [query, setQuery] = useState('')
-  const [preview, setPreview] = useState(null)
-  const [live, setLive] = useState({ slug: '', drawing: false, error: '' })
-  const [fontCatalog, setFontCatalog] = useState(POPULAR_FONTS)
-
-  // Check disk cache for existing theme preview images when opening the selection popup.
-  useEffect(() => {
-    const slug = preview?.slug
-    if (!slug || live.drawing || live.slug === slug) return
-    let open = true
-    fetch(`${LIVE}/${encodeURIComponent(slug)}`, { method: 'GET' })
-      .then(answer => { if (open && answer.ok) setLive({ slug, drawing: false, error: '' }) })
-      .catch(() => {})
-    return () => { open = false }
-  }, [preview, live.drawing, live.slug])
-  const [state, setState] = useState(BLANK)
+  const [state, setState] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [group, setGroup] = useState('All')
+  const [step, setStep] = useState(0)
+  const [paletteDialog, setPaletteDialog] = useState(null)
+  const [draftColors, setDraftColors] = useState([])
+  const [fontTarget, setFontTarget] = useState('heading')
+  const [fontQuery, setFontQuery] = useState('')
+  const [pendingImage, setPendingImage] = useState(null)
+  const [imagePurpose, setImagePurpose] = useState('')
+  const picker = useRef(null)
 
-  // Load themes
   useEffect(() => {
-    fetch(`${ASSETS}/themes.json`)
-      .then(r => r.ok ? r.json() : {})
-      .then(data => setThemes(Object.values(data)))
-      .catch(() => setThemes([]))
-  }, [])
-
-  // Fetch free Google Fonts catalog
-  useEffect(() => {
-    let active = true
-    fetch('https://cdn.jsdelivr.net/gh/hasinhayder/google-fonts/fonts.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (active && Array.isArray(data?.fonts)) {
-          setFontCatalog(data.fonts)
-        }
-      })
-      .catch(() => {})
-    return () => { active = false }
-  }, [])
-
-  // Load saved state from localStorage
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(`agentforge-design-${projectId}`) || '{}')
-      setState({ ...BLANK, ...saved, colors: saved.colors || {} })
-      if (saved.headingFont) loadGoogleFont(saved.headingFont)
-      if (saved.bodyFont) loadGoogleFont(saved.bodyFont)
-    } catch { }
+    try { setState(normalize(JSON.parse(localStorage.getItem(`agentforge-design-${projectId}`) || '{}'))) } catch { setState(EMPTY) }
   }, [projectId])
 
+  useEffect(() => {
+    if (!projectId) return
+    let active = true
+    api.siteImages(projectId).then(answer => {
+      if (!active || !answer?.images?.length) return
+      setState(previous => normalize({ ...previous, images: answer.images }))
+    }).catch(() => {})
+    return () => { active = false }
+  }, [projectId])
+
+  useEffect(() => {
+    loadGoogleFont(state.headingFont)
+    loadGoogleFont(state.bodyFont)
+  }, [state.headingFont, state.bodyFont])
+
   function save(patch) {
-    setState(prev => {
-      const next = { ...prev, ...patch }
-      try { localStorage.setItem(`agentforge-design-${projectId}`, JSON.stringify(next)) } catch { }
+    setState(previous => {
+      const next = normalize({ ...previous, ...patch })
+      try { localStorage.setItem(`agentforge-design-${projectId}`, JSON.stringify(next)) } catch {}
       return next
     })
   }
 
-  const theme = useMemo(() => themes.find(t => t.slug === state.slug) || null, [themes, state.slug])
-  const shown = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    if (!needle) return themes
-    return themes.filter(t => `${t.name} ${t.description}`.toLowerCase().includes(needle))
-  }, [themes, query])
-
-  function choose(picked) {
-    const h = picked.fonts?.[0] || ''
-    const b = picked.fonts?.[1] || picked.fonts?.[0] || ''
-    if (h) loadGoogleFont(h)
-    if (b) loadGoogleFont(b)
-    save({
-      slug: picked.slug, colors: {}, custom: false,
-      headingFont: h, bodyFont: b,
-    })
-    setPreview(null)
-  }
-
-  /**
-   * Draw one theme's preview page, then wait for it to land.
-   *
-   * The draw is a model call that takes half a minute, and holding one request
-   * open for it does not survive the hop through the dev proxy - it answered
-   * `HTTP 500 socket hang up` while the page was still being written, and the
-   * finished page then sat in the cache with the popup reporting failure. The
-   * request is a trigger; the cached page is the result, so ask for the page
-   * until it exists and only treat the deadline as failure.
-   */
-  async function draw(slug) {
-    if (live.drawing) return
-    setLive({ slug: '', drawing: true, error: '' })
-    let refused = ''
-    api.drawThemePreview(slug, '').catch(failure => { refused = failure?.message || '' })
-    const deadline = Date.now() + 240000
-    while (Date.now() < deadline) {
-      await new Promise(resume => setTimeout(resume, 2000))
-      let there = false
-      try {
-        there = (await fetch(`${LIVE}/${encodeURIComponent(slug)}`, { method: 'GET' })).ok
-      } catch { /* the proxy dropping a poll is not an answer either */ }
-      if (there) {
-        setLive({ slug, drawing: false, error: '' })
-        return
-      }
+  function requestImage(file) {
+    if (!file || uploading) return
+    if (!String(file.type || '').startsWith('image/')) {
+      setError('Choose a PNG, JPEG, WebP, GIF or SVG image.')
+      return
     }
-    setLive({ slug: '', drawing: false, error: refused || 'The preview took too long to draw.' })
+    setError('')
+    setPendingImage(file)
+    setImagePurpose('')
   }
 
-  async function apply() {
-    if (saving) return
-    setSaving(true)
+  async function addImage(file, purpose) {
+    if (!file || uploading) return
+    if (!String(file.type || '').startsWith('image/')) {
+      setError('Choose a PNG, JPEG, WebP, GIF or SVG image.')
+      return
+    }
+    setUploading(true); setError('')
+    try {
+      const answer = await api.siteImageSave(projectId, file, purpose.trim() || 'Design reference image')
+      save({ images: answer?.images || [...state.images, answer?.image].filter(Boolean) })
+      setPendingImage(null)
+    } catch (failure) { setError(failure?.message || 'The image could not be uploaded.') }
+    finally { setUploading(false) }
+  }
+
+  async function removeImage(file) {
+    if (!file) return
     setError('')
     try {
-      await onContinue(composeDirection(state, theme))
+      // Dropping an image removes both its manifest entry and its project-media
+      // file, so it cannot appear again after visiting another design step.
+      const answer = await api.siteImageDrop(projectId, file)
+      save({ images: answer?.images || state.images.filter(image => image.file !== file) })
     } catch (failure) {
-      setError(failure.message)
-    } finally {
-      setSaving(false)
+      setError(failure?.message || 'The image could not be removed.')
     }
   }
 
-  return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto w-full px-3.5 sm:px-6 py-6 sm:py-10">
-      <section className="mx-auto w-full max-w-6xl rounded-2xl border border-line bg-panel p-6 sm:p-8 text-ink shadow-2xl ring-1 ring-white/10 shrink-0">
-        <p className="text-xs font-semibold text-accent">SRS approved · Designer</p>
-        <h1 className="mt-2 text-2xl font-semibold">Customize the design</h1>
-        <p className="mt-2 text-sm text-muted">
-          Pick a theme for the look and feel. The designer reads its full design system, then your changes on top.
-        </p>
+  function openPalette(palette) {
+    setPaletteDialog(palette)
+    setDraftColors([...palette.colors])
+  }
 
-        {/* Theme Search */}
-        <div className="mt-5 flex items-center gap-3">
-          <Input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Search themes…"
-            className="w-full max-w-xs rounded-lg border border-line bg-panel2 p-2 text-sm"
-          />
-          <span className="text-xs text-muted">{shown.length} of {themes.length}</span>
-          {state.slug && (
-            <button
-              type="button"
-              onClick={() => save({ slug: '', colors: {}, headingFont: '', bodyFont: '' })}
-              className="ml-auto text-xs text-muted underline hover:text-ink cursor-pointer"
-            >
-              Clear theme
-            </button>
-          )}
-        </div>
+  function updateDraftColor(index, value) {
+    if (!isHex(value)) return
+    const colors = [...draftColors]
+    colors[index] = value.toUpperCase()
+    setDraftColors(colors)
+  }
 
-        {/* Themes Grid */}
-        <div className="mt-4 grid max-h-[42vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
-          {shown.map(item => (
-            <ThemeCard
-              key={item.slug}
-              theme={item}
-              selected={item.slug === state.slug}
-              onOpen={() => { setPreview(item); setLive({ slug: '', drawing: false, error: '' }) }}
-            />
-          ))}
-          {!themes.length && <p className="col-span-full py-8 text-center text-sm text-muted">Loading themes…</p>}
-        </div>
+  function applyPalette() {
+    if (!paletteDialog || draftColors.length !== 4) return
+    save({ palette: paletteDialog.id, colors: draftColors })
+    setPaletteDialog(null)
+  }
 
-        {/* Customization Section */}
-        <div className="mt-6 rounded-xl border border-line bg-panel2 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm font-medium">
-              {theme ? <>Theme: <span className="text-accent">{theme.name}</span></>
-                     : 'No theme selected — the designer follows the product requirements'}
-            </p>
-            <button
-              type="button"
-              onClick={() => save({ custom: !state.custom })}
-              className="text-xs text-accent underline cursor-pointer"
-            >
-              {state.custom ? 'Hide customization' : "Doesn't fit? Customize it"}
-            </button>
-          </div>
+  function chooseFont(font) {
+    save(fontTarget === 'heading' ? { headingFont: font } : { bodyFont: font })
+  }
 
-          {state.custom && (
-            <div className="mt-5 space-y-6">
-              {/* Wireframe Layout Fidelity Control */}
-              <div className="rounded-xl border border-line/70 bg-panel/60 p-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Wireframe Layout Fidelity
-                  </p>
-                  <span className="text-[10px] text-muted2">Prototype generation strategy</span>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {FIDELITY_OPTIONS.map(opt => {
-                    const active = (state.wireframeFidelity || 'AI Polished') === opt.value
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => save({ wireframeFidelity: opt.value })}
-                        className={`flex flex-col text-left rounded-xl border p-3 transition cursor-pointer ${
-                          active
-                            ? 'border-accent bg-accent/10 ring-1 ring-accent shadow-sm'
-                            : 'border-line bg-panel hover:border-line/80'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-ink">{opt.title}</span>
-                          {active && <Check className="size-3.5 text-accent" />}
-                        </div>
-                        <p className="mt-1 text-[11px] text-muted leading-relaxed">{opt.desc}</p>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
+  async function approve() {
+    if (saving) return
+    setSaving(true); setError('')
+    try { await onContinue({ direction: directionFor(state), designSpec: specFor(state) }) }
+    catch (failure) { setError(failure?.message || 'The design could not be approved.') }
+    finally { setSaving(false) }
+  }
 
-              {/* 1-Click Curated Color Mood Presets */}
-              <div className="rounded-xl border border-line/70 bg-panel/60 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted flex items-center gap-1.5">
-                    <Sparkles className="size-3.5 text-accent" />
-                    1-Click Color Mood Presets
-                  </p>
-                  <span className="text-[10.5px] text-muted2">Harmonious color palettes</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {COLOR_PRESETS.map(preset => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => save({ colors: { ...preset.colors }, button: preset.colors.button })}
-                      className="group flex flex-col gap-1.5 rounded-xl border border-line bg-panel p-2.5 text-left transition hover:border-accent hover:bg-panel2 cursor-pointer shadow-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-ink group-hover:text-accent truncate">
-                          {preset.name}
-                        </span>
-                        <span className="rounded bg-panel2 px-1.5 py-0.5 font-mono text-[9px] text-muted2">
-                          {preset.tag}
-                        </span>
-                      </div>
-                      <div className="flex h-3 w-full overflow-hidden rounded-md border border-line/60">
-                        <span className="flex-1" style={{ background: preset.colors.primary }} />
-                        <span className="flex-1" style={{ background: preset.colors.secondary }} />
-                        <span className="flex-1" style={{ background: preset.colors.surface }} />
-                        <span className="flex-1" style={{ background: preset.colors.button }} />
-                        <span className="flex-1" style={{ background: preset.colors.success }} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+  const selected = useMemo(() => paletteFor(state.palette), [state.palette])
+  const shownPalettes = useMemo(() => group === 'All' ? PALETTES : PALETTES.filter(palette => palette.group === group), [group])
+  const shownFonts = useMemo(() => FONT_OPTIONS.filter(font => font.toLowerCase().includes(fontQuery.trim().toLowerCase())), [fontQuery])
+  const currentFont = fontTarget === 'heading' ? state.headingFont : state.bodyFont
+  const stepCopy = [
+    { eyebrow: 'Step 1 of 4', title: 'Choose your colours', text: 'Choose a palette, open it, then adjust all four colours in the editor.' },
+    { eyebrow: 'Step 2 of 4', title: 'Choose your typography', text: 'Pick separate Google Fonts for headings and body text, with a live sample.' },
+    { eyebrow: 'Step 3 of 4', title: 'Upload image references', text: 'Add images that the prototype can use as visual references.' },
+    { eyebrow: 'Step 4 of 4', title: 'Add a design brief', text: 'Optionally add an extra design prompt, then continue directly to your prototype.' },
+  ][step]
+  return <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-panel text-ink">
+    <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-panel/95 px-4 py-3 backdrop-blur sm:px-6">
+      <div className="flex min-w-0 items-center gap-2.5"><button type="button" onClick={onBack} className="grid size-8 place-items-center rounded-md text-muted hover:bg-panel2 hover:text-ink" title="Back to wireframes"><ArrowLeft className="size-4" /></button><div><p className="text-[10px] font-semibold uppercase tracking-[.12em] text-muted2">Wireframe → Design</p><h1 className="text-sm font-semibold">Choose a visual theme</h1></div></div>
+      <span className="text-xs font-medium text-muted">{stepCopy.eyebrow}</span>
+    </header>
 
-              {/* Two-Column Layout: Controls on Left, Sticky Live Preview on Right */}
-              <div className="grid gap-6 lg:grid-cols-12">
-                {/* Left Columns: Visual Controls */}
-                <div className="space-y-6 lg:col-span-7">
-                  {/* Colors & Appearance */}
-                  <div className="rounded-xl border border-line bg-panel p-4 space-y-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">Colors</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {SWATCHES.map(key => (
-                        <Swatch
-                          key={key}
-                          label={key}
-                          value={state.colors[key]}
-                          fallback={theme?.colors?.[key]}
-                          onChange={value => save({ colors: { ...state.colors, [key]: value } })}
-                        />
-                      ))}
-                      <Swatch
-                        label="button"
-                        value={state.button}
-                        fallback={theme?.colors?.primary}
-                        onChange={value => save({ button: value })}
-                      />
-                      {STATUS_SWATCHES.map(key => (
-                        <Swatch
-                          key={key}
-                          label={key}
-                          value={state.colors[key]}
-                          fallback={theme?.colors?.[key]}
-                          onChange={value => save({ colors: { ...state.colors, [key]: value } })}
-                        />
-                      ))}
-                    </div>
+    <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+      <nav className="mb-7 flex flex-wrap gap-1" aria-label="Design customizer steps">{['Colours', 'Fonts', 'Images', 'Design brief'].map((label, index) => <div key={label} className="flex items-center gap-1"><button type="button" onClick={() => setStep(index)} aria-current={index === step ? 'step' : undefined} className={`flex items-center gap-2 rounded-lg px-1.5 py-1 text-xs font-semibold transition hover:bg-panel2 ${index === step ? 'text-ink' : index < step ? 'text-accent' : 'text-muted2'}`}><i className={`grid size-5 place-items-center rounded-full text-[10px] not-italic ${index <= step ? 'bg-accent text-ink' : 'bg-panel2 text-muted'}`}>{index < step ? <Check className="size-3" /> : index + 1}</i>{label}</button>{index < 3 && <b className="h-px w-6 bg-line" />}</div>)}</nav>
+      <section className="mb-6 max-w-2xl"><p className="text-[11px] font-semibold uppercase tracking-[.12em] text-accent">{stepCopy.eyebrow}</p><h2 className="mt-2 text-2xl font-semibold tracking-[-.035em] text-ink">{stepCopy.title}</h2><p className="mt-2 text-sm leading-relaxed text-muted">{stepCopy.text} No web page is generated or previewed in this customizer.</p></section>
 
-                    <div className="pt-2 border-t border-line/60 space-y-3">
-                      <Choice label="Appearance" options={APPEARANCES} value={state.appearance}
-                        onPick={value => save({ appearance: value })} />
-                      <Choice label="Borders" options={BORDERS} value={state.border}
-                        onPick={value => save({ border: value })} />
-                      <Choice label="Shadows" options={SHADOWS} value={state.shadow}
-                        onPick={value => save({ shadow: value })} />
-                      <Choice label="Icons" options={ICONS} value={state.icons}
-                        onPick={value => save({ icons: value })} />
-                    </div>
-                  </div>
+      {step === 0 && <><nav aria-label="Palette categories" className="mb-5 flex flex-wrap gap-1.5">{GROUPS.map(item => <button key={item} type="button" onClick={() => setGroup(item)} aria-pressed={group === item} className={`rounded-full border px-3 py-1.5 text-xs transition ${group === item ? 'border-accent bg-accent text-ink' : 'border-line bg-panel text-muted hover:border-line2 hover:text-ink'}`}>{item}</button>)}</nav><section aria-label="Colour theme gallery" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{shownPalettes.map(palette => <PaletteCard key={palette.id} palette={palette} selected={selected.id === palette.id} onPick={openPalette} />)}</section><section className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-panel2 p-4"><div className="flex overflow-hidden rounded-lg border border-line">{state.colors.map((color, index) => <i key={`${color}-${index}`} className="block size-9 sm:size-10" style={{ background: color }} title={color} />)}</div><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{selected.name}</p><p className="mt-0.5 text-xs text-muted">Click any palette to open its four-colour editor.</p></div><Button onClick={() => setStep(1)}>Approve colours</Button></section></>}
 
-                  {/* Typography & Layout */}
-                  <div className="rounded-xl border border-line bg-panel p-4 space-y-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">Typography</p>
-                    
-                    <label className="text-xs font-semibold uppercase tracking-wide text-muted block">
-                      Quick Font Pairing
-                      <select
-                        value={PAIRINGS.some(([, h, b]) => h === state.headingFont && b === state.bodyFont)
-                          ? `${state.headingFont}|${state.bodyFont}` : 'custom'}
-                        onChange={e => {
-                          if (e.target.value === 'custom') return
-                          const [heading, body] = e.target.value.split('|')
-                          if (heading) loadGoogleFont(heading)
-                          if (body) loadGoogleFont(body)
-                          save({ headingFont: heading, bodyFont: body })
-                        }}
-                        className="mt-1.5 block w-full rounded-lg border border-line bg-panel2 p-2 text-sm font-normal text-ink outline-none"
-                      >
-                        {PAIRINGS.map(([label, heading, body]) => (
-                          <option key={label} value={`${heading}|${body}`}>{label}</option>
-                        ))}
-                        <option value="custom">Custom (Search Google Fonts below)</option>
-                      </select>
-                    </label>
+      {step === 1 && <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]"><div className="rounded-2xl border border-line bg-panel2 p-4 sm:p-5"><div className="flex rounded-xl border border-line bg-panel p-1"><button type="button" onClick={() => setFontTarget('heading')} className={`flex-1 rounded-lg px-3 py-2 text-left text-xs transition ${fontTarget === 'heading' ? 'bg-accent font-semibold text-ink' : 'text-muted'}`}>Heading<br /><span className="font-normal">{state.headingFont}</span></button><button type="button" onClick={() => setFontTarget('body')} className={`flex-1 rounded-lg px-3 py-2 text-left text-xs transition ${fontTarget === 'body' ? 'bg-accent font-semibold text-ink' : 'text-muted'}`}>Body<br /><span className="font-normal">{state.bodyFont}</span></button></div><div className="mt-4 flex items-center justify-between gap-3"><p className="text-xs text-muted">Selecting a font applies it to the active {fontTarget} role.</p><span className="shrink-0 text-[11px] text-muted">{FONT_OPTIONS.length} Google Fonts</span></div><input aria-label="Search Google Fonts" value={fontQuery} onChange={event => setFontQuery(event.target.value)} placeholder="Search 100+ fonts…" className="mt-3 w-full rounded-xl border border-line bg-panel px-3 py-2 text-sm text-ink outline-none placeholder:text-muted2 focus:border-accent" /><div className="mt-3 grid max-h-[480px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">{shownFonts.map(font => <button key={font} type="button" onMouseEnter={() => loadGoogleFont(font)} onFocus={() => loadGoogleFont(font)} onClick={() => chooseFont(font)} aria-pressed={currentFont === font} style={{ fontFamily: fontStack(font) }} className={`rounded-xl border px-3 py-3 text-left text-lg transition ${currentFont === font ? 'border-accent bg-accent/15' : 'border-line bg-panel hover:border-line2'}`}>{font}<span className="mt-1 block text-[11px] text-muted">Aa Bb Cc 123</span></button>)}{shownFonts.length === 0 && <p className="col-span-2 rounded-xl border border-dashed border-line p-4 text-sm text-muted">No fonts match that search.</p>}</div></div><aside className="flex flex-col rounded-2xl border border-line bg-panel2 p-4 sm:p-5"><p className="text-sm font-semibold">Live sample</p><div className="mt-4 rounded-xl border border-line bg-panel p-4"><p className="text-2xl font-bold leading-tight" style={{ color: state.colors[0], fontFamily: fontStack(state.headingFont) }}>Make your product memorable.</p><p className="mt-3 text-sm leading-relaxed text-muted" style={{ fontFamily: fontStack(state.bodyFont) }}>The quick brown fox jumps over the lazy dog — a live sample of your selected typeface.</p></div><div className="mt-auto flex gap-2 pt-5"><Button variant="outline" onClick={() => setStep(0)}>Back</Button><Button className="flex-1" onClick={() => setStep(2)}>Approve fonts</Button></div></aside></section>}
 
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <FontPicker
-                        label="Heading font"
-                        value={state.headingFont}
-                        placeholder="e.g. Playfair Display"
-                        catalog={fontCatalog}
-                        onChange={val => save({ headingFont: val })}
-                      />
-                      <FontPicker
-                        label="Body font"
-                        value={state.bodyFont}
-                        placeholder="e.g. Inter"
-                        catalog={fontCatalog}
-                        onChange={val => save({ bodyFont: val })}
-                      />
-                    </div>
+      {step === 2 && <section className="mx-auto max-w-3xl rounded-2xl border border-line bg-panel2 p-4 sm:p-6"><div className="flex items-center gap-2"><ImagePlus className="size-4 text-accent" /><h3 className="text-sm font-semibold">Image upload queue</h3></div><p className="mt-1 text-xs leading-relaxed text-muted">These images are visual references for the prototype designer.</p><input ref={picker} hidden type="file" accept={ACCEPT_IMAGES} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; requestImage(file) }} /><div role="button" tabIndex={0} aria-label="Upload design reference image" onClick={() => picker.current?.click()} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') picker.current?.click() }} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); requestImage(event.dataTransfer.files?.[0]) }} className="mt-5 grid min-h-44 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-line2 bg-panel p-5 text-center transition hover:border-accent hover:bg-accent/5"><div><Upload className="mx-auto size-7 text-accent" /><p className="mt-3 text-sm font-semibold">Drag or click to upload image</p><p className="mt-1 text-xs text-muted">PNG, JPEG, WebP, GIF or SVG</p></div></div>{uploading && <p className="mt-3 flex items-center gap-2 text-xs text-muted"><Loader2 className="size-3.5 animate-spin" />Uploading image…</p>}{state.images.length > 0 && <ul className="mt-4 divide-y divide-line rounded-xl border border-line bg-panel">{state.images.map(image => <li key={image.file} className="flex items-center gap-2 px-3 py-2.5 text-xs"><span className="min-w-0 flex-1 truncate" title={image.file}>{image.file}</span><span className="text-muted">ready</span><button type="button" onClick={() => removeImage(image.file)} className="rounded p-1 text-muted hover:bg-panel2 hover:text-ink" title={`Remove ${image.file} from this design`}><X className="size-3.5" /></button></li>)}</ul>}<div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setStep(1)}>Back</Button><Button onClick={() => setStep(3)}>Continue to design brief</Button></div></section>}
 
-                    <div className="pt-2 border-t border-line/60 space-y-3">
-                      <div>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Button corners</p>
-                        <div className="flex flex-wrap gap-2">
-                          {RADII.map(([label, value]) => (
-                            <button
-                              key={value}
-                              type="button"
-                              onClick={() => save({ radius: value })}
-                              style={{ borderRadius: value }}
-                              className={`border px-3 py-1.5 text-xs transition cursor-pointer
-                                ${state.radius === value ? 'border-accent bg-accent/15 text-ink font-medium' : 'border-line text-muted hover:text-ink hover:bg-panel2'}`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <label className="text-xs font-semibold uppercase tracking-wide text-muted block">
-                        Spacing & Density
-                        <select
-                          value={state.density}
-                          onChange={e => save({ density: e.target.value })}
-                          className="mt-1.5 block w-full rounded-lg border border-line bg-panel2 p-2 text-sm font-normal text-ink outline-none"
-                        >
-                          {DENSITIES.map(value => <option key={value}>{value}</option>)}
-                        </select>
-                      </label>
-
-                      <div>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                          Corner radius <span className="font-normal normal-case text-muted2">({state.radius})</span>
-                        </p>
-                        <input
-                          type="range"
-                          min="0"
-                          max="32"
-                          step="1"
-                          aria-label="Corner radius"
-                          value={parseInt(state.radius, 10) || 0}
-                          onChange={e => save({ radius: `${e.target.value}px` })}
-                          className="w-full accent-[#1877F2] cursor-pointer"
-                        />
-                      </div>
-
-                      <Choice label="Content width" options={WIDTHS} value={state.width}
-                        onPick={value => save({ width: value })} />
-                      <Choice label="Navigation" options={NAVS} value={state.nav}
-                        onPick={value => save({ nav: value })} />
-                      <Choice label="Motion" options={MOTIONS} value={state.motion}
-                        onPick={value => save({ motion: value })} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Sticky Live Component Sandbox */}
-                <div className="lg:col-span-5">
-                  <div className="sticky top-6">
-                    <LiveComponentPreview state={state} theme={theme} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Site Images */}
-        <div className="mt-5 rounded-xl border border-line bg-panel2 p-5">
-          <SiteImages projectId={projectId} />
-        </div>
-
-        {/* Additional Look & Feel Directive */}
-        <label className="mt-5 block text-sm font-medium">
-          Anything else about the look and feel
-          <TextArea
-            value={state.direction}
-            onChange={e => save({ direction: e.target.value })}
-            rows={3}
-            placeholder="Reference sites, imagery, tone, specific UI guidelines, anything the theme does not cover…"
-            className="mt-2 w-full rounded-lg border border-line bg-panel2 p-3 text-ink"
-          />
-        </label>
-
-        {error && <p role="alert" className="mt-3 text-sm text-bad">{error}</p>}
-
-        {/* Action Bar */}
-        <div className="mt-6 flex justify-between gap-3">
-          <Button variant="outline" onClick={onBack}>Review SRS</Button>
-          <Button disabled={saving} onClick={apply}>
-            {saving ? 'Applying design…' : 'Apply to prototype'}
-          </Button>
-        </div>
-
-      {preview && (
-        <Modal onClose={() => setPreview(null)} className="max-w-3xl overflow-hidden p-0">
-          <div className="flex items-start justify-between gap-4 border-b border-line p-4">
-            <div>
-              <h2 className="text-lg font-semibold">{preview.name}</h2>
-              <p className="mt-1 max-w-xl text-sm text-muted">{preview.description}</p>
-            </div>
-            <Button onClick={() => choose(preview)}>
-              {preview.slug === state.slug ? 'Selected' : 'Use this theme'}
-            </Button>
-          </div>
-          {live.slug === preview.slug
-            ? <iframe title={`${preview.name} live preview`} src={`${LIVE}/${preview.slug}`}
-                className="h-[60vh] w-full border-0 bg-white" />
-            : preview.hasPreview
-              ? <div className="max-h-[60vh] overflow-y-auto bg-panel2">
-                  <img src={`${ASSETS}/${preview.slug}.png`} alt={`${preview.name} preview`} className="w-full" />
-                </div>
-              : <p className="flex h-40 items-center justify-center bg-panel2 text-sm text-muted">
-                  No screenshot for this theme — draw a live page to see it.
-                </p>}
-          <div className="flex flex-wrap gap-5 border-t border-line p-4 text-xs text-muted">
-            <span className="flex items-center gap-2">
-              {SWATCHES.map(key => preview.colors?.[key] && (
-                <span key={key} title={`${key} ${preview.colors[key]}`}
-                  className="h-4 w-4 rounded-full border border-line" style={{ background: preview.colors[key] }} />
-              ))}
-            </span>
-            {preview.fonts?.length > 0 && <span>Fonts: {preview.fonts.join(', ')}</span>}
-            <span className="ml-auto flex items-center gap-3">
-              {live.error && <span role="alert" className="text-bad">{live.error}</span>}
-              <button type="button" onClick={() => draw(preview.slug)} disabled={live.drawing}
-                className="text-accent underline disabled:opacity-50">
-                {live.drawing ? 'Drawing…'
-                  : live.slug === preview.slug ? 'Redraw live page' : 'Live preview'}
-              </button>
-            </span>
-          </div>
-        </Modal>
-      )}
-    </section>
-    </div>
-  )
+      {step === 3 && <section className="mx-auto grid max-w-3xl gap-5 lg:grid-cols-[minmax(0,1fr)_260px]"><div className="rounded-2xl border border-line bg-panel2 p-4 sm:p-6"><div className="flex items-center gap-2"><Sparkles className="size-4 text-accent" /><h3 className="text-sm font-semibold">Design prompt</h3></div><p className="mt-1 text-xs leading-relaxed text-muted">Optional — leave this empty if your colours, fonts and reference images already describe the design.</p><textarea aria-label="Additional design direction" value={state.prompt} onChange={event => save({ prompt: event.target.value })} rows={9} placeholder="Example: Friendly marketplace, rounded cards, warm and welcoming, generous whitespace…" className="mt-4 w-full resize-y rounded-xl border border-line bg-panel px-3 py-2.5 text-sm leading-relaxed text-ink outline-none placeholder:text-muted2 focus:border-accent" /></div><aside className="flex flex-col rounded-2xl border border-line bg-panel2 p-4 sm:p-6"><p className="text-sm font-semibold">Ready for prototype</p><p className="mt-2 text-xs leading-relaxed text-muted">{selected.name} colours, {state.headingFont}/{state.bodyFont}, and {state.images.length} image reference{state.images.length === 1 ? '' : 's'} will go to the prototype generation stage.</p><div className="mt-4 flex overflow-hidden rounded-lg border border-line">{state.colors.map((color, index) => <i key={`${color}-${index}`} className="block size-8" style={{ background: color }} />)}</div><div className="mt-auto flex gap-2 pt-5"><Button variant="outline" onClick={() => setStep(2)}>Back</Button><Button className="flex-1" disabled={saving} onClick={approve}>{saving ? 'Saving…' : 'Generate prototype'}</Button></div></aside></section>}
+      {error && <p role="alert" className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p>}
+    </main>
+    {paletteDialog && <Modal onClose={() => setPaletteDialog(null)} className="max-w-2xl p-0" overlayClassName="bg-black/55"><div className="border-b border-line px-5 py-4"><p className="text-[11px] font-semibold uppercase tracking-[.12em] text-accent">Colour editor</p><h3 className="mt-1 text-lg font-semibold">{paletteDialog.name} palette</h3><p className="mt-1 text-xs text-muted">Change any swatch and review all four colours live before applying.</p></div><div className="p-5"><div className="grid gap-3 sm:grid-cols-2">{draftColors.map((color, index) => <label key={`${COLOR_LABELS[index]}-${color}`} className="flex items-center gap-3 rounded-xl border border-line bg-panel2 p-3"><input aria-label={`${COLOR_LABELS[index]} draft colour`} type="color" value={color} onChange={event => updateDraftColor(index, event.target.value)} className="size-10 cursor-pointer rounded border-0 bg-transparent p-0" /><span className="min-w-0 flex-1"><span className="block text-xs font-semibold">{COLOR_LABELS[index]}</span><input aria-label={`${COLOR_LABELS[index]} draft hex`} key={color} defaultValue={color} onBlur={event => updateDraftColor(index, event.target.value)} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} className="mt-1 w-full bg-transparent text-xs uppercase text-muted outline-none focus:text-ink" /></span></label>)}</div><div className="mt-5 overflow-hidden rounded-xl border border-line"><div className="grid grid-cols-4">{draftColors.map((color, index) => <div key={`${color}-${index}`} className="h-24 sm:h-32" style={{ background: color }} />)}</div><div className="grid grid-cols-4 bg-panel">{draftColors.map((color, index) => <p key={`${color}-${index}`} className="truncate px-2 py-2 text-center text-[10px] font-medium uppercase text-muted">{color}</p>)}</div></div><div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setPaletteDialog(null)}>Cancel</Button><Button onClick={applyPalette}>Apply colours</Button></div></div></Modal>}
+    {pendingImage && <Modal onClose={() => setPendingImage(null)} className="max-w-lg p-0" overlayClassName="bg-black/55"><div className="border-b border-line px-5 py-4"><p className="text-[11px] font-semibold uppercase tracking-[.12em] text-accent">Describe image</p><h3 className="mt-1 text-lg font-semibold">What is this image for?</h3><p className="mt-1 truncate text-xs text-muted" title={pendingImage.name}>{pendingImage.name}</p></div><div className="p-5"><label className="block text-xs font-semibold text-ink">Reference purpose <span className="font-normal text-muted">(optional)</span><input autoFocus aria-label="Image reference purpose" value={imagePurpose} onChange={event => setImagePurpose(event.target.value)} placeholder="Example: Product photography style, brand logo, dashboard inspiration…" className="mt-2 w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted2 focus:border-accent" /></label><p className="mt-3 text-xs leading-relaxed text-muted">This label helps the prototype designer use the image in the right way.</p><div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setPendingImage(null)}>Cancel</Button><Button disabled={uploading} onClick={() => addImage(pendingImage, imagePurpose)}>{uploading ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}{uploading ? 'Uploading…' : 'Add image'}</Button></div></div></Modal>}
+  </div>
 }

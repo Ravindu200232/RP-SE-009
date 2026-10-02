@@ -1,56 +1,50 @@
 'use client'
 
-import { CheckCircle2, Loader2, MousePointer2, Play, UserRound } from 'lucide-react'
+import { CheckCircle2, Loader2, MousePointer2, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+/**
+ * What the running test is doing, as a slim strip along the bottom of the preview and a thin progress
+ * line along the top. The website itself stays what is on screen.
+ */
 export default function LiveE2EOverlay({ event }) {
   if (!event) return null
   const done = event.state === 'journey_done'
-  const failed = event.state === 'step_failed'
+  const failed = event.state === 'step_failed' || (done && event.ok === false)
   const total = Number(event.total || 0)
   const index = Number(event.index || 0)
-  const pct = total ? Math.max(4, Math.min(100, Math.round(index / total * 100))) : 8
+  const pct = total ? Math.max(3, Math.min(100, Math.round(index / total * 100))) : 6
 
   return (
-    <div className="pointer-events-none absolute inset-x-5 top-5 z-[25] flex justify-center">
-      <div className="w-full max-w-[620px] rounded-2xl border border-white/15 bg-[#121622]/95 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
-        <div className="flex items-center gap-3.5">
-          <div className={cn('grid size-10 place-items-center rounded-xl',
-            failed ? 'border border-rose-500/30 bg-rose-500/20 text-rose-400' 
-              : done ? 'border border-emerald-500/30 bg-emerald-500/20 text-emerald-400' 
-              : 'border border-blue-500/30 bg-blue-500/20 text-blue-400')}>
-            {failed ? <MousePointer2 className="size-4" />
-              : done ? <CheckCircle2 className="size-4" />
-              : <Loader2 className="size-4 animate-spin" />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[.18em] text-blue-400">
-              <Play className="size-3" /> Live browser test
-              {event.role && <><span>·</span><UserRound className="size-3" /><span className="text-slate-400">{event.role}</span></>}
-            </div>
-            <p className="mt-0.5 truncate text-[13.5px] font-bold text-white">
-              {event.title || 'End-to-end journey'}
-            </p>
-            <p className={cn('mt-0.5 truncate text-[12px]', failed ? 'text-rose-400 font-medium' : done ? 'text-emerald-400 font-medium' : 'text-slate-400')}>
-              {done ? 'Journey passed in the real browser'
-                : failed ? (event.message || event.label || 'The browser found a problem')
-                : friendlyStep(event)}
-            </p>
-          </div>
+    <>
+      <div className="pointer-events-none absolute inset-x-3 top-3 z-[25] h-[3px] overflow-hidden rounded-full bg-black/20">
+        <div className={cn('h-full rounded-full transition-all duration-500', failed ? 'bg-rose-500' : 'bg-blue-500')}
+             style={{ width: `${pct}%` }} />
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[25] flex justify-center px-4">
+        <div className="flex max-w-full items-center gap-2.5 rounded-full border border-black/15 bg-panel/90 py-1.5 pl-2.5 pr-4 shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+          <span className={cn('grid size-6 shrink-0 place-items-center rounded-full',
+            failed ? 'bg-rose-500/25 text-rose-300' : done ? 'bg-emerald-500/25 text-ink' : 'bg-blue-500/25 text-blue-300')}>
+            {failed ? <MousePointer2 className="size-3" />
+              : done ? <CheckCircle2 className="size-3" />
+              : <Loader2 className="size-3 animate-spin" />}
+          </span>
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[.16em] text-accent">Live test</span>
+          {event.role && <span className="hidden shrink-0 items-center gap-1 text-[10.5px] text-muted sm:flex"><UserRound className="size-3" />{event.role}</span>}
+          <span className="min-w-0 truncate text-[12px] font-semibold text-ink">{event.title || 'End-to-end journey'}</span>
+          <span className={cn('hidden min-w-0 truncate text-[11.5px] md:block', failed ? 'text-rose-300' : done ? 'text-ink' : 'text-muted')}>
+            {done ? (failed ? (event.message || 'Failed') : 'Passed')
+              : failed ? (event.message || event.label || 'The browser found a problem')
+              : friendlyStep(event)}
+          </span>
           {total > 0 && (
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[11px] font-semibold text-slate-300 shadow-sm">
+            <span className="shrink-0 rounded-full border border-black/10 bg-black/5 px-2 py-0.5 font-mono text-[10.5px] font-semibold text-ink">
               {Math.min(index, total)}/{total}
             </span>
           )}
         </div>
-        {!done && total > 0 && (
-          <div className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div className={cn('h-full rounded-full transition-all duration-500', failed ? 'bg-rose-500' : 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)]')}
-                 style={{ width: `${pct}%` }} />
-          </div>
-        )}
       </div>
-    </div>
+    </>
   )
 }
 

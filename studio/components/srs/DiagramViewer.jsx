@@ -77,7 +77,7 @@ export default function DiagramViewer({ svg, title, onClose }) {
            className={cn('min-h-0 flex-1 overflow-hidden',
              drag.current ? 'cursor-grabbing' : 'cursor-grab')}>
         <div className="flex h-full w-full items-center justify-center">
-          <div className="srs-diagram origin-center rounded-[18px] bg-white p-6 shadow-2xl [&_svg]:h-auto [&_svg]:max-w-none"
+          <div className="srs-diagram origin-center rounded-none bg-white p-6 shadow-2xl [&_svg]:h-auto [&_svg]:max-w-none"
                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
                dangerouslySetInnerHTML={{ __html: svg }} />
         </div>

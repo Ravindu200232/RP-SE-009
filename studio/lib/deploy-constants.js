@@ -90,6 +90,9 @@ export const TARGETS = [
     blurb: 'A Docker image built by GitHub Actions — never on this machine — '
          + 'pushed to ECR and run on Fargate behind a load balancer, so the '
          + 'URL never changes. Costs more than EC2 and is NOT free tier.' },
+  { id: 'github', label: 'GitHub',
+    blurb: 'Publish the project as a repository of its own: a real README, a meaningful commit history '
+         + 'and CI, checked by cloning it fresh and building it.' },
   { id: 'aws_ec2', label: 'AWS EC2',
     blurb: 'One small instance with an Elastic IP, nginx, and the app under '
          + 'systemd. Port 22 stays shut; administration is over SSM. '
@@ -98,6 +101,9 @@ export const TARGETS = [
 
 
 export const STATE_TEXT = {
+  PLANNING:          ['Planning the deployment', 'run'],
+  AWAITING_APPROVAL: ['Waiting for your approval', 'run'],
+  NEEDS_INPUT:       ['Waiting for your answer', 'run'],
   STARTING:     ['Starting…', 'run'],
   DRAFT:        ['Queued', 'run'],
   ANALYZING:    ['Reading the project', 'run'],
@@ -114,6 +120,9 @@ export const STATE_TEXT = {
   CANCELLED:    ['Cancelled', 'mute'],
 }
 
+
+/** The states before anything is carried out: the plan is being made, asked about or read. */
+export const PLAN_STATES = new Set(['PLANNING', 'NEEDS_INPUT', 'AWAITING_APPROVAL'])
 
 export const TERMINAL = new Set(
   ['LIVE', 'FAILED', 'ROLLED_BACK', 'DESTROYED', 'CANCELLED'])
