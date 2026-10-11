@@ -23,7 +23,7 @@ for folder in ("", "src", "srs-agent", "prototype-agent", "builder-agent", "qa-a
 GROUPS = {
     "c1": ("Requirements interview, specification, diagrams and wireframes", "Gunasena R M K N (IT22078582)", [
         "all_diagram_notation", "class_diagram_standard", "diagram_drawing", "diagram_look", "diagram_renderer",
-        "diagram_review_context", "handoff", "interview_skip", "journey_contract", "json_edits", "spec_resume",
+        "diagram_review_context", "handoff", "interview_skip", "journey_contract", "json_edits", "spec_resume", "srs_decisions", "srs_plain_summary",
         "srs_corpus", "srs_corpus_fetch", "srs_reconcile", "use_case_layout", "wireframe", "wireframe_html"]),
     "c2": ("Generative engine, prototype, app builder, context memory and data layer", "Subasinha P A R B (IT22098450)", [
         "agent", "app_text", "auth_guide", "build", "changes", "chat_media", "cli", "cloud_streaming",
@@ -38,7 +38,7 @@ GROUPS = {
     "c4": ("Autonomous multi-target deployment", "Bandara R M M P (IT22249166)", [
         "cli_monitor", "cli_signin", "deploy_accounts_refresh", "deploy_asks_midway", "deploy_flow", "deploy_vars", "stacks"]),
     "shared": ("Shared platform and integration", "the whole team", [
-        "availability", "desktop_backend", "plugins", "privacy", "reliability", "stage_evidence", "store", "studio",
+        "accounts", "availability", "desktop_backend", "plugins", "privacy", "reliability", "stage_evidence", "store", "studio",
         "versions", "wsd_slow_client"]),
 }
 
