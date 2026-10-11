@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 import json
@@ -81,8 +82,34 @@ def model_context_length(client: Any, model: str) -> int | None:
         return None
 
 
+# What a picture costs a model, roughly. Its bytes are never counted as text: a screenshot would read as hundreds of
+# thousands of tokens and the history would be compacted away.
+PICTURE_TOKENS = 1500
+# The most a request that carries a picture may weigh in all (the conversation as JSON and the pictures as base64). Measured on
+# Ollama Cloud with a long project conversation: 2.5 MB with a picture was answered, 3.4 MB with the same picture was a
+# "500 Internal Server Error" on every try, while the same conversation without the picture (2.6 MB) was answered too.
+MAX_REQUEST_BYTES = 2_400_000
+
+
+PROMPT_TOO_LONG = re.compile(r"prompt is too long:?\s*(\d+)", re.I)
+
+
+def prompt_too_long(exc: BaseException) -> int:
+    """The model's own count of a request it refused for being longer than its window, else 0.
+
+    Ollama answers "The prompt is too long: 1643388, model maximum context length: 1048576". The estimate below
+    (four characters a token) can be far under the real count for text that tokenizes densely, such as mangled
+    characters a project's files carry, so the window can be passed without the history ever being compacted.
+    """
+    found = PROMPT_TOO_LONG.search(str(exc))
+    return int(found.group(1)) if found else 0
+
+
 def _approx_tokens(messages: list[dict]) -> int:
-    return len(json.dumps(messages, ensure_ascii=False, default=str)) // 4
+    pictures = sum(len(m.get("images") or []) for m in messages if isinstance(m, dict))
+    plain = [{k: v for k, v in m.items() if k != "images"} if isinstance(m, dict) and m.get("images") else m
+             for m in messages]
+    return len(json.dumps(plain, ensure_ascii=False, default=str)) // 4 + pictures * PICTURE_TOKENS
 
 
 def _usage_count(response: Any, *names: str) -> int:
@@ -133,6 +160,14 @@ def _mechanical_digest(chunk: str, limit: int = 3000) -> str:
     return ("[unsummarized stretch] " + "\n".join(parts))[:limit] if parts else ""
 
 
+def served_from_cloud(model: str) -> bool:
+    """Whether `model` runs on ollama.com (`name:cloud`, `name:tag-cloud`), even when it is reached through this computer's own
+    Ollama. Its replies are streamed: a long answer sent as one response is cut off by the service's edge (Cloudflare answers
+    "524", a timeout, after about a hundred seconds without a byte) - a stream keeps bytes flowing."""
+    name = str(model or "").strip().lower()
+    return name.endswith(":cloud") or name.endswith("-cloud")
+
+
 class Agent:
     def __init__(self, client: Any, model: str, workspace: Path,
                  approve: Callable[[str], bool], context: int | None = None,
@@ -160,6 +195,8 @@ class Agent:
         self.last_terminal_signal = ""
         self.memory_summary = ""
         self.last_prompt_tokens = 0
+        # How many real tokens one estimated token turned out to be, once the model has said (see prompt_too_long).
+        self.token_scale = 1.0
         # These come from the provider's completed responses.  They are kept
         # separately from ``context_usage`` (which is an estimate of the
         # conversation window) so the Studio can show an honest per-request
@@ -218,8 +255,23 @@ class Agent:
         keep their existing single-response path.  The assembled object has
         the ordinary response shape used by the tool loop below.
         """
-        if not self.cloud:
+        if not (self.cloud or served_from_cloud(self.model)):
             return self.client.chat(**kwargs)
+        # A reply streamed from the cloud can be cut off part-way ("peer closed connection without sending complete message
+        # body"). The words are only being collected here, so nothing is lost but that attempt: the request is asked for again,
+        # the way the host's retrying client would have asked for a request that failed before its first word.
+        attempt = 0
+        while True:
+            try:
+                return self._streamed_response(kwargs)
+            except Exception as exc:  # noqa: BLE001 - raised again unless it is a bad minute of the service
+                again = getattr(self.client, "_next_attempt", None)
+                if not callable(again):
+                    raise
+                attempt = again(exc, attempt)         # raises when it is not worth asking again, or the attempts are gone
+
+    def _streamed_response(self, kwargs: dict[str, Any]) -> Any:
+        """One streamed request, read to its end and put back together as the ordinary response."""
         stream = self.client.chat(**{**kwargs, "stream": True})
         if not hasattr(stream, "__iter__"):
             return stream
@@ -258,7 +310,8 @@ class Agent:
                      if self.mode == "plan" else
                      "ACT MODE: The user approved the plan. Use the offered tools to implement and "
                      "verify every deliverable. Do not stop after a partial result. "
-                     "For package installs and builds, set run_command timeout_seconds as needed (up to 3600). "
+                     "For package installs and builds, set run_command timeout_seconds as needed (up to 600; a "
+                     "deployment's release command up to 1800). "
                      f"End with {COMPLETE} only when the entire plan is done and checked. "
                      f"If an external blocker prevents progress, end with {BLOCKED} and explain it.")
         memory = f"\nMemory summary from earlier turns:\n{self.memory_summary}" if self.memory_summary else ""
@@ -269,8 +322,8 @@ class Agent:
         return getattr(self, "base_system", SYSTEM) + f"\nWorkspace: {self.tools.root}\n{mode_rule}{extra_effort}{memory}"
 
     def _summarize_history(self) -> None:
-        if not self.context or (max(_approx_tokens(self.messages), self.last_prompt_tokens)
-                                < self.context * 0.88):
+        estimate = int(_approx_tokens(self.messages) * getattr(self, "token_scale", 1.0))
+        if not self.context or (max(estimate, self.last_prompt_tokens) < self.context * 0.88):
             return
         # Keep the current user request. Prefer summarizing complete older turns;
         # if one tool-heavy turn fills the window, summarize its oldest tool cycles.
@@ -400,6 +453,7 @@ class Agent:
         self.last_terminal_signal = ""
         self.messages[0]["content"] = self._system_message()
         self.messages.append({"role": "user", "content": prompt})
+        compacted_for_length = 0
         for step_index in range(self.max_steps):
             self._summarize_history()
             schemas = (TOOL_SCHEMAS if self.mode == "act" else
@@ -428,7 +482,17 @@ class Agent:
             self.announce("[thinking] model is considering the request")
             try:
                 response = self._chat_response(kwargs)
-            except Exception as exc:  # noqa: BLE001 - re-raised unless it's the one case handled
+            except Exception as exc:  # noqa: BLE001 - re-raised unless it's a case handled here
+                counted = prompt_too_long(exc)
+                if counted and self.context and compacted_for_length < 3:
+                    # The model counted the request itself: believe it from now on, compact, and ask again.
+                    compacted_for_length += 1
+                    estimate = max(1, _approx_tokens(self.messages))
+                    self.token_scale = max(getattr(self, "token_scale", 1.0), counted / estimate)
+                    self.last_prompt_tokens = counted
+                    self.announce(f"[context] The model counted {counted:,} tokens, more than its window holds: "
+                                  "compacting the earlier work and asking again.")
+                    continue
                 if tools_unsupported(exc):
                     raise RuntimeError(
                         f"The model '{self.model}' does not support tool calling, which this "
@@ -519,12 +583,54 @@ class Agent:
                           self.tools.execute(name, args))
                 save_result(name, args, result)
                 cursor += 1
+            self._show_pictures()
             # A terminal marker accompanying tool calls means those calls were
             # the final action. Returning here prevents another automatic
             # continuation turn from reopening an already completed plan.
             if self.last_terminal_signal:
                 return terminal_text
         return f"Tool batch reached {self.max_steps} steps; continuing automatically."
+
+    def _show_pictures(self) -> None:
+        """Hand the model the pictures its tools took (screenshots). Ollama carries a picture on a user turn, and the tool
+        results must follow the assistant's tool calls directly, so they come as one message after all of them. Only the
+        newest pictures stay in the history: older ones are replaced by a note, so the bytes are not sent again and again."""
+        take = getattr(self.tools, "take_images", None)
+        pictures = take() if callable(take) else []
+        if not pictures:
+            return
+        self._drop_old_pictures()
+        # The model service refuses a request that is too big to take pictures with, and says only "500 Internal Server Error":
+        # with a very long conversation (a project whose chat has grown to some megabytes) the picture is the last straw, and
+        # every try of the same request fails the same way. So a picture is attached only while the whole request stays under
+        # what was seen to work; past that the model is told it could not be shown, and goes on from the page's text and files.
+        room = MAX_REQUEST_BYTES - len(json.dumps(self.messages, ensure_ascii=False, default=str))
+        fits: list[tuple[str, bytes]] = []
+        for label, data in pictures:
+            cost = len(data) * 4 // 3 + 16
+            if cost <= room:
+                fits.append((label, data))
+                room -= cost
+        if len(fits) < len(pictures):
+            left = [label for label, _ in pictures if (label, _) not in fits]
+            self.messages.append({
+                "role": "user",
+                "content": f"You took {', '.join(left)}, but this conversation has grown too long to attach a picture to a request: "
+                           "the picture could not be shown to you. Judge the page from its text and files instead."})
+        if not fits:
+            return
+        what = "the screenshot" if len(fits) == 1 else f"the {len(fits)} screenshots"
+        self.messages.append({
+            "role": "user",
+            "content": f"Here {'is' if len(fits) == 1 else 'are'} {what} you took: "
+                       + "; ".join(label for label, _ in fits) + ". Look at it and judge the page as a person would.",
+            "images": [base64.b64encode(data).decode("ascii") for _, data in fits]})
+
+    def _drop_old_pictures(self) -> None:
+        for message in self.messages:
+            if isinstance(message, dict) and message.get("images"):
+                message.pop("images")
+                message["content"] = str(message.get("content") or "") + " (the picture is no longer attached)"
 
     def execute_plan(self, request: str, plan: str, audit: bool = True,
                      parallel_write_limit: int = 1) -> ExecutionResult:

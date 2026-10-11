@@ -14,6 +14,7 @@ through here.
 """
 from __future__ import annotations
 
+import base64
 import json
 import re
 import threading
@@ -24,8 +25,9 @@ from typing import Any, Callable, Sequence, TypeVar
 
 import httpx
 import ollama
+from ollama_terminal.agent import served_from_cloud
 
-from . import bus, config
+from . import bus, config, connection
 
 T = TypeVar("T")
 
@@ -71,23 +73,6 @@ def extract_json(text: str) -> Any:
     raise ValueError("the model did not return JSON")
 
 
-def extract_html(text: str) -> str:
-    """The HTML document in a model reply, without its commentary or fence."""
-    raw = (text or "").strip()
-    fenced = re.search(r"```(?:html)?\s*(.+?)```", raw, re.DOTALL)
-    if fenced:
-        raw = fenced.group(1).strip()
-    start = raw.lower().find("<!doctype")
-    if start < 0:
-        start = raw.lower().find("<html")
-    if start > 0:
-        raw = raw[start:]
-    end = raw.lower().rfind("</html>")
-    if end > 0:
-        raw = raw[:end + len("</html>")]
-    return raw.strip()
-
-
 _local = threading.local()
 
 
@@ -114,6 +99,72 @@ def _wait_for_stop(seconds: float) -> bool:
     return event.wait(seconds)
 
 
+class _Linked(threading.Event):
+    """A Stop of its own that is also set whenever the run's Stop (`parent`) is: what a call given a time limit is run under,
+    so the run's Stop ends it and so does giving up on it."""
+
+    def __init__(self, parent: threading.Event | None):
+        super().__init__()
+        self._parent = parent
+
+    def is_set(self) -> bool:
+        return super().is_set() or bool(self._parent is not None and self._parent.is_set())
+
+    def wait(self, timeout: float | None = None) -> bool:
+        end = None if timeout is None else time.monotonic() + timeout
+        while True:
+            if self.is_set():
+                return True
+            left = None if end is None else end - time.monotonic()
+            if left is not None and left <= 0:
+                return False
+            super().wait(0.05 if left is None else min(0.05, left))
+
+
+def within(seconds: float, function: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    """`function(*args)`, but not for longer than `seconds`: a model call that has stopped answering (a service that keeps
+    failing and is asked again and again) must not stop a whole review or walk with it.
+
+    The call runs on its own thread, under the Stop of the run it belongs to; giving up on it stops it too, so it does not go
+    on asking the model service (or waiting for a "Try again" nobody will press) for work nobody wants any more."""
+    box: dict[str, Any] = {}
+    done = threading.Event()
+    stop = _Linked(_stop_event())
+
+    def work() -> None:
+        bind_stop(stop)
+        try:
+            box["value"] = function(*args, **kwargs)
+        except BaseException as exc:  # noqa: BLE001 - handed back to the thread that waits
+            box["error"] = exc
+        finally:
+            done.set()
+
+    threading.Thread(target=work, name="model-within", daemon=True).start()
+    if not done.wait(seconds):
+        stop.set()
+        raise TimeoutError(f"the model did not answer within {int(seconds)} seconds")
+    if "error" in box:
+        raise box["error"]
+    return box["value"]
+
+
+def _connection_report(state: str, fields: dict[str, Any]) -> None:
+    """The model service stopped answering a call made for a project (or answers again): the chat says so."""
+    project = getattr(_local, "project", "")
+    if project:
+        bus.connection(project, state, agent=getattr(_local, "role", "") or bus.DEVELOPER, **fields)
+
+
+def _connection_presses() -> int:
+    return connection.presses(getattr(_local, "project", ""))
+
+
+def _hold_for_person() -> bool:
+    """A call made for a project, under a Stop button, waits for "Try again" instead of failing: the person can always end it."""
+    return bool(getattr(_local, "project", "")) and _stop_event() is not None
+
+
 def client() -> Any:
     """One Ollama client per thread, so parallel lanes do not share a socket."""
     saved = config.settings()
@@ -127,9 +178,11 @@ def client() -> Any:
             except ValueError as exc:
                 raise LLMUnavailable(str(exc)) from exc
         else:
-            inner = ollama.Client(host=saved.get("ollama_host") or "http://localhost:11434")
+            inner = ollama.Client(host=saved.get("ollama_host") or "http://localhost:11434", timeout=connection.model_timeout())
         from .session import RetryingClient
-        _local.client = RetryingClient(inner, cancelled=_stopped, wait_for_cancel=_wait_for_stop)
+        _local.client = RetryingClient(inner, cancelled=_stopped, wait_for_cancel=_wait_for_stop,
+                                       on_connection=_connection_report, presses=_connection_presses,
+                                       hold=_hold_for_person)
         _local.key = key
     return _local.client
 
@@ -243,9 +296,19 @@ def _focused_usage(project: str, model: str, context: int, role: str) -> Callabl
     return report
 
 
+def _user_message(user: str, images: Sequence[bytes | str] | None) -> dict[str, Any]:
+    """The user's turn, with any pictures it carries (raw bytes or base64 text) as base64, the way Ollama takes them."""
+    message: dict[str, Any] = {"role": "user", "content": user}
+    pictures = [base64.b64encode(item).decode("ascii") if isinstance(item, (bytes, bytearray)) else str(item)
+                for item in (images or []) if item]
+    if pictures:
+        message["images"] = pictures
+    return message
+
+
 def complete(system: str, user: str, model: str = "", think: bool | None = None,
             project: str = "", workspace: Path | None = None, role: str = "",
-            thinking_fallback: bool = True) -> str:
+            thinking_fallback: bool = True, images: Sequence[bytes | str] | None = None) -> str:
     """One call, one answer, no history — and, when `project`/`workspace` are
     given, a read-only tool the model can call instead of being handed
     pre-embedded file content.
@@ -254,12 +317,13 @@ def complete(system: str, user: str, model: str = "", think: bool | None = None,
     source): a reply with no content then comes back empty, never as the model's reasoning ("Let me read…").
     """
     from . import llm_tools
+    _local.project, _local.role = project, role
     kwargs: dict[str, Any] = {
         "model": _model(model),
         "messages": [{"role": "system", "content": system},
-                     {"role": "user", "content": user}],
-        "stream": bool(config.setting("cloud")),
+                     _user_message(user, images)],
     }
+    kwargs["stream"] = bool(config.setting("cloud")) or served_from_cloud(kwargs["model"])
     kwargs["think"] = config.thinking_enabled() if think is None else think
     context = _context_for(kwargs["model"])
     if context and not config.setting("cloud"):
@@ -277,7 +341,8 @@ def complete(system: str, user: str, model: str = "", think: bool | None = None,
 
 def complete_json(system: str, user: str, validator: Callable[[Any], Any] | None = None,
                   label: str = "json", model: str = "", attempts: int = 3,
-                  project: str = "", workspace: Path | None = None, role: str = "") -> Any:
+                  project: str = "", workspace: Path | None = None, role: str = "",
+                  images: Sequence[bytes | str] | None = None) -> Any:
     """One call answered as JSON, repaired in place when it is not.
 
     The repair carries the model's own broken answer and what was wrong with it,
@@ -286,12 +351,13 @@ def complete_json(system: str, user: str, validator: Callable[[Any], Any] | None
     of pre-embedded file content.
     """
     from . import llm_tools
+    _local.project, _local.role = project, role
     tools = _tools_for(project, workspace, role)
-    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    messages = [{"role": "system", "content": system}, _user_message(user, images)]
     last = ""
     for _ in range(max(1, attempts)):
-        kwargs: dict[str, Any] = {"model": _model(model), "messages": messages,
-                                  "stream": bool(config.setting("cloud"))}
+        kwargs: dict[str, Any] = {"model": _model(model), "messages": messages}
+        kwargs["stream"] = bool(config.setting("cloud")) or served_from_cloud(kwargs["model"])
         # Local Ollama supports JSON mode and returns syntactically valid JSON.
         # Ollama Cloud currently does not support constrained output, so keep
         # the existing prompt-and-validator repair path for hosted models.
@@ -331,54 +397,6 @@ def complete_json(system: str, user: str, validator: Callable[[Any], Any] | None
             continue
         return data if checked is None else checked
     raise LLMRepairFailed(label, last, f"no valid JSON after {attempts} attempts")
-
-
-def complete_html(system: str, user: str, model: str = "", minimum: int = 0,
-                  label: str = "html", attempts: int = 2,
-                  think: bool | None = None,
-                  project: str = "", workspace: Path | None = None, role: str = "",
-                  on_stream_start: Callable[[], None] | None = None,
-                  on_stream_token: Callable[[str], None] | None = None) -> str:
-    """One call answered as a complete HTML document. When `project`/`workspace`
-    are given, the model gets a read-only tool instead of pre-embedded file content.
-
-    `on_stream_start`/`on_stream_token`, when given, are called as the model
-    writes — the caller decides what "streaming" means to it (a bus event, a
-    log line); this module stays oblivious to that, same as it stays
-    oblivious to `bus` everywhere else.
-    """
-    from . import llm_tools
-    tools = _tools_for(project, workspace, role)
-    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-    last = ""
-    for _ in range(max(1, attempts)):
-        kwargs: dict[str, Any] = {"model": _model(model), "messages": messages,
-                                  "stream": bool(config.setting("cloud"))}
-        kwargs["think"] = config.thinking_enabled() if think is None else think
-        context = _context_for(kwargs["model"])
-        if context and not config.setting("cloud"):
-            kwargs["options"] = {"num_ctx": context}
-        message = llm_tools.run_chat(client().chat, kwargs, tools,
-                                     on_stream_start=on_stream_start, on_stream_token=on_stream_token,
-                                     on_usage=_focused_usage(project, kwargs["model"], context, role))
-        llm_tools.tag_effort(tools, kwargs["think"], label)
-        last = ((getattr(message, "content", "") or "")
-                or (getattr(message, "thinking", "") or "")).strip()
-        html = extract_html(last)
-
-        if html.lower().startswith(("<!doctype", "<html")) and len(html) >= minimum:
-            return html
-
-        why = ("it was not a complete HTML document starting with <!DOCTYPE html>"
-               if not html.lower().startswith(("<!doctype", "<html"))
-               else f"it was only {len(html)} characters, and this page needs at "
-                    f"least {minimum} — you left the page half drawn")
-        messages += [{"role": "assistant", "content": html[:1500]},
-                     {"role": "user", "content":
-                      f"That is not usable: {why}. Use the supplied project files again if "
-                      f"you need to resolve a missing detail, then draw the whole page and "
-                      f"return the complete HTML document and nothing else."}]
-    raise LLMRepairFailed(label, last, "no complete HTML document")
 
 
 def web_search(query: str, max_results: int = 4) -> list[dict[str, str]]:

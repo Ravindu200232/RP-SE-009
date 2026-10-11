@@ -76,6 +76,18 @@ DEFAULTS: dict[str, Any] = {
     "supabase_oauth_access_token": "",
     "supabase_oauth_refresh_token": "",
     "supabase_oauth_expires_at": 0,
+    "e2e_visual_review": True,         # after the end-to-end tests, a model that can look at pictures reviews their screenshots
+    "prototype_visual_review": True,   # after the prototype is bundled, a model that can look at pictures reviews every screen
+    "prototype_journey_test": True,    # then every journey is clicked through in a browser, live, with a picture at every step
+    "permission_mode": "auto",         # the mode a new project starts in (permissions.py): auto, manual, accept_edits, bypass
+    "bypass_permissions": False,       # the bypass mode is only offered once the person has turned it on in the mode menu
+    "privacy_filter": True,            # everything typed goes through Microsoft Presidio first: personal data reaches no model (privacy.py)
+    "privacy_model": "en_core_web_sm", # the spaCy model Presidio finds names with (without it: patterns only, no names)
+    "privacy_entities": [],            # which kinds of personal data are hidden; empty is privacy.DEFAULT_ENTITIES
+    "diagram_visual_review": True,     # the specification's diagrams are photographed and looked at by a vision model, two rounds at most
+    "supabase_oauth_via": "",       # "broker" (the engine's OAuth app) or "own" (one this person registered)
+    "supabase_account_id": "",      # the active account's organisation id
+    "supabase_account_credentials": {},   # the other accounts signed in, kept aside: id -> tokens (never sent to the UI)
     "supabase_org": "",
     # The one MongoDB Atlas Service Account this studio is connected as (server_modules/mongo_connect.py):
     "mongodb_client_id": "",
@@ -83,8 +95,12 @@ DEFAULTS: dict[str, Any] = {
     "mongodb_oauth_access_token": "",
     "mongodb_oauth_expires_at": 0,
     "mongodb_org": "",
+    "mongodb_atlas_account": "",    # who signed in through the Atlas CLI (cli_signin.py); the CLI keeps the credential
+    "mongodb_atlas_profile": "",    # the Atlas CLI profile (one per account) in use; "" is the CLI's own default
+    "mongodb_clusters_credentials": {},   # the cluster made for each account not in use: profile -> project, cluster, string
     "mongodb_atlas_group_id": "",
     "mongodb_atlas_cluster_name": "",
+    "mongodb_db_user": "",           # the Atlas database user this installation connects as: its own, never shared (mongo_connect.db_username)
     "aws_start_url": "",
     "aws_sso_region": "",
     "aws_profile": "",
@@ -307,10 +323,10 @@ def record_dir(project: str) -> Path:
 # workspace layout fact, not a setting — kept here for the same reason
 # `workspace_for()` and `record_dir()` are.
 SCAFFOLD_DIRS = (
-    "srs/handoff", "srs/wireframes", "srs/diagrams", "srs/diagram-context",
-    "srs/reviews", "srs/wireframe-system",
+    "srs/handoff", "srs/diagrams", "srs/diagram-context",
+    "srs/reviews",
     "design",
-    "prototype/input", "prototype/assets/uploads",
+    "wireframe", "prototype/input",
     "build/guides", "build/plan",
     "qa/guides",
     "deploy/skills", "deploy/runs",

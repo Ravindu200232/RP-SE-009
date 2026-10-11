@@ -9,8 +9,8 @@
 #   manifest.json                           what the installer installs, with every file's sha256
 #   manifest.local.json                     the same, from the files on this computer (to test the installer offline)
 #
-# The command line tools a blank Windows computer is missing (Node.js, Git, gh, AWS and Azure CLIs, the Vercel,
-# Netlify and Supabase CLIs, Playwright's browser) are not in the zip: the installer fetches each from its official
+# The command line tools a blank Windows computer is missing (Node.js, Git, gh, AWS, Azure and MongoDB Atlas CLIs, the
+# Vercel, Netlify and Supabase CLIs, Playwright's browser) are not in the zip: the installer fetches each from its official
 # source, pinned here to the version current when the release was built.
 param(
     [string]$Repo = '',
@@ -38,7 +38,10 @@ if (-not $Repo) {
 }
 $PythonVersion = '3.12.10'
 $StudioModules = @{ 'puppeteer' = '25.12.0'; 'marked' = '4.3.0'; '@mermaid-js/mermaid-cli' = '11.17.0' }
-$BackendPackages = @('ollama>=0.6.2,<1', 'httpx>=0.27,<1', 'pydantic>=2.6,<3', 'cryptography>=42,<48')
+$BackendPackages = @('ollama>=0.6.2,<1', 'httpx>=0.27,<1', 'pydantic>=2.6,<3', 'cryptography>=42,<48',
+                     'presidio-analyzer>=2.2,<3', 'presidio-anonymizer>=2.2,<3', 'spacy>=3.7,<4')
+# The privacy filter's English model (Presidio finds names with it); a plain wheel, so it is installed without its dependencies.
+$PrivacyModel = 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl'
 
 function Step($text) { Write-Host "`n== $text" -ForegroundColor Cyan }
 
@@ -141,6 +144,8 @@ if (Want 'python') {
     $hostPython = Find-Python312
     & $hostPython -m pip install --disable-pip-version-check --target $site --only-binary=:all: --platform win_amd64 --python-version 3.12 --implementation cp @BackendPackages
     if ($LASTEXITCODE -ne 0) { throw 'pip install failed' }
+    & $hostPython -m pip install --disable-pip-version-check --target $site --no-deps $PrivacyModel
+    if ($LASTEXITCODE -ne 0) { throw 'pip install of the privacy filter model failed' }
 }
 
 if (Want 'package') {
@@ -178,6 +183,10 @@ $aws = ($awsTags | Where-Object { $_.name -match '^2\.\d+\.\d+$' } | Select-Obje
 # The same zip Microsoft's own blob store serves, from GitHub's CDN: that store can crawl at tens of KB/s.
 $azure = ((Invoke-RestMethod 'https://api.github.com/repos/Azure/azure-cli/releases/latest' -Headers $headers).assets | Where-Object { $_.name -match '^azure-cli-[\d.]+-x64\.zip$' } | Select-Object -First 1).browser_download_url
 if (-not $azure) { $azure = [Net.WebRequest]::Create('https://aka.ms/installazurecliwindowszipx64').GetResponse().ResponseUri.AbsoluteUri }
+# The Atlas CLI is released from a repository that also releases another tool: take the newest atlascli/vX.Y.Z tag.
+$atlasReleases = Invoke-RestMethod 'https://api.github.com/repos/mongodb/mongodb-atlas-cli/releases?per_page=30' -Headers $headers
+$atlas = (($atlasReleases | Where-Object { $_.tag_name -match '^atlascli/v\d+\.\d+\.\d+$' } | Select-Object -First 1).tag_name) -replace '^atlascli/v', ''
+if (-not $atlas) { throw 'could not find the latest Atlas CLI release' }
 $npmClis = foreach ($name in 'vercel', 'netlify-cli', 'supabase') { "$name@" + (npm.cmd view $name version).Trim() }
 $playwright = (npm.cmd view playwright version).Trim()
 
@@ -186,7 +195,8 @@ $tools = @(
     @{ id = 'git'; title = 'Git'; url = $mingit.browser_download_url; type = 'zip'; target = 'tools/git' },
     @{ id = 'gh'; title = 'GitHub CLI'; url = $gh.browser_download_url; type = 'zip'; target = 'tools/gh' },
     @{ id = 'aws'; title = "AWS CLI $aws"; url = "https://awscli.amazonaws.com/AWSCLIV2-$aws.msi"; type = 'msi-extract'; target = 'tools/aws' },
-    @{ id = 'az'; title = 'Azure CLI'; url = "$azure"; type = 'zip'; target = 'tools/az' }
+    @{ id = 'az'; title = 'Azure CLI'; url = "$azure"; type = 'zip'; target = 'tools/az' },
+    @{ id = 'atlas'; title = "MongoDB Atlas CLI $atlas"; url = "https://fastdl.mongodb.org/mongocli/mongodb-atlas-cli_${atlas}_windows_x86_64.zip"; type = 'zip'; target = 'tools/atlas' }
 )
 $components = @()
 $localComponents = @()
@@ -231,12 +241,27 @@ namespace AgentForge.Setup { static class Config {
     public const string ManifestUrl = "https://github.com/$Repo/releases/latest/download/manifest.json";
 } }
 "@
+# Who made the file, what it is and which version: the Details tab of its Properties, and what Windows shows beside an
+# unknown program. Without these a compiled exe says nothing about itself, and antivirus heuristics and SmartScreen
+# treat a file like that with more suspicion than one that does. (Only a code-signing signature makes Windows trust it.)
+$year = (Get-Date).Year
+Write-Text (Join-Path $installer 'AssemblyInfo.generated.cs') @"
+using System.Reflection;
+[assembly: AssemblyTitle("AgentForge Setup")]
+[assembly: AssemblyDescription("Installs AgentForge Studio for the current user: downloads the app from its GitHub release and sets it up. No administrator rights needed.")]
+[assembly: AssemblyCompany("AgentForge")]
+[assembly: AssemblyProduct("AgentForge")]
+[assembly: AssemblyCopyright("Copyright (c) $year AgentForge")]
+[assembly: AssemblyVersion("$version.0")]
+[assembly: AssemblyFileVersion("$version.0")]
+[assembly: AssemblyInformationalVersion("$version")]
+"@
 $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 & $csc -nologo -target:winexe -optimize+ "-out:$(Join-Path $out 'AgentForgeSetup.exe')" `
     "-win32icon:$(Join-Path $root 'desktop\build\icon.ico')" "-win32manifest:$(Join-Path $installer 'app.manifest')" `
     -r:System.IO.Compression.dll -r:System.IO.Compression.FileSystem.dll -r:System.Web.Extensions.dll `
     -r:System.Windows.Forms.dll -r:System.Drawing.dll `
-    (Join-Path $installer 'AgentForgeSetup.cs') (Join-Path $installer 'Config.generated.cs')
+    (Join-Path $installer 'AgentForgeSetup.cs') (Join-Path $installer 'Config.generated.cs') (Join-Path $installer 'AssemblyInfo.generated.cs')
 if ($LASTEXITCODE -ne 0) { throw 'the installer did not compile' }
 
 Step "Done"

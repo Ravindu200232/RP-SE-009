@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -16,6 +17,7 @@ from typing import Any, Callable
 
 import httpx
 
+from . import screenshot as screenshots
 from .browser_inspect import inspect_local_page
 from .guard import SourceGuard
 from .mcp_client import MCPManager
@@ -24,7 +26,48 @@ from .mcp_client import MCPManager
 MAX_OUTPUT = 24_000
 MAX_READ = 32_000
 MAX_COMMAND_SECONDS = 600
+# A command that has finished but left a background process holding its output open (a server started with `Start-Process`, say)
+# is not waited for after this long: the output is only for the model to read, and waiting for the pipe to close would wait for
+# as long as that server runs.
+OUTPUT_GRACE_SECONDS = 5
+# `Start-Process` gives a program its own console, and on Windows that is a window on the person's screen (a terminal tab
+# titled "next-server" that opens for every server an agent starts to test an app). The command runs with no window of its
+# own, so what it starts is started hidden too, unless it says how it wants to be shown (-WindowStyle, -NoNewWindow, -Verb).
+POWERSHELL_HIDE_START = (
+    "function Start-Process { if (-not ($args | Where-Object { $_ -is [string] -and $_ -match "
+    "'^-(w(i(n(d(o(w(s(t(y(l(e)?)?)?)?)?)?)?)?)?)?|nonew\\w*|v(e(r(b)?)?)?)$' })) "
+    "{ Microsoft.PowerShell.Management\\Start-Process @args -WindowStyle Hidden } "
+    "else { Microsoft.PowerShell.Management\\Start-Process @args } }; "
+)
 SERVER_COMMAND_SECONDS = 75
+# A deployment's release (`netlify deploy --build`, `vercel deploy --prod`) builds the app and uploads it, which on this
+# computer took longer than ten minutes: killed at the usual limit, it left a half-made deploy and stale build output behind.
+RELEASE_COMMAND_SECONDS = 1800
+# A command that starts the app's server: the program at the start of the command (or of one of its parts), never the
+# same words inside a string the command only reads or prints.
+_SERVER_COMMAND = re.compile(
+    r"(?:^|[;&|(/]\s*|\b(?:npx|pnpm|yarn|bunx|exec)\s+)(?:next\s+(?:dev|start)\b|npm\s+(?:run\s+)?(?:dev|start)\b|start\s+/b\b)",
+    re.I)
+_RELEASE_COMMAND = re.compile(r"(?:^|[;&|(]\s*|\bnpx\s+)(?:netlify\s+deploy\b|vercel\b(?=[^;&|]*(?:\bdeploy\b|--prod\b|\bbuild\b))"
+                              r"|npm\s+run\s+build\b|next\s+build\b)", re.I)
+# A run of the whole end-to-end suite. The Studio runs it itself, once (`qa_agent/e2e_run.py`); an agent runs one journey's
+# spec file, or a --grep of a few, while it writes or fixes them.
+_E2E_SUITE = re.compile(r"\b(?:qa:e2e|test:e2e|playwright\s+test)\b", re.I)
+_E2E_NARROWED = re.compile(r"\.spec\.[cm]?[jt]sx?\b|\.test\.[cm]?[jt]sx?\b|(?:^|\s)(?:--grep|-g)(?:[\s=]|$)|--last-failed\b|--list\b"
+                           r"|(?:^|\s)e2e/[\w./-]+", re.I)
+E2E_SUITE_REFUSED = ("The Studio runs the whole end-to-end suite itself, once, after this work (and again only when the person "
+                     "asks), so it is not run from here. Run one journey's spec file instead, for example: "
+                     "node scripts/with-server.mjs -- npx playwright test e2e/journeys/UJ-001.spec.js --project=desktop")
+
+
+def server_command(command: str) -> bool:
+    """Whether `command` starts the app's server (a development or production server that never exits by itself)."""
+    return bool(_SERVER_COMMAND.search(command))
+
+
+def whole_e2e_suite(command: str) -> bool:
+    """Whether `command` runs the whole end-to-end suite rather than one spec file or a --grep of a few tests."""
+    return bool(_E2E_SUITE.search(command)) and not _E2E_NARROWED.search(command)
 
 # A CLI that colours its own output (netlify, vercel, npm...) still does so once piped,
 # leaving raw escape codes ("[32m...[39m") in what both the model and the chat card see.
@@ -142,24 +185,63 @@ def _segment_program(segment: str) -> str:
     return name
 
 
-def _command_problem(command: str) -> str | None:
-    """Why `command` is blocked, or `None` when it is fine to run."""
+def command_check(command: str) -> tuple[str, str, str]:
+    """How `command` sits with what a build/test/deploy stage runs: (level, why, program).
+
+    `level` is "" when it is one of the usual commands; "unusual" when a program in it is not (`program` names it); "danger" when
+    it can wreck the computer or send a credential out. A host that asks the person (the studio's permission modes) asks about
+    both; one that does not (the terminal agent) refuses both."""
     lowered = command.lower()
     for pattern, message in _DENY_PATTERNS:
         if pattern.search(lowered):
-            return message
+            return "danger", message, ""
     for segment in _split_top_level(command):
         program = _segment_program(segment)
         if not program or program in _ALLOWED_PROGRAMS:
             continue
         if program in _DANGEROUS_CMDLETS:
-            return f"'{program}' is not allowed"
+            return "danger", f"'{program}' is not allowed", program
         if _CMDLET_SHAPE.match(program):
             continue  # an unlisted PowerShell Verb-Noun cmdlet — allowed by shape
-        return (f"'{program}' is not one of the commands a build/test/deploy "
+        return ("unusual",
+                f"'{program}' is not one of the commands a build/test/deploy "
                 f"stage runs (npm/git/node/python/vercel/... and their usual "
-                f"companions) — use one of those instead")
-    return None
+                f"companions) — use one of those instead", program)
+    return "", "", ""
+
+
+def _command_problem(command: str) -> str | None:
+    """Why `command` is blocked, or `None` when it is fine to run."""
+    level, why, _program = command_check(command)
+    return why if level else None
+
+
+def command_programs(command: str) -> list[str]:
+    """The program of every part of a command line (`npm i && node x.js` is `npm`, `node`)."""
+    return [program for program in (_segment_program(part) for part in _split_top_level(command)) if program]
+
+
+# What looks at things and changes nothing: the commands that need no question even when the person asked to be asked about commands.
+READ_ONLY_PROGRAMS = {"ls", "dir", "cat", "type", "echo", "pwd", "cd", "head", "tail", "wc", "grep", "rg", "which", "where",
+                      "get-childitem", "get-content", "select-string", "get-location", "test", "true", "false"}
+READ_ONLY_GIT = {"status", "diff", "log", "show", "branch", "rev-parse", "remote", "ls-files"}
+
+
+def read_only(command: str) -> bool:
+    """Whether every part of `command` only looks at things."""
+    parts = _split_top_level(command)
+    if not parts:
+        return False
+    for part in parts:
+        program = _segment_program(part)
+        if program == "git":
+            words = part.split()
+            sub = next((w for w in words[1:] if not w.startswith("-")), "")
+            if sub not in READ_ONLY_GIT:
+                return False
+        elif program not in READ_ONLY_PROGRAMS:
+            return False
+    return True
 
 
 def tools_unsupported(exc: Exception) -> bool:
@@ -199,6 +281,8 @@ def describe_call(name: str, args: dict[str, Any]) -> str:
         return f"web_fetch({args.get('url') or ''})"
     if name == "browser_inspect":
         return f"browser_inspect({args.get('url') or 'managed preview'}, {args.get('viewport') or 'desktop'})"
+    if name == "screenshot":
+        return f"screenshot({args.get('target') or 'managed preview'}, {args.get('viewport') or 'desktop'})"
     return f"{name}({', '.join(f'{k}={v!r}' for k, v in args.items())})"
 
 
@@ -227,6 +311,10 @@ TOOL_SCHEMAS = [
     _schema("browser_inspect", "Open one local running app page in a real browser. Returns rendered text, layout/accessibility findings (including elements that overflow the viewport) and saves a screenshot for UI review. Use desktop and mobile before declaring a UI complete; it never clicks, types, signs in or navigates away from the local preview.",
             {"url": {"type": "string", "description": "Optional http://127.0.0.1 or http://localhost preview URL. Studio agents default to their managed preview."},
              "viewport": {"type": "string", "enum": ["desktop", "mobile"], "description": "desktop (1440px) or mobile (390px)"}}, []),
+    _schema("screenshot", "Take a silent screenshot of one page and, when your model can look at pictures, see it: a page of the prototype (its file name such as dashboard.html, or its route such as /dashboard), an HTML file in the workspace, or a local preview URL (http://localhost...). Use it to judge how a page really looks - layout, spacing, overlap, clipped or unreadable text, contrast, broken images, the mobile layout - instead of guessing from the code, and check desktop and mobile. It never clicks, types or leaves the page; a signed-in prototype page is shown signed in as a demo role that can open it. A model that cannot look at pictures only gets the file saved: use browser_inspect for layout facts instead.",
+            {"target": {"type": "string", "description": "A prototype page (dashboard.html or /dashboard), an HTML file in the workspace, or a local preview URL. Empty: the managed preview."},
+             "viewport": {"type": "string", "enum": ["desktop", "mobile"], "description": "desktop (1440px wide) or mobile (390px wide)"},
+             "role": {"type": "string", "description": "Optional: the demo role or email to show a signed-in prototype page as."}}, []),
 ]
 
 
@@ -246,6 +334,14 @@ class WorkspaceTools:
                              if protected_app_root and self.root.is_relative_to(Path(protected_app_root).resolve())
                              else None)
         self.mcp = mcp
+        # A host that asks the person before an edit or a command (the studio's permission modes) sets this: it is given what the
+        # agent wants to do ({"kind": "edit" | "command", ...}) and returns "" to go ahead, else what to tell the model. Without
+        # it `approve` is asked, and a command that is not a usual one is refused.
+        self.permission: Callable[[dict[str, Any]], str] | None = None
+        # Pictures the screenshot tool took, until the agent has shown them to the model (once), and whether this
+        # model can look at pictures at all (the studio sets it from what Ollama says of the model).
+        self._pictures: list[tuple[str, bytes]] = []
+        self.sees_pictures: Callable[[], bool] = lambda: False
 
     def _local_web_request(self, endpoint: str, payload: dict[str, Any]) -> str:
         response = httpx.post(f"{self.web_host}/api/experimental/{endpoint}",
@@ -261,12 +357,37 @@ class WorkspaceTools:
 
     def execute(self, name: str, args: dict[str, Any]) -> str:
         try:
-            if self.mcp is not None and self.mcp.is_mcp_tool(name):
-                return self.mcp.call(name, args)[:MAX_OUTPUT]
-            method = getattr(self, f"tool_{name}", None)
-            if method is None or name not in {s["function"]["name"] for s in TOOL_SCHEMAS}:
-                raise ValueError(f"Unknown tool: {name}")
-            return str(method(**args))[:MAX_OUTPUT]
+            def invoke() -> str:
+                if self.mcp is not None and self.mcp.is_mcp_tool(name):
+                    return self.mcp.call(name, args)[:MAX_OUTPUT]
+                method = getattr(self, f"tool_{name}", None)
+                if method is None or name not in {s["function"]["name"] for s in TOOL_SCHEMAS}:
+                    raise ValueError(f"Unknown tool: {name}")
+                return str(method(**args))[:MAX_OUTPUT]
+
+            stop_requested = getattr(self, "stop_requested", None)
+            if not callable(stop_requested):
+                return invoke()
+            if stop_requested():
+                raise InterruptedError("the run was stopped")
+            done = threading.Event()
+            answer: dict[str, Any] = {}
+
+            def worker() -> None:
+                try:
+                    answer["value"] = invoke()
+                except Exception as exc:  # noqa: BLE001 - re-raised on the calling agent thread
+                    answer["error"] = exc
+                finally:
+                    done.set()
+
+            threading.Thread(target=worker, name=f"tool:{name}", daemon=True).start()
+            while not done.wait(0.05):
+                if stop_requested():
+                    raise InterruptedError("the run was stopped")
+            if "error" in answer:
+                raise answer["error"]
+            return str(answer.get("value") or "")[:MAX_OUTPUT]
         except Exception as exc:
             return f"Tool error: {exc}"
 
@@ -342,10 +463,19 @@ class WorkspaceTools:
                 continue
         return "\n".join(hits) or "No matches"
 
+    def _permitted(self, action: dict[str, Any], question: str) -> str:
+        """"" when the action may go ahead, else what to tell the model."""
+        if self.permission is None:
+            return "" if self.approve(question) else "Denied by user"
+        return self.permission(action) or ""
+
     def tool_write_file(self, path: str, content: str) -> str:
         file = self._path(path)
-        if not self.approve(f"Write {file} ({len(content)} characters)?"):
-            return "Denied by user"
+        denied = self._permitted({"kind": "edit", "file": file.relative_to(self.root).as_posix(),
+                                  "detail": f"{len(content)} characters", "write": True},
+                                 f"Write {file} ({len(content)} characters)?")
+        if denied:
+            return denied
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(content, encoding="utf-8")
         return f"Wrote {file.relative_to(self.root)}"
@@ -357,38 +487,51 @@ class WorkspaceTools:
         content = file.read_text(encoding="utf-8")
         if content.count(old) != 1:
             raise ValueError(f"Expected exactly one match; found {content.count(old)}")
-        if not self.approve(f"Edit {file} (replace {len(old)} characters)?"):
-            return "Denied by user"
+        denied = self._permitted({"kind": "edit", "file": file.relative_to(self.root).as_posix(),
+                                  "detail": f"replace {len(old)} characters", "write": False},
+                                 f"Edit {file} (replace {len(old)} characters)?")
+        if denied:
+            return denied
         file.write_text(content.replace(old, new, 1), encoding="utf-8")
         return f"Edited {file.relative_to(self.root)}"
 
     def tool_run_command(self, command: str, timeout_seconds: int = 600) -> str:
         if not command.strip():
             raise ValueError("Empty command")
-        problem = _command_problem(command)
-        if problem:
-            raise ValueError(f"Command blocked: {problem}")
+        level, why, program = command_check(command)
+        if level and self.permission is None:
+            raise ValueError(f"Command blocked: {why}")
         # A generated app may own one or more Node processes. Killing every
         # `node.exe` also kills the Studio, unrelated previews and the build
         # itself. Commands must target a known PID when cleanup is needed.
         if ("taskkill" in command.lower() and "/im" in command.lower()
                 and "node.exe" in command.lower()) or "stop-process -name node" in command.lower():
             raise ValueError("Do not terminate every node.exe process. Target a known child PID instead.")
-        server_command = any(token in command.lower() for token in
-                             ("next dev", "next start", "npm run dev", "npm run start", "start /b"))
+        starts_server = server_command(command)
         # The Studio has one managed preview process and takes care of its
         # port, environment and lifecycle.  Letting an agent run a server in a
         # foreground terminal always looks successful ("Ready in 439ms") but
         # never exits, consuming the build turn until it times out.
-        if server_command and getattr(self, "managed_preview", False):
+        if starts_server and getattr(self, "managed_preview", False):
             raise ValueError("Do not run a development or production server from the agent. "
                              "The Studio starts the managed preview automatically after the build.")
-        if not self.approve(f"Run in {self.root}: {command} ?"):
-            return "Denied by user"
-        timeout = min(max(int(timeout_seconds), 1), MAX_COMMAND_SECONDS)
-        if server_command:
+        if getattr(self, "studio_runs_e2e", False) and whole_e2e_suite(command):
+            raise ValueError(E2E_SUITE_REFUSED)
+        denied = self._permitted({"kind": "command", "command": command, "level": level, "why": why, "program": program},
+                                 f"Run in {self.root}: {command} ?")
+        if denied:
+            return denied
+        ceiling = RELEASE_COMMAND_SECONDS if getattr(self, "deploying", False) and _RELEASE_COMMAND.search(command) \
+            else MAX_COMMAND_SECONDS
+        timeout = min(max(int(timeout_seconds), 1), ceiling)
+        if starts_server:
             timeout = min(timeout, SERVER_COMMAND_SECONDS)
-        shell_args = [self.shell, "-NoProfile", "-Command", command] if os.name == "nt" else [self.shell, "-c", command]
+        if os.name != "nt":
+            shell_args = [self.shell, "-c", command]
+        elif "powershell" in Path(self.shell).name.lower() or "pwsh" in Path(self.shell).name.lower():
+            shell_args = [self.shell, "-NoProfile", "-Command", POWERSHELL_HIDE_START + command]
+        else:
+            shell_args = [self.shell, "-NoProfile", "-Command", command]
         before = self.source_guard.snapshot() if self.source_guard else None
         output = ""
         output_parts: list[str] = []
@@ -457,9 +600,16 @@ class WorkspaceTools:
             started = time.monotonic()
             heartbeat = 0
             reader_done = False
+            exited_at = 0.0
             while process.poll() is None or not reader_done:
                 if stopped_at and process.poll() is not None and time.monotonic() - stopped_at > 2:
                     break  # stopped: a grandchild still holding the output open is not waited for
+                if process.poll() is not None:
+                    exited_at = exited_at or time.monotonic()
+                    if not reader_done and time.monotonic() - exited_at > OUTPUT_GRACE_SECONDS:
+                        append("(The command has finished, but a process it started in the background still holds its output "
+                               "open, so nothing more is read from it.)\n")
+                        break
                 try:
                     line = lines.get(timeout=0.25)
                     if line is None:
@@ -517,10 +667,53 @@ class WorkspaceTools:
         response = self.client.web_fetch(url=url)
         return json.dumps(response.model_dump(), ensure_ascii=False)[:MAX_OUTPUT]
 
+    def take_images(self) -> list[tuple[str, bytes]]:
+        """The pictures the last tool calls took for the model to look at, as (label, PNG bytes); each is handed out once."""
+        pictures, self._pictures = self._pictures, []
+        return pictures
+
+    def _take_picture(self, target: str, viewport: str, role: str, out: Path) -> Path:
+        """Photograph `target` into `out`: a local preview URL, or an HTML file in the workspace. (The studio also knows the
+        prototype's pages, by file name and by route.)"""
+        stop_requested = getattr(self, "stop_requested", None)
+        cancelled = stop_requested if callable(stop_requested) else None
+        if target.lower().startswith("http"):
+            return (screenshots.shoot(screenshots.local_url(target), out, viewport, cancelled=cancelled)
+                    if cancelled else screenshots.shoot(screenshots.local_url(target), out, viewport))
+        page = self._path(target)
+        if page.suffix.lower() not in {".html", ".htm"} or not page.is_file():
+            raise ValueError(f"{target} is not an HTML file in the workspace, a prototype page or a local preview URL")
+        return (screenshots.shoot(page, out, viewport, cancelled=cancelled)
+                if cancelled else screenshots.shoot(page, out, viewport))
+
+    def tool_screenshot(self, target: str = "", viewport: str = "desktop", role: str = "") -> str:
+        """A silent screenshot, kept under .agentforge/qa/shots and, for a model that can look at pictures, shown to it."""
+        choice = str(viewport or "desktop").strip().lower()
+        if choice not in screenshots.VIEWPORTS:
+            raise ValueError("viewport must be desktop or mobile")
+        target = str(target or "").strip() or getattr(self, "browser_url", lambda: "")()
+        if not target:
+            raise ValueError("Say which page to photograph: a prototype page, an HTML file, or a local preview URL.")
+        digest = hashlib.sha256(f"{target}|{choice}|{role}".encode("utf-8")).hexdigest()[:12]
+        relative = Path(".agentforge") / "qa" / "shots" / f"screenshot-{choice}-{digest}.png"
+        out = self._take_picture(target, choice, str(role or "").strip(), self.root / relative)
+        seen = bool(self.sees_pictures())
+        if seen:
+            self._pictures.append((f"{target} ({choice})", out.read_bytes()))
+        return json.dumps({
+            "saved": relative.as_posix(), "target": target, "viewport": choice, "shown_to_you": seen,
+            "note": ("The screenshot is attached to the next message: look at it." if seen else
+                     "This model cannot look at pictures, so the screenshot was only saved for the person; "
+                     "use browser_inspect for the page's layout facts."),
+        }, ensure_ascii=False)
+
     def tool_browser_inspect(self, url: str = "", viewport: str = "desktop") -> str:
         """Render a local preview without interacting with it or the outside web."""
         default_url = getattr(self, "browser_url", lambda: "")()
         if not url and not default_url:
             raise ValueError("No managed local preview is running. Start the Studio preview and try again.")
-        result = inspect_local_page(self.root, url or default_url, viewport)
+        stop_requested = getattr(self, "stop_requested", None)
+        result = (inspect_local_page(self.root, url or default_url, viewport, cancelled=stop_requested)
+                  if callable(stop_requested)
+                  else inspect_local_page(self.root, url or default_url, viewport))
         return json.dumps(result, ensure_ascii=False)

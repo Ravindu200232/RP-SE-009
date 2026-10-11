@@ -45,9 +45,7 @@ desktop/dist/
 release/stage/
 release/out/
 release/installer/Config.generated.cs
+release/installer/AssemblyInfo.generated.cs
 release/cache/
 engine-proxy/.wrangler/
 engine-proxy/.dev.vars
-
-# The built-in engine's address and app token: kept out of this public repository.
-server_modules/engine.json
