@@ -5,24 +5,28 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDown, Check, CheckCircle2, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Clock, Copy, ExternalLink, FileCode2, FlaskConical, ListChecks, Loader2,
-  MessageCircleQuestion, MessageSquare, MousePointerClick, Palette, Paperclip, Pencil, Plug, Search,
+  MessageCircleQuestion, MessageSquare, MousePointerClick, Palette, Paperclip, Pencil, Plug, RefreshCw, Search,
   Send, SkipForward, Sparkles,
-  Square, Terminal, Wrench, X,
+  Square, Terminal, Wifi, WifiOff, Wrench, X,
 } from 'lucide-react'
 
-import { api } from '@/lib/api'
+import { API, api } from '@/lib/api'
 import { chatTurns } from '@/lib/chat'
 import { chatDisplayBlocks, cleanChatProse } from '@/lib/chat-display'
 import { consoleReport, forgetConsole } from '@/lib/console-log'
 import { computeLineDiff } from '@/lib/diff'
 import { modelLabel } from '@/lib/models'
 import { useStore } from '@/lib/store'
+import { useVisionModels } from '@/lib/vision'
 import { useEditAttachments } from '@/lib/use-edit-attachments'
 import { answerAsk, answerOption, answerQuestion, answerValue, declineAsk, reviseDrawing, send } from '@/lib/ws'
 import { cn } from '@/lib/utils'
 import ChangePlan from './ChangePlan'
 import EditAttach from './EditAttach'
+import PermissionCard from './PermissionCard'
+import PermissionMode from './PermissionMode'
 import PluginAccounts from './PluginAccounts'
+import VisionBadge from './VisionBadge'
 import { Dropdown, Modal } from './ui'
 
 const ICONS = {
@@ -63,28 +67,13 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
   const agentState = useStore(s => s.agentState)
   const agentDetail = useStore(s => s.agentDetail)
   const reasoning = useStore(s => s.reasoning)
+  const connection = useStore(s => s.connection)
   const runStartedAt = useStore(s => s.runStartedAt)
   const pushChat = useStore(s => s.pushChat)
   const selection = useStore(s => s.selection)
   const removeSelection = useStore(s => s.removeSelection)
   const clearSelection = useStore(s => s.clearSelection)
-  const planMode = useStore(s => s.planModeByProject[project] ?? true)
-  const setPlanModeStore = useStore(s => s.setPlanMode)
-  const [planModeBusy, setPlanModeBusy] = useState(false)
-  const togglePlanMode = async () => {
-    if (!project || planModeBusy) return
-    const next = !planMode
-    setPlanModeBusy(true)
-    setPlanModeStore(project, next)   // optimistic — a typed change reads this immediately
-    try {
-      await api.setPlanMode(project, next)
-    } catch (e) {
-      setPlanModeStore(project, !next)
-      useStore.getState().addLog('WARN', `Could not change plan mode — ${e.message}`)
-    } finally {
-      setPlanModeBusy(false)
-    }
-  }
+  const permissions = useStore(s => s.permissions)
 
   // Collapsing gives the whole width back to the work when someone wants it.
   const [open, setOpen] = useState(true)
@@ -275,7 +264,8 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
       console: consoleReport(),
     }
     if (selection.length) {
-      payload.elements = selection.filter(s => s.kind === 'element').map(s => s.info)
+      // The things pointed at, and what each drawing was around: the agent is told about them in words.
+      payload.elements = selection.flatMap(s => (s.kind === 'element' ? [s.info] : s.marked || []))
       payload.shots = selection.filter(s => s.shot)
         .map(s => ({ kind: s.kind, image: s.shot, label: s.label }))
     }
@@ -364,9 +354,11 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
             <Turn key={turn.id || `${turn.at}-${turn.role}-${turn.title || turn.text || ''}`} turn={turn}
                   live={lifecycleStream.busy && turn.id === turns.at(-1)?.id} />
           ))}
-          {lifecycleStream.busy && (reasoning || Boolean(agentState)) && !ask &&
+          {lifecycleStream.busy && connection && !ask && <ConnectionNotice connection={connection} project={project} />}
+          {lifecycleStream.busy && !connection && (reasoning || Boolean(agentState)) && !ask && !(permissions || []).length &&
             <Thinking reasoning={reasoning} state={agentState} detail={agentDetail} />}
           {ask && <Asked ask={ask} onPick={said => { setText(said); box.current?.focus() }} />}
+          {(permissions || []).map(card => <PermissionCard key={card.id} card={card} />)}
           {queued.map(item => (
             <Queued key={item.id} item={item}
                     onDrop={() => useStore.getState().dropQueued(item.id)} />
@@ -424,23 +416,14 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
                 <EditAttach attach={attach} project={project}
                         onSpoken={said => setText((text ? text.trimEnd() + ' ' : '') + said)} disabled={reading} />
                 <PluginPicker project={project} />
-                {selection.length ? (
+                <PermissionMode project={project} className="ml-1" />
+                {selection.length > 0 && (
                   <span
                     title="Element-specific edits are scoped to the selected artifact."
                     className="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold text-muted2">
                     <ListChecks className="size-3" />
                     Direct element edit
                   </span>
-                ) : (
-                  <button type="button" onClick={togglePlanMode} disabled={!project || planModeBusy}
-                    title={planMode
-                      ? 'Every request is planned first: you read the plan and approve it before anything changes. Click to apply changes directly instead.'
-                      : 'Changes apply at once, with no plan to approve first. Click to plan first instead.'}
-                    className={cn('ml-1 inline-flex items-center gap-1 rounded-md border border-line px-2 py-1 text-[10px] font-medium transition-colors disabled:opacity-50',
-                      planMode ? 'bg-panel2 text-ink hover:border-line2' : 'text-muted2 hover:bg-panel2 hover:text-ink')}>
-                    <ListChecks className="size-3" />
-                    {planMode ? 'Plan first' : 'Apply directly'}
-                  </button>
                 )}
               </span>
             ) : <span />}
@@ -486,6 +469,7 @@ function ChatModelControls({ project, agentRole, busy }) {
   const [catalog, setCatalog] = useState(null)
   const [saving, setSaving] = useState(false)
   const [open, setOpen] = useState(false)
+  const seeing = useVisionModels(open)
 
   const role = agentRole === 'designer' ? 'design' : 'builder'
   const current = models[role] || models.agent || ''
@@ -567,6 +551,7 @@ function ChatModelControls({ project, agentRole, busy }) {
                             className={cn('flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] transition-colors disabled:opacity-45',
                               picked ? 'bg-accent/55 text-ink' : 'text-ink hover:bg-panel2')}>
                       <span className="min-w-0 flex-1 truncate">{modelLabel(row) || id}</span>
+                      {seeing.vision.has(id) && <VisionBadge />}
                       {picked && <Check className="size-3 shrink-0" />}
                     </button>
                   )
@@ -574,6 +559,11 @@ function ChatModelControls({ project, agentRole, busy }) {
               </section>
             ))}
             {!catalog && <p className="px-2 py-3 text-[10px] text-muted2">Reading available models…</p>}
+            {catalog && seeing.vision.size > 0 && (
+              <p className="px-2 py-1.5 text-[9.5px] leading-snug text-muted2">
+                A model marked <b>vision</b> can look at pictures, so the Studio can have it check the prototype's screens by looking at them. Other models skip that check.
+              </p>
+            )}
             {catalog && !groups.some(([, rows]) => rows.length) && <p className="px-2 py-3 text-[10px] text-muted2">No models are available yet.</p>}
           </div>
 
@@ -902,6 +892,61 @@ function Thinking({ reasoning = false, state = '', detail = '' }) {
   )
 }
 
+/**
+ * The model service is not answering. While the run asks again by itself this counts down to the next try, with a button to
+ * ask at once; once it has asked as many times as it will, the run holds still here - nothing is lost - and the same button
+ * continues it from this very request.
+ */
+function ConnectionNotice({ connection, project }) {
+  const [mark, setMark] = useState(() => Date.now())
+  const [now, setNow] = useState(() => Date.now())
+  const [pressed, setPressed] = useState(false)
+  useEffect(() => { setMark(Date.now()); setPressed(false) }, [connection.at, connection.state])
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 500)
+    return () => clearInterval(timer)
+  }, [])
+  const waiting = connection.state === 'waiting'
+  const left = Math.min(connection.pause, Math.max(0, Math.ceil((mark + connection.pause * 1000 - now) / 1000)))
+  const press = async () => {
+    if (pressed) return
+    setPressed(true)
+    try {
+      await api.connectionRetry(project)
+    } catch (e) {
+      setPressed(false)
+      useStore.getState().addLog('WARN', `Could not ask again — ${e.message}`)
+    }
+  }
+  return (
+    <div role="alert" className="my-2 rounded-xl border border-warn/35 bg-warn-tint/50 px-3.5 py-3 shadow-sm">
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-warn/15 text-warn">
+          <WifiOff className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[12.5px] font-semibold text-ink">
+            {waiting ? 'Disconnected from the model service' : 'The connection to the model service was interrupted'}
+          </p>
+          {connection.detail && (
+            <p className="mt-0.5 break-words font-mono text-[10.5px] text-muted2">{connection.detail}</p>
+          )}
+          <p className="mt-1 text-[11px] leading-relaxed text-muted">
+            {waiting
+              ? `It was asked ${connection.of} times and still does not answer. The run is paused at this request and nothing is lost — press Try again to continue from here, or Stop.`
+              : `Try ${connection.failed} of ${connection.of} failed${connection.pause ? ` · asking again in ${left}s` : ''}`}
+          </p>
+          <button type="button" onClick={press} disabled={pressed}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-[11.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
+            <RefreshCw className={cn('size-3', pressed && 'animate-spin')} />
+            {pressed ? 'Asking…' : waiting ? 'Try again' : 'Try again now'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** Modal picker to configure and toggle third-party plugins for the current project. */
 function PluginPicker({ project }) {
   const [open, setOpen] = useState(false)
@@ -974,8 +1019,10 @@ function Asked({ ask, onPick }) {
         {options.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {options.map(option => (
-              <button key={option.id} onClick={() => (asksValue ? answerOption(option.label) : onPick(option.label))}
-                      title={option.hint || (asksValue ? 'Answer with this instead of a value' : 'Put this in the box below')}
+              <button key={option.id}
+                      onClick={() => (asksValue || ask.quick ? answerOption(option.label) : onPick(option.label))}
+                      title={option.hint || (asksValue ? 'Answer with this instead of a value'
+                        : ask.quick ? `Answer ${option.label}` : 'Put this in the box below')}
                       className="rounded-xl border border-line2 bg-panel px-2.5 py-1.5 text-left
                                  text-[11.5px] font-semibold text-ink transition-colors
                                  hover:border-accent hover:text-accent">
@@ -1203,6 +1250,7 @@ function FileActionCard({ turn, live }) {
 
 /** Memoized conversation turn row rendering messages, tool events, and plans. */
 const Turn = memo(function Turn({ turn, live }) {
+  const project = useStore(s => s.project)
   if (turn.role === 'stage') {
     const active = turn.status === 'active'
     const passed = turn.status === 'done'
@@ -1230,6 +1278,18 @@ const Turn = memo(function Turn({ turn, live }) {
             </p>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (turn.role === 'connection') {
+    return (
+      <div className="my-1 flex items-center gap-2 rounded-lg border border-ok/30 bg-ok-tint/50 px-3 py-2 text-[11.5px] text-ink">
+        <Wifi className="size-3.5 shrink-0 text-ok" />
+        <span>
+          Connected to the model service again
+          {turn.failed ? ` after ${turn.failed} failed ${turn.failed === 1 ? 'try' : 'tries'}` : ''} — carrying on.
+        </span>
       </div>
     )
   }
@@ -1280,6 +1340,15 @@ const Turn = memo(function Turn({ turn, live }) {
       </div>
     )
     if (['command', 'command_output'].includes(turn.kind)) return <CommandTurn turn={turn} live={live} />
+    if (turn.kind === 'permission') {
+      const allowed = /^allowed/i.test(turn.text || '')
+      return (
+        <div className="my-1 ml-1 flex min-w-0 items-center gap-2 text-[11.5px] text-muted">
+          {allowed ? <Check className="size-3 shrink-0 text-ok" /> : <X className="size-3 shrink-0 text-bad" />}
+          <span className="min-w-0 truncate" title={turn.text}>{turn.text}</span>
+        </div>
+      )
+    }
     return (
       <div className="my-3 min-w-0 pl-1">
         <div className="min-w-0 flex-1">
@@ -1298,6 +1367,8 @@ const Turn = memo(function Turn({ turn, live }) {
                 </div>
               )
               : <ReadableAgentText text={turn.text} />}
+          {turn.images?.length > 0 && <TurnPictures images={turn.images} project={project} />}
+          {turn.actions?.length > 0 && <TurnActions actions={turn.actions} project={project} />}
         </div>
       </div>
     )
@@ -1335,6 +1406,50 @@ const Turn = memo(function Turn({ turn, live }) {
     </div>
   )
 })
+
+/** Buttons under a message ("Fix the failing journeys"): each sends its prompt as if it had been typed, to the developer. */
+function TurnActions({ actions, project }) {
+  const busy = useStore(s => s.busy)
+  function go(action) {
+    const s = useStore.getState()
+    if (!project || busy) return
+    send({
+      type: 'agent_update', project, agent: 'developer', prompt: action.prompt,
+      model: s.models.builder || s.models.agent, think: s.think, thinking_level: s.thinkingLevel,
+    })
+    s.setBusy(true)
+  }
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {actions.map(action => (
+        <button key={action.label} onClick={() => go(action)} disabled={busy}
+                title={busy ? 'Wait for the run in progress to end' : action.prompt}
+                className="rounded-xl border border-line2 bg-panel px-2.5 py-1.5 text-[11.5px] font-semibold text-ink
+                           transition-colors hover:border-accent hover:text-accent disabled:opacity-40">
+          {action.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** The screenshots a message carries (the visual review's, the screenshot tool's): a thumbnail each, the full picture on click. */
+function TurnPictures({ images, project }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {images.map((image, index) => {
+        const src = `${API}/qa-screenshot/${encodeURIComponent(project || '')}?path=${encodeURIComponent(image.path)}`
+        return (
+          <a key={`${image.path}-${index}`} href={src} target="_blank" rel="noreferrer" title={image.label || 'Open the screenshot'}
+             className="group block w-[150px] overflow-hidden rounded-xl bg-panel2 shadow-sm transition-shadow hover:shadow-md">
+            <img src={src} alt={image.label || 'Screenshot'} loading="lazy" className="h-[104px] w-full object-cover object-top" />
+            {image.label && <span className="block truncate px-2 py-1 text-[9.5px] text-muted2">{image.label}</span>}
+          </a>
+        )
+      })}
+    </div>
+  )
+}
 
 /** Terminal output remains available without overwhelming a long chat. */
 function CommandTurn({ turn, live }) {

@@ -311,6 +311,11 @@ def _check(data: Any, may_ask: bool) -> dict:
                 allowed = ", ".join(deploy_vars.CHECKS) or "nothing right now"
                 raise ValueError(f'"check" must be left out ({allowed} is offered)')
             asked.update(variable=variable, secret=bool(data.get("secret", True)), check=check)
+        # The database connection is the studio's to provide: a model that asks the customer for it is told why not (the
+        # repair turn), so the customer is never asked for a connection string in the chat.
+        held = deploy_vars.provided(asked)
+        if held:
+            raise ValueError(held)
         return asked
     if kind != "plan":
         raise ValueError('"kind" must be "answer", "question" or "plan"')
@@ -487,9 +492,16 @@ def restore_questions() -> list[dict]:
 # --- the two halves -----------------------------------------------------------
 
 def _spawn(project: str, change_id: str, fn: Any, *args: Any) -> None:
+    session = session_for(project)
+    prepare = getattr(session, "prepare_run", None)
+    if callable(prepare):
+        prepare()
+
     def run() -> None:
         try:
             fn(*args)
+            if getattr(session_for(project), "cancelled", False) is True:
+                raise RunCancelled(project)
         except RunCancelled:
             _mark(project, change_id, "cancelled")
             bus.cancelled(project, "Stopped.")
@@ -660,6 +672,14 @@ def _execute(project: str, change_id: str, model: str) -> None:
         result = session.execute_approved(request, plan, model)
         after = _snapshot(session.workspace)
         _announce(project, before, after)
+        if result["status"] == "complete" and _srs_changed(before, after):
+            # The specification was changed: what its overview says (the open decisions, the quality review) is brought back
+            # in line with what it says now, instead of staying as it was when it was first written.
+            from srs_agent import document as srs_document
+
+            srs_document.reconcile(project, change["request"], result["text"], session)
+        if result["status"] == "complete" and change.get("journeys"):
+            _run_fixed_journeys(project, session, [str(j) for j in change["journeys"]])
     except RunCancelled:
         raise
     except Exception as exc:  # noqa: BLE001
@@ -686,6 +706,33 @@ def _execute(project: str, change_id: str, model: str) -> None:
         session.fail(change["error"])
 
 
+def _run_fixed_journeys(project: str, session: Any, journeys: list[str]) -> None:
+    """After a fix of failed journeys the person asked for: only those journeys run again, and the chat says how they did.
+    What still fails is offered to be fixed again, never run again by itself."""
+    from qa_agent import e2e_run
+    from qa_agent.screen_keeper import Keeper
+
+    with Keeper(session.workspace):
+        outcome = e2e_run.run(project, session, grep=journeys, reason="fix")
+    if outcome.get("status") in {"skipped", "error", "build_failed"}:
+        return
+    still = [row["id"] for row in e2e_run.failures(session.workspace)]
+    fixed = [j for j in journeys if j not in still]
+    text = (f"Ran {', '.join(journeys)} again: " + (f"{', '.join(fixed)} now pass" if fixed else "none of them passes yet")
+            + (f"; {', '.join(j for j in journeys if j in still)} still fail" if any(j in still for j in journeys) else "") + ".")
+    if still:
+        bus.agent_msg(project, text + " They are not run again by themselves.", title="Journeys run again",
+                      actions=[{"label": "Fix the failing journeys", "prompt": "fix the failing journeys"}])
+    else:
+        bus.agent_msg(project, text + " Every journey now passes.", title="Journeys run again")
+        from .qa_report import summary_counts
+
+        saved = session.read_record("qa", "report.json", fallback=None)
+        if (store.get(project) or {}).get("status") == "tested-with-failures" and not summary_counts(
+                saved if isinstance(saved, dict) else {})["fail"]:
+            store.update(project, status="tested")
+
+
 def _guides(project: str = "") -> str:
     """The build and test guides, for a change that reaches application code."""
     try:
@@ -696,12 +743,19 @@ def _guides(project: str = "") -> str:
         return ""
 
 
+def _srs_changed(before: dict, after: dict) -> bool:
+    """Whether a run changed any file of the specification."""
+    record = f"{config.RECORD_DIR}/srs/"
+    return any(path.startswith(record) for path in set(before) | set(after) if before.get(path) != after.get(path))
+
+
 def _announce(project: str, before: dict, after: dict) -> None:
     """Tell the studio which stages' files a run changed, from the folders they are in."""
     changed = {path for path in set(before) | set(after) if before.get(path) != after.get(path)}
     if not changed:
         return
     record = f"{config.RECORD_DIR}/"
+    _rebundle(project, changed)
     if any(path.startswith(f"{record}prototype/") for path in changed):
         bus.prototype_changed(project)
     if any(path.startswith(f"{record}srs/") for path in changed):
@@ -711,6 +765,33 @@ def _announce(project: str, before: dict, after: dict) -> None:
 
         if builder.built(project):
             builder.show_preview(project)
+
+
+def _rebundle(project: str, changed: set[str]) -> None:
+    """A change that edited the wireframe's or the prototype's source bundles that app again, before the preview reloads.
+
+    The preview shows the bundled page (`bundle.html`), never the source: a chat change that turned the theme white edited
+    `src/index.css`, the preview reloaded the bundle made before it, and the screen stayed dark as if nothing had changed. A
+    bundle that cannot be made is said in the chat; it never undoes a change that worked."""
+    from . import web_app
+
+    for kind in web_app.KINDS:
+        source = f"{config.RECORD_DIR}/{kind}/app/"
+        edited = [path for path in changed if path.startswith(source)
+                  and Path(path).name not in {web_app.BUNDLE, web_app.BUILT}
+                  and not any(part in {"node_modules", "dist"} for part in Path(path).parts)]
+        if not edited:
+            continue
+        session = session_for(project)
+        if not web_app.stale(web_app.app_dir(session.workspace, kind)):
+            continue                                           # the agent bundled it itself, after its last edit
+        try:
+            web_app.build_for(session, project, kind, agent=bus.DESIGNER)
+        except RunCancelled:
+            raise
+        except Exception as exc:  # noqa: BLE001 - the change stands; what keeps it from showing is told
+            bus.log(project, "WARN", f"The {kind} was changed but could not be bundled again: {str(exc)[:300]}",
+                    agent=bus.DESIGNER)
 
 
 # What the flows' modules use of the state above.

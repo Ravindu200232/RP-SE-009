@@ -19,6 +19,7 @@ import queue
 import re
 import threading
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
@@ -29,11 +30,28 @@ from ollama_terminal.agent import Agent
 from ollama_terminal.mcp_client import NAME_PREFIX as MCP_NAME_PREFIX
 from ollama_terminal.tools import WorkspaceTools, describe_call
 
-from . import bus, config, deploy_vars, live, plugins, prompts, stage_evidence, supabase_connect
+from . import bus, config, connection, deploy_vars, live, permissions, plugins, prompts, stage_evidence, supabase_connect, vision
 
 
 class RunCancelled(Exception):
     """Raised inside a run when the studio asked for it to stop."""
+
+
+PHASE_REPAIRS = 2            # how many times a phase that is not finished is asked for again
+
+
+@dataclass
+class Phases:
+    """A build given to the model one numbered phase at a time (see `builder_agent/phases.py`).
+
+    `items` are the phases, each a dict with at least `title`, `detail` and `status`; the functions say what to ask for, what a
+    phase has delivered (the problems it still has, none when it is done), and where the state is kept so a stopped build resumes."""
+    items: list[dict[str, Any]]
+    request_for: Callable[[int, dict[str, Any]], str]
+    repair_for: Callable[[int, dict[str, Any], list[str]], str]
+    verify: Callable[[dict[str, Any]], list[str]] = field(default=lambda phase: [])
+    save: Callable[[str], None] = field(default=lambda plan_file: None)
+    summary: Callable[[dict[str, Any]], str] = field(default=lambda phase: "")     # what a finished phase delivered, in words
 
 
 class EngineUnavailable(RuntimeError):
@@ -45,6 +63,40 @@ _JSON_BLOCK = re.compile(r"```(?:json)?\s*(.+?)```", re.DOTALL)
 # The one stage whose agent may run the app's server itself: the preview did not start, and the
 # agent is starting it to find out why.
 PREVIEW_START = "preview_start"
+# The stages whose commands run the built app (its seed, its tests, its build): they get the database the build ran on.
+APP_STAGES = {"build", "build-edit", PREVIEW_START, "change", "test", "review"}
+# The stages in which the Studio, not the agent, runs the whole end-to-end suite (`qa_agent/e2e_run.py`).
+E2E_OWNED_STAGES = {"build", "build-edit", "change", "test", "review"}
+
+
+def command_environment(project: str, stage: str) -> dict[str, str]:
+    """What a command run for this project in `stage` is given: this machine's environment, the enabled plugins' variables, the
+    live channel its Playwright runs stream to, this project's own Supabase project, the database the build ran on (for the
+    stages that run the app) or the deployment's values (for a deployment), and the Node hooks every process gets.
+
+    One place, so the agent's commands, the Studio's own end-to-end run and the preview are given the same database."""
+    from . import node_hooks
+
+    enabled = config.record_dir(project) / "plugins.json"
+    choices = json.loads(enabled.read_text(encoding="utf-8")) if enabled.is_file() else []
+    # A generated app's Playwright run streams what its browser shows to this address (or, with no port to post to, this
+    # folder), and the studio's preview displays it while the test runs.
+    env = {**os.environ, **plugins.environment(choices), **live.channel_for(project)}
+    # A Supabase-stack project gets the one real project `supabase_connect` made for it, in build, test and deploy alike.
+    env.update(supabase_connect.env_for(project))
+    if stage.startswith("deploy"):
+        # A deployment may also override with what the customer saved for it explicitly (pointing production at a different
+        # Supabase project, or an unrelated variable), and its CLI is signed in with the token saved here when there is one.
+        env.update(deploy_vars.environment(build=False, project=project))
+        from . import cli_signin
+
+        env.update(cli_signin.env_tokens())
+    elif stage in APP_STAGES:
+        # A build, a change, a test run and a review need the same saved values (the database connection string, a key the
+        # customer gave before the plan) reachable by their own commands: a change that fixes a journey and runs it again uses
+        # the database the build seeded, never a local fallback.
+        env.update(deploy_vars.environment(build=True, project=project))
+    return node_hooks.add(env, node_hooks.DNS_FALLBACK)
 
 # A build stage is a long conversation with a remote service, and remote
 # services have bad minutes. Losing an hour of work to one 502 is not a model
@@ -65,6 +117,19 @@ def _transient(exc: Exception) -> bool:
     return isinstance(exc, (ConnectionError, TimeoutError, OSError, httpx.TransportError))
 
 
+HOLD_SECONDS = 1800        # how long a run holds still for "Try again" before it gives up
+
+
+def _said(exc: Exception) -> str:
+    """What the model service said, short enough for a notice: "Internal Server Error (status code: 500)"."""
+    text = str(exc).strip() or exc.__class__.__name__
+    status = getattr(exc, "status_code", None)
+    text = re.sub(r"\s*\(ref:\s*[0-9a-f-]+\)", "", text)             # the service's own reference number means nothing to a person
+    if isinstance(status, int) and f"{status}" not in text:
+        text += f" (status code: {status})"
+    return text[:160]
+
+
 class _Failure:
     """An exception raised on a reading thread, carried to the thread that waits for the reply."""
 
@@ -81,11 +146,21 @@ class RetryingClient:
 
     def __init__(self, inner: Any, announce: Callable[[str], None] | None = None,
                  cancelled: Callable[[], bool] | None = None,
-                 wait_for_cancel: Callable[[float], bool] | None = None):
+                 wait_for_cancel: Callable[[float], bool] | None = None,
+                 on_connection: Callable[[str, dict[str, Any]], None] | None = None,
+                 presses: Callable[[], int] | None = None, hold: bool | Callable[[], bool] = False):
+        """`on_connection(state, fields)` is told when the service stops answering ("retrying", "waiting") and when it answers
+        again ("ok"), for the chat to show. `presses()` counts the person's presses of "Try again": a wait ends at once when
+        the count moves. `hold`: when it has asked as many times as it will on its own, wait for the person instead of
+        giving up (a function says so per request)."""
         self._inner = inner
         self._announce = announce
         self._cancelled = cancelled
         self._wait_for_cancel = wait_for_cancel
+        self._on_connection = on_connection
+        self._presses = presses
+        self._hold = hold
+        self._incident = False         # the service has failed and has not answered since
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._inner, name)
@@ -167,36 +242,141 @@ class RetryingClient:
 
         return read()
 
-    def chat(self, **kwargs: Any) -> Any:
-        last: Exception | None = None
-        for attempt in range(RETRY_ATTEMPTS):
-            self._raise_if_cancelled()
+    def _tell(self, state: str, **fields: Any) -> None:
+        """The connection's state, for the chat to show. A notice nobody could show never stops a request."""
+        if self._on_connection:
             try:
-                if kwargs.get("stream"):
-                    return self._interruptible_stream(self._inner.chat(**kwargs))
-                return self._interruptible(lambda: self._inner.chat(**kwargs))
+                self._on_connection(state, fields)
+            except Exception:  # noqa: BLE001 - a notice is only a notice
+                pass
+
+    def _recovered(self) -> None:
+        """The service answered: if it had been failing, say it is back."""
+        if self._incident:
+            self._incident = False
+            self._tell("ok")
+
+    def _pause(self, seconds: float) -> None:
+        """Wait `seconds` before asking again. Stop ends the wait at once; so does the person's "Try again"."""
+        # ``time.sleep`` made Stop appear broken while a cloud request was
+        # backing off: the longest delay is 30 seconds.  A session supplies
+        # its Event.wait here, which wakes immediately when the customer
+        # presses Stop; simple clients keep the old sleep behaviour.
+        if not self._presses:
+            if self._wait_for_cancel:
+                if self._wait_for_cancel(seconds):
+                    raise RunCancelled("The run was stopped.")
+            else:
+                time.sleep(seconds)
+            return
+        end = time.monotonic() + seconds
+        pressed = self._presses()
+        while True:
+            left = end - time.monotonic()
+            if left <= 0:
+                return
+            step = min(0.25, left)
+            if self._wait_for_cancel:
+                if self._wait_for_cancel(step):
+                    raise RunCancelled("The run was stopped.")
+            else:
+                time.sleep(step)
+            if self._presses() != pressed:
+                return
+
+    def _back_off(self, exc: Exception, attempt: int) -> None:
+        """Say the connection was interrupted and wait before the next attempt; Stop ends the wait at once."""
+        pause = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)]
+        self._incident = True
+        self._tell("retrying", failed=attempt + 1, of=RETRY_ATTEMPTS, pause=pause, detail=_said(exc))
+        if self._announce:
+            self._announce(f"[retry] Connection to the model service was interrupted "
+                           f"({str(exc)[:120]}). Retrying attempt {attempt + 2} of "
+                           f"{RETRY_ATTEMPTS} in {pause}s.")
+        self._pause(pause)
+
+    def _wait_for_person(self, exc: Exception) -> None:
+        """It has been asked as many times as it will be on its own: hold the run here until the person presses "Try again"
+        (or Stop), so that what was done so far, and this very request, are not lost to a service that is down for a while."""
+        self._incident = True
+        self._tell("waiting", of=RETRY_ATTEMPTS, detail=_said(exc), hold=True)
+        if self._announce:
+            self._announce(f"[retry] The model service is still not answering ({str(exc)[:120]}). "
+                           "Waiting here until you press Try again.")
+        deadline = time.monotonic() + HOLD_SECONDS
+        pressed = self._presses() if self._presses else 0
+        while time.monotonic() < deadline:
+            if self._wait_for_cancel:
+                if self._wait_for_cancel(0.25):
+                    raise RunCancelled("The run was stopped.")
+            else:
+                time.sleep(0.25)
+            if self._presses and self._presses() != pressed:
+                return
+        raise exc            # nobody came back for it in all that time
+
+    def _next_attempt(self, exc: Exception, attempt: int) -> int:
+        """What to do after a failed request: the number of the next attempt, or raise when it is not worth asking again."""
+        self._raise_if_cancelled()
+        if not _transient(exc):
+            raise exc
+        if attempt >= RETRY_ATTEMPTS - 1:
+            if not (self._hold() if callable(self._hold) else self._hold):
+                raise exc
+            self._wait_for_person(exc)
+            return 0                                   # the person said to try again: a fresh round of attempts
+        self._back_off(exc, attempt)
+        return attempt + 1
+
+    def _retried_stream(self, kwargs: dict[str, Any], first: Any = None) -> Any:
+        """A streamed reply, asked for again when the connection fails before its first chunk.
+
+        A streamed request is only sent when the first chunk is read, so a dropped connection, a bad TLS record or
+        a 502 on opening it surfaces to whoever reads the stream, not to `chat()`, and used to end the whole run. It
+        is asked for again here. Once a chunk has been handed on the reply cannot be repeated without handing the
+        same words on twice, so a failure after that is raised as it is. `first` is the stream already opened for the
+        first attempt.
+        """
+        attempt = 0
+        while True:
+            self._raise_if_cancelled()
+            started = False
+            try:
+                stream, first = (first if first is not None else self._inner.chat(**kwargs)), None
+                for chunk in self._interruptible_stream(stream):
+                    if not started:
+                        started = True
+                        self._recovered()
+                    yield chunk
+                return
             except RunCancelled:
                 raise
-            except Exception as exc:  # noqa: BLE001 - re-raised below when it is not transient
-                self._raise_if_cancelled()
-                if not _transient(exc) or attempt == RETRY_ATTEMPTS - 1:
+            except Exception as exc:  # noqa: BLE001 - re-raised below when it is not worth asking again
+                if started:
+                    self._raise_if_cancelled()
                     raise
-                last = exc
-                pause = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)]
-                if self._announce:
-                    self._announce(f"[retry] Connection to the model service was interrupted "
-                                   f"({str(exc)[:120]}). Retrying attempt {attempt + 2} of "
-                                   f"{RETRY_ATTEMPTS} in {pause}s.")
-                # ``time.sleep`` made Stop appear broken while a cloud request was
-                # backing off: the longest delay is 30 seconds.  A session supplies
-                # its Event.wait here, which wakes immediately when the customer
-                # presses Stop; simple clients keep the old sleep behaviour.
-                if self._wait_for_cancel:
-                    if self._wait_for_cancel(pause):
-                        raise RunCancelled("The run was stopped.")
-                else:
-                    time.sleep(pause)
-        raise last  # pragma: no cover - the loop either returns or raises above
+                attempt = self._next_attempt(exc, attempt)
+
+    def chat(self, **kwargs: Any) -> Any:
+        if kwargs.get("stream"):
+            try:
+                first = self._inner.chat(**kwargs)      # a real client only builds the stream here; nothing is sent yet
+            except Exception:  # noqa: BLE001 - asked again, and judged, by the retrying read below
+                first = None
+            if first is not None and not hasattr(first, "__iter__"):
+                return first                            # not a stream after all: handed back as it is
+            return self._retried_stream(kwargs, first)
+        attempt = 0
+        while True:
+            self._raise_if_cancelled()
+            try:
+                answer = self._interruptible(lambda: self._inner.chat(**kwargs))
+                self._recovered()
+                return answer
+            except RunCancelled:
+                raise
+            except Exception as exc:  # noqa: BLE001 - raised by `_next_attempt` when it is not worth asking again
+                attempt = self._next_attempt(exc, attempt)
 
 
 def extract_json(text: str) -> Any:
@@ -233,6 +413,34 @@ class StudioTools(WorkspaceTools):
         # A Studio agent must never own a long-running web server.  Preview
         # startup is handled by preview_runtime, which assigns the stack's preview port.
         self.managed_preview = True
+
+    def _take_picture(self, target: str, viewport: str, role: str, out: Path) -> Path:
+        """A prototype page by its file name, route or name (shown signed in as a role that can open it, or as `role`);
+        anything else - a preview URL, an HTML file - as the generic tool does."""
+        if not target.lower().startswith("http"):
+            from prototype_agent import screens
+
+            root = self.root / config.RECORD_DIR / "prototype"
+            try:
+                rows = (json.loads((root / "routes.json").read_text(encoding="utf-8")) or {}).get("routes") or []
+                accounts = (json.loads((root / "demo-accounts.json").read_text(encoding="utf-8")) or {}).get("accounts") or []
+            except (OSError, ValueError):
+                rows, accounts = [], []
+            page = screens.find_page(root, target, rows) if rows else None
+            file = self.root / target
+            if page and not (file.is_file() and file.suffix.lower() in {".html", ".htm"}):
+                wanted = role.strip().lower()
+                email = None
+                if wanted:
+                    email = next((str(a.get("email") or "") for a in accounts if wanted in {
+                        str(a.get("email") or "").lower(), str(a.get("role") or "").lower(),
+                        str(a.get("role_key") or "").lower()}), "")
+                stop_requested = getattr(self, "stop_requested", None)
+                if callable(stop_requested):
+                    return screens.shoot_page(root, page, accounts, out, viewport, email,
+                                               cancelled=stop_requested)
+                return screens.shoot_page(root, page, accounts, out, viewport, email)
+        return super()._take_picture(target, viewport, role, out)
 
     def browser_url(self) -> str:
         """The local preview this project's browser tool may inspect."""
@@ -290,27 +498,14 @@ class StudioTools(WorkspaceTools):
         previous = self._before(path) if name in {"write_file", "replace_text"} else None
 
         if name == "run_command":
-            enabled = config.record_dir(self.project) / "plugins.json"
-            choices = json.loads(enabled.read_text(encoding="utf-8")) if enabled.is_file() else []
-            # A generated app's Playwright run streams what its browser shows to this
-            # address (or, with no port to post to, this folder), and the studio's
-            # preview displays it while the test runs.
-            self.command_env = {**os.environ, **plugins.environment(choices),
-                                **live.channel_for(self.project)}
-            # A Supabase-stack project gets the one real project `supabase_connect` made for it,
-            # in build, test and deploy alike - unlike the old studio-wide MongoDB setting, there is
-            # no separate "the studio's own" database to fall back to here.
-            self.command_env.update(supabase_connect.env_for(self.project))
             stage = session_for(self.project).stage
+            self.command_env = command_environment(self.project, stage)
             # Starting the app is that stage's whole job (the preview would not start); everywhere
             # else the Studio's preview runtime owns the app's server.
             self.managed_preview = stage != PREVIEW_START
-            if stage.startswith("deploy") or stage in {"build", "build-edit", PREVIEW_START}:
-                # A deployment may also override with what the customer saved for it explicitly
-                # (pointing production at a different Supabase project, or an unrelated variable);
-                # a build/update needs the same saved values (a database connection string, a key the
-                # customer gave before the plan) reachable by its own commands and the preview.
-                self.command_env.update(deploy_vars.environment())
+            # The Studio runs the whole end-to-end suite itself, once (`qa_agent/e2e_run.py`); the agent runs one spec at a time.
+            self.studio_runs_e2e = stage in E2E_OWNED_STAGES
+            self.deploying = stage.startswith("deploy")
         result = super().execute(name, args)
 
         relative = self._relative(path) if path else None
@@ -342,6 +537,17 @@ class StudioTools(WorkspaceTools):
         elif name == "web_fetch":
             bus.log(self.project, "INFO",
                     f'Read web page {str(args.get("url") or "")}', agent=role)
+        elif name == "screenshot" and not result.startswith("Tool error"):
+            try:
+                taken = json.loads(result)
+                bus.agent_msg(self.project,
+                              f"{taken.get('target')} · {taken.get('viewport')} · "
+                              + ("the model is looking at it" if taken.get("shown_to_you")
+                                 else "saved (this model cannot look at pictures)"),
+                              title="Screenshot", kind="screenshot", agent=role,
+                              images=[{"path": taken.get("saved"), "label": f"{taken.get('target')} · {taken.get('viewport')}"}])
+            except (TypeError, ValueError):
+                bus.log(self.project, "WARN", "The screenshot tool returned an unreadable result.", agent=role)
         elif name == "browser_inspect":
             try:
                 inspected = json.loads(result)
@@ -382,6 +588,7 @@ class ProjectSession:
         self.record.mkdir(parents=True, exist_ok=True)
 
         self.lock = threading.RLock()
+        self._cancel_lock = threading.Lock()
         self.role = bus.DEVELOPER
         self.stage = "idle"
         self._cancel = threading.Event()
@@ -413,10 +620,14 @@ class ProjectSession:
             except ValueError as exc:
                 raise EngineUnavailable(str(exc)) from exc
         else:
-            inner = ollama.Client(host=saved.get("ollama_host") or "http://localhost:11434")
+            inner = ollama.Client(host=saved.get("ollama_host") or "http://localhost:11434", timeout=connection.model_timeout())
+        # A run that is working on the person's project holds still for "Try again" when the model service stops answering,
+        # rather than failing with all it has done so far: the chat shows it (`bus.connection`) and says what to press.
         return RetryingClient(inner, announce=self._announce,
                               cancelled=lambda: self.cancelled,
-                              wait_for_cancel=self._cancel.wait)
+                              wait_for_cancel=self._cancel.wait,
+                              on_connection=lambda state, fields: bus.connection(self.project, state, agent=self.role, **fields),
+                              presses=lambda: connection.presses(self.project), hold=True)
 
     def _announce(self, line: str) -> None:
         """What the engine narrates, as the studio's own log and state."""
@@ -518,8 +729,12 @@ class ProjectSession:
                     role_of=lambda: self.role,
                     mcp=self._agent.mcp,
                 )
+                # What the agent may do without asking is the project's permission mode (permissions.py).
+                self._agent.tools.permission = permissions.gate_for(self.project, lambda: self.cancelled, lambda: self.role)
                 # A command running when Stop is pressed is stopped with its process tree, not waited for.
                 self._agent.tools.stop_requested = lambda: self.cancelled
+                # Whether the model in use can look at the screenshots its tool takes (Ollama says so: vision.py).
+                self._agent.tools.sees_pictures = lambda: vision.supports(self._agent.model) is True
                 self._apply_effort(self._agent, level)
                 self._model = wanted
                 self._thinking_level = level
@@ -612,6 +827,31 @@ class ProjectSession:
             # reason to break the turn that is already in progress.
             pass
 
+    def shed_history(self, note: str = "", keep_tokens: int = 40_000) -> int:
+        """Start a stage from a small conversation: the turns so far are archived, verbatim (`_archive_summary`), and what is
+        left is the memory summary the project already has plus `note`. Returns how many turns were set aside, 0 when the
+        conversation is already small.
+
+        A project is one conversation, so a deployment used to be asked for inside everything the build said and did: seven
+        hundred thousand tokens (two and a half megabytes) sent with every command's answer, slow, and past what the model
+        service accepts in one request. What a deployment needs is on disk (the build and test records, the specification);
+        the prompts say where, and the archive has the rest."""
+        from ollama_terminal.agent import _approx_tokens
+
+        agent = self._agent or self.agent()
+        with self.lock:
+            if _approx_tokens(agent.messages) <= keep_tokens or len(agent.messages) <= 1:
+                return 0
+            old = agent.messages[1:]
+            self._archive_summary(old)
+            if note and note not in agent.memory_summary:
+                agent.memory_summary = (agent.memory_summary + "\n" + note).strip()[-12_000:]
+            del agent.messages[1:]
+            agent.messages[0]["content"] = agent._system_message()
+            agent.last_prompt_tokens = 0
+        self.save_context()
+        return len(old)
+
     def save_context(self) -> None:
         if self._agent is None or self._is_discarded():
             return
@@ -622,7 +862,9 @@ class ProjectSession:
                 "thinking_level": self._thinking_level,
                 "memory_summary": self._agent.memory_summary,
                 "tool_calls": self._agent.tool_call_count,
-                "messages": self._agent.messages,
+                # Screenshots are shown to the model once; the bytes are not kept in the saved conversation.
+                "messages": [{k: v for k, v in m.items() if k != "images"} if isinstance(m, dict) and "images" in m else m
+                             for m in self._agent.messages],
             }, ensure_ascii=False, default=str), encoding="utf-8")
         except (OSError, TypeError, ValueError):
             # A context that cannot be written is a context this run still has.
@@ -630,10 +872,21 @@ class ProjectSession:
 
     # --- running ------------------------------------------------------------
 
+    def prepare_run(self) -> None:
+        """Register a new run before it is queued or its worker is started.
+
+        Clearing Stop here closes the race where a customer presses Stop after
+        the request is accepted but before ``begin`` runs on the worker thread.
+        Once queued, ``begin`` may only observe cancellation, never erase it.
+        """
+        with self._cancel_lock:
+            if self._is_discarded():
+                raise RunCancelled(self.project)
+            self._cancel.clear()
+
     def begin(self, stage: str, role: str = bus.DEVELOPER, run_id: str = "") -> None:
-        if self._is_discarded():
+        if self.cancelled:
             raise RunCancelled(self.project)
-        self._cancel.clear()
         from . import llm
 
         llm.bind_stop(self._cancel)  # the direct model calls this run makes honour its Stop too
@@ -661,6 +914,17 @@ class ProjectSession:
         bus.done(self.project, text, agent=self.role)
         self.save_context()
         self.stage = "idle"
+        self._refresh_preview()
+
+    def _refresh_preview(self) -> None:
+        """A build written while the preview server ran (the tests build the app again) leaves it serving a build that is
+        gone: it is replaced, so what the preview shows is the app as it is now."""
+        try:
+            from . import preview_runtime
+
+            preview_runtime.refresh_if_stale(self.project)
+        except Exception as exc:  # noqa: BLE001 - never a reason to end a finished run
+            bus.log(self.project, "WARN", f"The preview could not be refreshed: {exc}")
 
     def fail(self, text: str) -> None:
         # Cancellation is an expected pause, not a failed build.  The outer
@@ -676,9 +940,11 @@ class ProjectSession:
         bus.failed(self.project, text, agent=self.role)
         self.save_context()
         self.stage = "idle"
+        self._refresh_preview()
 
     def cancel(self) -> None:
-        self._cancel.set()
+        with self._cancel_lock:
+            self._cancel.set()
 
     def _is_discarded(self) -> bool:
         """Whether deletion retired this session.
@@ -835,13 +1101,16 @@ class ProjectSession:
                          f"{attempts} attempts: {last[:300]}")
 
     def run_task(self, request: str, model: str = "", thinking_level: str = "", plan_directory: str = "",
-                 audit: bool = False, parallel_write_limit: int = 1) -> dict[str, Any]:
+                 audit: bool = False, parallel_write_limit: int = 1, phases: Phases | None = None) -> dict[str, Any]:
         """Plan silently, then carry the plan out.
 
         The CLI shows its plan and waits for a person. Here nobody is waiting: the
         studio already approved this stage by starting it, so the plan is produced
         and immediately executed in the same conversation. Callers may skip the
         extra audit pass when later phases already provide the relevant checks.
+
+        With `phases` the plan is carried out one numbered phase at a time (`_run_phases`) instead of in one go, so a plan
+        too big for one turn is still done in full.
         """
         # Keep the one-argument call shape for lightweight adapters/tests that
         # provide an ``agent(model)`` callable. A real chat turn passes the
@@ -879,6 +1148,11 @@ class ProjectSession:
             raise RunCancelled(self.project)
 
         bus.agent_state(self.project, "building", agent=self.role)
+        if phases is not None:
+            phases.save(plan_file)                     # a build stopped in its first phase still carries on with this plan
+            done = self._run_phases(agent, plan, plan_file, phases, parallel_write_limit)
+            bus.agent_state(self.project, "", agent=self.role)
+            return {"plan": plan, "plan_file": plan_file, **done}
         with self.lock:
             execution_request = request
             if plan_file:
@@ -894,6 +1168,87 @@ class ProjectSession:
         bus.agent_state(self.project, "", agent=self.role)
         return {"plan": plan, "plan_file": plan_file, "status": result.status,
                 "text": result.text, "rounds": result.rounds}
+
+    def _phase_turn(self, agent: Agent, request: str, pointer: str, parallel_write_limit: int = 1) -> Any:
+        """One phase's turn, or the repeat of it, in the one conversation."""
+        try:
+            with self.lock:
+                return agent.execute_plan(request, pointer, audit=False, parallel_write_limit=parallel_write_limit)
+        finally:
+            self.report_memory()
+            self.save_context()
+
+    def _run_phases(self, agent: Agent, plan: str, plan_file: str, phases: Phases, parallel_write_limit: int = 1) -> dict[str, Any]:
+        """Carry out a plan one numbered phase at a time, each in full.
+
+        A phase is given to the model with only its own work in it; what it delivered is checked (`phases.verify`), and one that is
+        not finished is asked for again up to `PHASE_REPAIRS` times, with what is missing written out. A phase that is still not
+        finished is recorded as such and the build goes on to the next, so the tests and the checks still run; what is left undone is
+        for the build's own gate to refuse, by name, never to report as the application. Phases already done are skipped, which is how
+        a stopped build carries on."""
+        total = len(phases.items)
+        pointer = (f"The approved plan is saved at {plan_file}. Read the parts of it this phase needs, once; do not reread all of it."
+                   if plan_file else plan[:6000])
+        rounds, last = 0, ""
+        for number, phase in enumerate(phases.items, start=1):
+            if phase.get("status") == "done":
+                continue
+            if self.cancelled:
+                raise RunCancelled(self.project)
+            key, title = f"build:phase-{number}", f"Phase {number} of {total} · {phase['title']}"
+            bus.phase(self.project, key, title, detail=str(phase.get("detail") or ""), number=number, agent=self.role)
+            if phase.get("detail"):
+                bus.agent_msg(self.project, str(phase["detail"]), title=f"Phase {number} of {total}", kind="narration",
+                              agent=self.role)
+            bus.agent_state(self.project, "building", agent=self.role)
+            result = self._phase_turn(agent, phases.request_for(number, phase), pointer, parallel_write_limit)
+            rounds += result.rounds
+            last = result.text or last
+            if result.status == "blocked":
+                phase["note"] = str(result.text or "")[:300]
+                bus.log(self.project, "WARN", f"{title} ended blocked: {phase['note']}", agent=self.role)
+            problems = phases.verify(phase)
+            for attempt in range(1, PHASE_REPAIRS + 1):
+                if not problems:
+                    break
+                if self.cancelled:
+                    raise RunCancelled(self.project)
+                bus.agent_msg(self.project, f"{phase['title']} is not finished yet: " + "; ".join(problems[:2])
+                              + (f" (and {len(problems) - 2} more)" if len(problems) > 2 else "")
+                              + f". Finishing it ({attempt} of {PHASE_REPAIRS}).",
+                              title=f"Phase {number} of {total}", kind="narration", agent=self.role)
+                result = self._phase_turn(agent, phases.repair_for(number, phase, problems), pointer, parallel_write_limit)
+                rounds += result.rounds
+                last = result.text or last
+                problems = phases.verify(phase)
+            phase["problems"] = problems
+            phase["status"] = "done" if not problems else "incomplete"
+            phases.save(plan_file)
+            bus.phase(self.project, key, title, status="complete" if not problems else "failed",
+                      detail="; ".join(problems[:3]), number=number, agent=self.role)
+            delivered = phases.summary(phase) if not problems else ""
+            if delivered:
+                bus.agent_msg(self.project, delivered, title=f"Phase {number} of {total} done", kind="narration", agent=self.role)
+        unfinished = [phase["title"] for phase in phases.items if phase.get("status") != "done"]
+        return {"status": "incomplete" if unfinished else "complete", "text": last, "rounds": rounds,
+                "phases": phases.items}
+
+    def resume_phases(self, plan: str, plan_file: str, phases: Phases, model: str = "") -> dict[str, Any]:
+        """Carry on with a plan already made and the phases not done yet: what a stopped build does, instead of planning again."""
+        agent = self.agent(model)
+        if self.cancelled:
+            raise RunCancelled(self.project)
+        done = sum(1 for phase in phases.items if phase.get("status") == "done")
+        bus.agent_msg(self.project, f"Carrying on from the plan already made: {done} of {len(phases.items)} phases are done.",
+                      title="Build resumed", kind="narration", agent=self.role)
+        bus.agent_state(self.project, "building", agent=self.role)
+        try:
+            finished = self._run_phases(agent, plan, plan_file, phases)
+        finally:
+            bus.agent_state(self.project, "", agent=self.role)
+            self.report_memory()
+            self.save_context()
+        return {"plan": plan, "plan_file": plan_file, **finished}
 
     def execute_approved(self, request: str, plan: str, model: str = "") -> dict[str, Any]:
         """Carry out a plan the customer has already approved.

@@ -13,8 +13,10 @@ from typing import Any, Callable
 from prototype_agent import design as design_stage
 from prototype_agent import prototype as prototyper
 from srs_agent import document, interview, plan
+from srs_agent import wireframe as wireframer
 
-from . import config, store
+from . import bus, config, permissions, privacy, store, web_app
+from .session import session_for
 
 Handler = Callable[[str, dict[str, Any]], Any]
 
@@ -53,6 +55,8 @@ def create_project(_project: str, body: dict) -> Any:
     idea = str(body.get("idea") or "").strip()
     if not idea:
         raise ValueError("describe what you want built")
+    hidden = privacy.scrub(idea) if privacy.enabled() else privacy.Scrubbed(idea)       # NotSent (a ValueError) when it cannot run
+    idea = hidden.text
     # The model picked beside the first input: the interview, the plan and the specification all run on the
     # saved model, so it is saved here, before any of them starts.
     chosen = str(body.get("model") or "").strip()
@@ -68,6 +72,8 @@ def create_project(_project: str, body: dict) -> Any:
                           language=str(body.get("language") or ""),
                           stack=str(body.get("stack") or ""),
                           workspace_path=str(body.get("workspace_path") or ""))
+    privacy.tell(record["id"], hidden.found)
+    permissions.start_project(record["id"], str(body.get("permission_mode") or ""))
     return {"project": {"id": record["id"], "name": record["name"],
                         "stack": record["stack"], "language": record["language"],
                         "status": record["status"]}}
@@ -94,7 +100,14 @@ def interview_next(project: str, _body: dict) -> Any:
 
 @route("POST", rf"/projects/{P}/interview/answer")
 def interview_answer(project: str, body: dict) -> Any:
-    return interview.record_answer(project, body)
+    return interview.record_answer(project, {**body, **{key: privacy.screen(project, str(body[key]))
+                                                         for key in ("text", "custom") if body.get(key)}})
+
+
+@route("POST", rf"/projects/{P}/interview/skip")
+def interview_skip(project: str, _body: dict) -> Any:
+    """No interview: the plan is written from the idea and the chosen stack, and says what it assumed."""
+    return interview.skip(project)
 
 
 # --- the plan ---------------------------------------------------------------
@@ -106,9 +119,10 @@ def plan_current(project: str, _body: dict) -> Any:
 
 @route("POST", rf"/projects/{P}/plan")
 def plan_draft(project: str, body: dict) -> Any:
+    answers = body.get("answers") if isinstance(body.get("answers"), dict) else None
     return plan.draft(project,
-                      revision=str(body.get("revision") or ""),
-                      answers=body.get("answers") if isinstance(body.get("answers"), dict) else None)
+                      revision=privacy.screen(project, str(body.get("revision") or "")),
+                      answers={q: privacy.screen(project, str(a)) for q, a in answers.items()} if answers else None)
 
 
 @route("POST", rf"/projects/{P}/plan/approve")
@@ -156,6 +170,7 @@ def customize(project: str, body: dict) -> Any:
     request = str(body.get("prompt") or "").strip()
     if not request:
         raise ValueError("say what to change")
+    request = privacy.screen(project, request)
     from server_modules import bus, prompts
     from server_modules.session import session_for
 
@@ -167,6 +182,7 @@ def customize(project: str, body: dict) -> Any:
             "chat/update", message=request, stage="specification",
             artifacts="the specification, its diagrams and its wireframes",
             language=store.require(project).get("language", "English")))
+        document.reconcile(project, request, result.get("text", ""), session)
         session.finish("Specification updated.")
         return {"ok": True, "text": result.get("text", ""),
                 "srs": document.document(project)}
@@ -197,34 +213,65 @@ def wireframes(project: str, _body: dict) -> Any:
     return document.wireframes(project)
 
 
+@route("POST", rf"/projects/{P}/wireframes/build")
+def build_wireframes(project: str, body: dict) -> Any:
+    """Draw the wireframes again, or carry on a run that was stopped (`resume`)."""
+    return wireframer.run(project, privacy.screen(project, str(body.get("prompt") or "").strip()), fresh=not body.get("resume"))
+
+
 @route("POST", rf"/projects/{P}/wireframes/html")
-def draw_wireframe(project: str, body: dict) -> Any:
-    """The Wireframe tab's own draw button.
-
-    One focused call per screen, reading the handoff documents the specification
-    stage wrote. Previously this asked the agent to "redraw following the skill",
-    which is how seven pages came back as four-line stubs.
-    """
-    return document.redraw(project, str(body.get("route") or "").strip(),
-                            quiet=bool(body.get("quiet")))
+def build_html_wireframes(project: str, body: dict) -> Any:
+    """The same wireframes as plain HTML pages in `.agentforge/wireframe-html` (to compare with the React app)."""
+    return wireframer.run_html(project, privacy.screen(project, str(body.get("prompt") or "").strip()), fresh=not body.get("resume"))
 
 
-@route("POST", rf"/projects/{P}/wireframes/html/edit")
+@route("POST", rf"/projects/{P}/wireframes/edit")
 def edit_wireframe(project: str, body: dict) -> Any:
-    return document.save_wireframe_html(project, str(body.get("route") or ""),
-                                        str(body.get("html") or ""))
+    """One change to the wireframes, asked for in words (about one page when `route` is given, and about the `elements` pointed at)."""
+    return wireframer.edit(project, privacy.screen(project, str(body.get("prompt") or "")), str(body.get("route") or ""),
+                           body.get("elements"))
 
 
-@route("POST", rf"/projects/{P}/wireframes/html/ai-edit")
-def ai_edit_wireframe(project: str, body: dict) -> Any:
-    """Make one direct, page-scoped AI change without entering plan mode."""
-    return document.ai_edit_wireframe(project, str(body.get("route") or ""),
-                                      str(body.get("prompt") or ""))
+@route("POST", rf"/projects/{P}/prototype/edit")
+def edit_prototype(project: str, body: dict) -> Any:
+    """One change to the prototype, asked for in words (and about the `elements` pointed at)."""
+    return prototyper.revise(project, privacy.screen(project, " ".join(str(body.get("prompt") or "").split())), body.get("elements"))
+
+
+# What is still working on an app: its words are not swapped under it.
+_WORKING = ("srs", "wireframes", "wireframe-edit", "prototype", "prototype-edit", "review", "build")
+
+
+@route("POST", rf"/projects/{P}/app/text-edit")
+def edit_app_text(project: str, body: dict) -> Any:
+    """Retype some words on a page of the wireframes or the prototype: `old` becomes `new` in the app's source when `old` is
+    written there in exactly one place, and the app is bundled again. Otherwise `{"ok": false, "reason"}` says why not, and the studio
+    hands the change to the agent."""
+    kind = str(body.get("kind") or "")
+    if kind not in web_app.KINDS:
+        raise ValueError("the words are on the wireframes or on the prototype")
+    session = session_for(project)
+    if session.stage in _WORKING:
+        raise ValueError("wait for the agent to finish: it is still working on the app")
+    app = web_app.app_dir(session.workspace, kind)
+    if not web_app.built(app):
+        raise FileNotFoundError(f"the {kind} is not drawn yet")
+    done = web_app.edit_text(app, str(body.get("old") or ""), str(body.get("new") or ""))
+    if not done.get("ok"):
+        return done
+    original = done.pop("original")
+    made, log = web_app.bundle(app)
+    if not made:
+        (app / done["file"]).write_bytes(original.encode("utf-8"))
+        web_app.bundle(app)                                      # the page the studio shows is the one it had
+        return {"ok": False, "reason": "does not bundle", "detail": log[-300:]}
+    (bus.prototype_changed if kind == "prototype" else bus.wireframe_changed)(project)
+    return done
 
 
 @route("POST", rf"/projects/{P}/wireframes/approve")
 def approve_wireframes(project: str, body: dict) -> Any:
-    return prototyper.generate_from_wireframes(project, str(body.get("prompt") or ""))
+    return prototyper.generate_from_wireframes(project, privacy.screen(project, str(body.get("prompt") or "")))
 
 
 # --- the design contract ----------------------------------------------------
@@ -237,7 +284,7 @@ def design_spec(project: str, _body: dict) -> Any:
 @route("POST", rf"/projects/{P}/design-spec/draft")
 def design_draft(project: str, body: dict) -> Any:
     spec = body.get("spec") if isinstance(body.get("spec"), dict) else None
-    return design_stage.draft(project, direction=str(body.get("direction") or ""), spec=spec)
+    return design_stage.draft(project, direction=privacy.screen(project, str(body.get("direction") or "")), spec=spec)
 
 
 @route("POST", rf"/projects/{P}/design-spec/(?P<version>[^/]+)/approve")

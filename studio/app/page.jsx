@@ -5,7 +5,7 @@ import { Eye, Code2, Database, EthernetPort, FileText, FlaskConical, History, Pl
 import { useStore } from '@/lib/store'
 import { answerQuestion, connect, send } from '@/lib/ws'
 import { forgetConsole } from '@/lib/console-log'
-import { api } from '@/lib/api'
+import { api, isJobCancelled } from '@/lib/api'
 import { previewHref } from '@/lib/preview'
 import { catalogue, TIERS } from '@/lib/models'
 import { readFolder } from '@/lib/importer'
@@ -58,28 +58,11 @@ const STAGE_TAB = {
   deploy: 'deploy', deployment: 'deploy', done: 'versions',
 }
 
-const WIREFRAME_APPROVAL_PROMPT =
-  'Use the approved /plan as the scope. Read the site map and the application spec at ' +
-  '.agentforge/srs/handoff/ (sitemap.md, app.md). Before drawing anything, search the web ' +
-  '(the web_search tool) for how good products of this kind lay out their screens, and take ideas ' +
-  'from what you find. Then draw one creative, strictly black-and-white low-fidelity HTML wireframe ' +
-  'for every planned screen, with no page limit. A screen is one page with one job: tables, forms and ' +
-  'detail views each get a page of their own and are linked from the pages that lead to them, never ' +
-  'piled into another page; use a popup only for a short contextual action. Draw the shared layout ' +
-  'once and keep it identical on every page: the same navigation, header, sidebar and footer in the ' +
-  'same position, and the same buttons, forms, cards, tables and status marks. Use realistic sample ' +
-  'data and make the way from page to page obvious. Show the pages as a grid, one by one as they ' +
-  'finish, and enable editing.'
+// What starting each stage asks for: the first line of `prompts/wireframe/generate.md` and `prompts/prototype/generate.md`.
+// The agent reads the web-artifacts-builder skill and the files the earlier stages left; nothing more needs saying here.
+const WIREFRAME_APPROVAL_PROMPT = 'Generate low-fidelity wireframes.'
 
-const PROTOTYPE_APPROVAL_PROMPT =
-  'Generate a full prototype by reading the approved wireframes and SRS handoff files. ' +
-  'Make a coherent, world-class, realistic prototype using HTML, CSS and purposeful animation, with ' +
-  'consistent shared components and a clear end-to-end user flow. If sign-in exists, place clearly ' +
-  'labelled fictitious demo credentials for every approved role on the sign-in page, add convenient ' +
-  'role demo access, and make each role enter the correct home, navigation and permitted workflow. ' +
-  'Use relevant real sample images discovered through Google Images wherever the wireframes call for ' +
-  'photography or image content, with descriptive alt text and graceful fallbacks. Check for CSS, link, ' +
-  'interaction and runtime errors before finishing.'
+const PROTOTYPE_APPROVAL_PROMPT = 'Generate a high-fidelity, animated prototype.'
 
 async function retry(fn, times, waitMs) {
   let last
@@ -153,8 +136,13 @@ export default function Studio() {
   // the account connections whenever Settings closes, since that is where they are made.
   const [settingsTab, setSettingsTab] = useState('')
   const [settingsClosed, setSettingsClosed] = useState(0)
+  // A count of account changes made in Settings while it is open (a sign-in finishing, a token saved): the Deploy
+  // panel behind it reads who is signed in again each time, instead of showing "not connected" until it is reopened.
+  const [accountsChanged, setAccountsChanged] = useState(0)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [mobileView, setMobileView] = useState('view') // 'chat' | 'view'
+  // A wireframe page opened on its own takes the whole view: the chat beside it is hidden until the pages are listed again.
+  const [wireFocus, setWireFocus] = useState(false)
   const opening = useRef(0)
   const wireframeApproval = useRef(null)
   const prototypeApproval = useRef(null)
@@ -422,6 +410,13 @@ export default function Studio() {
       })
       useStore.getState().bumpProjects()
     }).catch(error => {
+      if (isJobCancelled(error)) {
+        useStore.getState().applyProjectEvent({
+          type: 'sync_state', project: name, status: 'paused', source: 'wireframe',
+          detail: 'Wireframe generation stopped. Saved progress can be continued.',
+        })
+        return
+      }
       useStore.getState().applyProjectEvent({
         type: 'sync_state', project: name, status: 'failed', source: 'wireframe',
         error: error.message,
@@ -451,12 +446,28 @@ export default function Studio() {
       prompt: [PROTOTYPE_APPROVAL_PROMPT, customizerPrompt].filter(Boolean).join('\n\n'),
     })
     prototypeApproval.current = job
-    job.then(() => {
+    job.then(result => {
+      if (result?.complete === false) {
+        useStore.getState().applyProjectEvent({
+          type: 'sync_state', project: name, status: 'paused', source: 'prototype',
+          detail: 'Prototype generation paused with completed pages saved.',
+        })
+        useStore.getState().bumpProjects()
+        return
+      }
       useStore.getState().applyProjectEvent({
         type: 'sync_state', project: name, status: 'clean', source: 'prototype',
       })
       useStore.getState().bumpProjects()
     }).catch(error => {
+      if (isJobCancelled(error)) {
+        useStore.getState().applyProjectEvent({
+          type: 'sync_state', project: name, status: 'paused', source: 'prototype',
+          detail: 'Prototype generation stopped. Completed pages were saved.',
+        })
+        useStore.getState().bumpProjects()
+        return
+      }
       useStore.getState().applyProjectEvent({
         type: 'sync_state', project: name, status: 'failed', source: 'prototype',
         error: error.message,
@@ -563,8 +574,10 @@ export default function Studio() {
       {settingsOpen && (
         <SettingsModal initialTab={settingsTab}
                        onClose={() => { setSettingsOpen(false); setSettingsTab(''); setSettingsClosed(n => n + 1) }}
-                       onSaved={() => api.models().then(r => setCat(catalogue(r)))
-                                         .catch(() => { })}
+                       onSaved={() => {
+                         setAccountsChanged(n => n + 1)
+                         return api.models().then(r => setCat(catalogue(r))).catch(() => { })
+                       }}
                        onImport={importFolder}
                        onZip={downloadZip}
                        onOpenInNewTab={openPreviewInNewTab}
@@ -768,7 +781,8 @@ export default function Studio() {
           <div className="flex min-h-0 flex-1 bg-bg/40 overflow-hidden">
             <div className={cn(
               "shrink-0 h-full",
-              mobileView === 'chat' ? 'flex w-full lg:w-auto' : 'hidden lg:flex'
+              view === 'wireframe' && wireFocus ? 'hidden'
+                : mobileView === 'chat' ? 'flex w-full lg:w-auto' : 'hidden lg:flex'
             )}>
               <AgentChat key={`${project}-${agentRole}`}
                          projectTitle={projects.find(row => row?.name === project)?.title || ''} />
@@ -822,13 +836,14 @@ export default function Studio() {
                 <SrsResult key={`srs-${project}`} onApprove={approveSrsAndDraw} />
               )}
               {view === 'wireframe' && (
-                <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(191, 185, 255,.07),transparent_30%)] p-5">
-                  <div className="mx-auto max-w-[1400px]">
-                    <div className="mb-5">
+                <div className={cn("min-h-0 flex-1 bg-[radial-gradient(circle_at_top_right,rgba(191, 185, 255,.07),transparent_30%)]",
+                                  wireFocus ? 'flex flex-col overflow-hidden p-3' : 'overflow-y-auto p-5')}>
+                  <div className={wireFocus ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto max-w-[1400px]'}>
+                    {!wireFocus && <div className="mb-5">
                       <h1 className="text-lg font-semibold text-ink">Wireframes</h1>
-                      <p className="text-xs text-muted">All planned screens in a grid. Open a page to edit its layout.</p>
-                    </div>
-                    <Wireframes srs={{ project }} generating={syncState?.status === 'running' && ['srs', 'wireframe'].includes(syncState?.source)}
+                      <p className="text-xs text-muted">The wireframes, as a React app: click through the pages, or ask for a change.</p>
+                    </div>}
+                    <Wireframes srs={{ project }} onFocus={setWireFocus} generating={syncState?.status === 'running' && ['srs', 'wireframe'].includes(syncState?.source)}
                                 approving={syncState?.status === 'running' && syncState?.source === 'prototype'}
                                 onApprove={approveWireframesAndBuildPrototype}
                                 onRetryPrototype={() => startPrototypeFromDesign()} />
@@ -837,7 +852,8 @@ export default function Studio() {
               )}
               {view === 'deploy' && (
                 <DeployPanel key={`deploy-${project}`}
-                             onSettings={() => setSettingsOpen(true)} />
+                             onSettings={() => setSettingsOpen(true)}
+                             accountsRevision={accountsChanged + settingsClosed} />
               )}
               {view === 'versions' && <VersionsPanel key={`versions-${project}`} />}
               {view === 'database' && (

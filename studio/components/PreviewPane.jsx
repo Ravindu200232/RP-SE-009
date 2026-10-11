@@ -115,6 +115,12 @@ export default function PreviewPane({ hidden, onBuild }) {
     api.previewLink(project)
       .then(state => { useStore.getState().setRuntime(state); setPublishing('') })
       .catch(error => {
+        // This build publishes no address for an app (there is no tunnel): not a failure of the app or of the run,
+        // so it is said once, where the address would be, and not as a warning in the log.
+        if (/no public preview tunnel/i.test(error.message || '')) {
+          setPublishing('this app can only be previewed on the computer AgentForge runs on')
+          return
+        }
         setPublishing(error.message)
         addLog('WARN', `This app has no public address — ${error.message}`)
       })
@@ -456,7 +462,7 @@ export default function PreviewPane({ hidden, onBuild }) {
     }
   }
 
-  /** Navigates preview to home when runtime is active; prototypes are served under /prototype/. */
+  /** Navigates preview to home when runtime is active. */
   useEffect(() => {
     const f = frameRef.current
     if (!f) return
@@ -693,7 +699,9 @@ export default function PreviewPane({ hidden, onBuild }) {
                   )}
                 </div>
               </div>
-            ) : canResume ? (
+            ) : canResume && runtime?.status !== 'running' ? (
+              /* An app that is answering stays on screen: a run that failed after it was built (a deployment that could not be
+                 verified, say) leaves "Resume" in the header, but does not cover a working preview. */
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-panel p-8 text-center" role="status">
                 <div className="grid size-14 place-items-center rounded-2xl border border-accent/20 bg-accent text-ink">
                   <Play className="size-7" />

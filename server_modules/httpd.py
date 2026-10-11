@@ -29,8 +29,9 @@ from prototype_agent import prototype as prototyper
 from qa_agent import report_pdf
 from qa_agent import verify as qa
 from srs_agent import document as srs_document
+from srs_agent import wireframe as wireframer
 
-from . import bus, changes, cli_monitor, cli_signin, config, deploy_vars, github_device, jobs, live, ollama_cloud, pdf, plugins as plugin_service, preview_runtime, prompts, routes_deploy, routes_srs, runs, secrets_guard, store, supabase_connect, versions, workspace_picker
+from . import bus, changes, cli_monitor, cli_signin, config, connection, deploy_vars, github_device, jobs, live, mongo_connect, ollama_cloud, pdf, plugins as plugin_service, permissions, preview_runtime, privacy, prompts, routes_deploy, routes_srs, runs, secrets_guard, store, supabase_connect, versions, vision, web_app, workspace_picker
 from . import database_rows as database_rows_module
 from .session import session_for
 
@@ -164,6 +165,24 @@ def models(_ctx: dict) -> Any:
     }
 
 
+@route("GET", r"/privacy")
+def privacy_status(_ctx: dict) -> Any:
+    """Whether the privacy filter (Microsoft Presidio) is on and ready, and what it hides."""
+    return privacy.status()
+
+
+@route("GET", r"/models/capabilities")
+def model_capabilities(_ctx: dict) -> Any:
+    """Which of the models in `/models` can look at a picture (`{"capabilities": {id: {"vision": bool}}, "pending": n}`).
+
+    Ollama is asked per model (`vision.py`), a few at a time in the background, so this answers at once with what is known
+    and the picker asks again while `pending` is not zero."""
+    listed = models({})
+    ids = [str(row.get("id") if isinstance(row, dict) else row)
+           for row in [*(listed.get("local_models") or []), *(listed.get("cloud") or [])]]
+    return vision.capabilities(ids)
+
+
 @route("POST", r"/ollama/test")
 def ollama_test(ctx: dict) -> Any:
     """Whether ollama.com takes the key typed in (or, with none typed, the saved one). The key never comes back."""
@@ -263,7 +282,14 @@ def write_settings(ctx: dict) -> Any:
     patch.pop("cloud", None)
     config.save_settings(patch)
     prompts.clear_cache()
+    if any(_ACCOUNT_SETTING.match(key) for key in patch):
+        cli_signin.SIGNINS.forget()        # an account was just connected or changed: the panels must not be shown the old answer
     return read_settings({})
+
+
+# The settings that make a service connected (a token, a profile, a connection string): saving one changes who the command
+# line tools are signed in as, so what was remembered of it is dropped (`cli_signin.CliSignins.forget`).
+_ACCOUNT_SETTING = re.compile(r"^(github|vercel|netlify|azure|aws|mongodb|atlas|supabase)_|^deploy_mongodb_uri$")
 
 
 @route("POST", r"/github/device/start")
@@ -278,6 +304,7 @@ def github_device_poll(ctx: dict) -> Any:
     if result.get("status") == "ready":
         token = result.pop("token", "")
         config.save_settings({"github_token": token})
+        cli_signin.SIGNINS.forget()
         result["deploy"] = read_settings({})["deploy"]
     return result
 
@@ -310,7 +337,12 @@ def cli_signin_available(ctx: dict) -> Any:
 def _keep_signin(result: dict) -> dict:
     """What a finished sign-in left in the tool's own store becomes this account's settings."""
     if result.get("status") == "ready":
-        config.save_settings(result.pop("values"))
+        values = result.pop("values")
+        # A MongoDB account signed in as its own CLI profile becomes the one in use, with its own cluster record.
+        profile = values.pop(cli_signin.ATLAS_PROFILE_SETTING, None)
+        config.save_settings(values)
+        if profile is not None:
+            mongo_connect.switch_account(profile)
         result["deploy"] = read_settings({})["deploy"]
     return result
 
@@ -382,7 +414,8 @@ def cli_monitor_stop(ctx: dict) -> Any:
 
 @route("POST", r"/cli-signin/start")
 def cli_signin_start(ctx: dict) -> Any:
-    return cli_signin.SIGNINS.start(str(ctx.get("provider") or ""), {"region": str(ctx.get("region") or "")})
+    return cli_signin.SIGNINS.start(str(ctx.get("provider") or ""),
+                                    {"region": str(ctx.get("region") or ""), "add": bool(ctx.get("add"))})
 
 
 @route("POST", r"/cli-signin/poll")
@@ -416,7 +449,7 @@ def supabase_connect_status(ctx: dict) -> Any:
 
 @route("POST", r"/supabase/oauth/status")
 def supabase_oauth_status(_ctx: dict) -> Any:
-    """Whether the studio has a Supabase OAuth app registered and an account signed in."""
+    """Whether Supabase sign-in can start (the engine's OAuth app, or the person's own) and an account is signed in."""
     return supabase_connect.token_status()
 
 
@@ -435,11 +468,24 @@ def supabase_oauth_cancel(ctx: dict) -> Any:
     return supabase_connect.OAUTH.cancel(str(ctx.get("flow_id") or ""))
 
 
+@route("POST", r"/supabase/oauth/switch")
+def supabase_oauth_switch(ctx: dict) -> Any:
+    """Make another signed-in Supabase account the one new projects are made in."""
+    return supabase_connect.switch_account(str(ctx.get("id") or ""))
+
+
+@route("POST", r"/supabase/oauth/remove")
+def supabase_oauth_remove(ctx: dict) -> Any:
+    """Sign one Supabase account out of the studio."""
+    return supabase_connect.remove_account(str(ctx.get("id") or ""))
+
+
 @route("GET", r"/supabase-oauth/callback")
 def supabase_oauth_callback(ctx: dict) -> Any:
-    """Where the browser lands after approving the sign-in on supabase.com - this exact path, on
-    this studio's own API server, is what the OAuth app's callback URL is registered as
-    (`supabase_connect.REDIRECT_URI`). Only records what arrived; `poll()` does the real exchange."""
+    """Where the browser lands after approving the sign-in on supabase.com: sent here by the engine's
+    sign-in broker, or - for a person's own OAuth app - registered as that app's callback URL directly
+    (`supabase_connect.REDIRECT_URI`, this studio's own API server). Only records what arrived; `poll()`
+    does the real exchange."""
     query = ctx.get("_query") or {}
     code, state = str(query.get("code") or ""), str(query.get("state") or "")
     error = str(query.get("error_description") or query.get("error") or "")
@@ -555,8 +601,19 @@ def decide(ctx: dict) -> Any:
             return {"ok": False, "detail": problem}                 # the question stays open, with this to read
         ctx = {**ctx, "reply": prompts.load("deployment/value-saved", variable=asked["variable"]).strip()}
         held = ""
+    elif asked.get("kind") == "permission":
+        held = ""
+    elif ctx.get("via") == "option" and str(ctx.get("reply") or "") in {
+            str(option.get("label") if isinstance(option, dict) else option) for option in asked.get("options") or []}:
+        held = ""        # one of the card's own options (a round's Yes or No): the Studio wrote it, there is nothing to screen
     else:
         held = secrets_guard.refusal(str(ctx.get("reply") or ctx.get("feedback") or ""))
+        if not held:
+            try:
+                project_of = asked.get("project", "")
+                ctx = {**ctx, **{key: privacy.screen(project_of, str(ctx[key])) for key in ("reply", "feedback") if ctx.get(key)}}
+            except privacy.NotSent as exc:
+                held = str(exc)
     if held:
         # The question stays open: it is answered again, without the secret.
         asked = next((d for d in bus.pending_decisions() if d.get("id") == decision_id), {})
@@ -572,13 +629,15 @@ def decide(ctx: dict) -> Any:
 
     if bus.deliver(decision_id, reply if choice == "answer" else ""):
         return {"ok": True}                        # a build holding still before its plan takes the answer and goes on
+    if question.get("kind") == "permission":
+        return {"ok": False, "detail": "that request is no longer waiting"}       # the run it was for has ended
     if project and question.get("change_id"):
         # The planner asked it: the answer (or "you decide") goes back to that request.
         return changes.answer(project, str(question["change_id"]), reply if choice == "answer" else "",
                               str(ctx.get("model") or ""))
     if project and choice in {"answer", "revise"} and reply:
         runs.agent_update_direct({"project": project, "prompt": reply,
-                                  "agent": question.get("agent", bus.DEVELOPER)})
+                                  "agent": question.get("agent", bus.DEVELOPER)}, screened=True)
     elif project:
         bus.log(project, "INFO", f"Question answered: {choice}",
                 agent=question.get("agent", bus.DEVELOPER))
@@ -664,8 +723,7 @@ def files(ctx: dict) -> Any:
         if root.is_dir():
             return {p.relative_to(session.workspace).as_posix():
                     p.read_text(encoding="utf-8", errors="replace")
-                    for p in sorted(root.rglob("*")) if p.is_file()
-                    and p.stat().st_size < 400_000}
+                    for p in web_app.source_files(root) if p.stat().st_size < 400_000}
     return builder.files(project)
 
 
@@ -716,6 +774,8 @@ def workflow(ctx: dict) -> Any:
         "build_available": store.build_available(record),
         "sync": _last_sync(project),
         "plan_mode": record.get("plan_mode", True),
+        "permission_mode": permissions.mode_of(project),
+        "bypass_enabled": permissions.bypass_enabled(),
     }
 
 
@@ -739,6 +799,35 @@ def set_plan_mode(ctx: dict) -> Any:
     project = _project(ctx)
     record = store.update(project, plan_mode=bool(ctx.get("enabled", True)))
     return {"project": project, "plan_mode": record.get("plan_mode", True)}
+
+
+@route("GET", r"/permissions")
+def permission_status(_ctx: dict) -> Any:
+    """The modes, the one a new project starts in, and whether the bypass mode is turned on."""
+    return permissions.status()
+
+
+@route("POST", r"/permissions")
+def permission_settings(ctx: dict) -> Any:
+    """Turn the bypass mode on or off (`bypass`), or change the mode a new project starts in (`default`)."""
+    if "bypass" in ctx:
+        permissions.enable_bypass(bool(ctx.get("bypass")))
+    if ctx.get("default"):
+        permissions.set_default(str(ctx["default"]))
+    return permissions.status()
+
+
+@route("GET", r"/projects/(?P<project>[^/]+)/permission-mode")
+def get_permission_mode(ctx: dict) -> Any:
+    return permissions.status(_project(ctx))
+
+
+@route("POST", r"/projects/(?P<project>[^/]+)/permission-mode")
+def set_permission_mode(ctx: dict) -> Any:
+    """Put one project in a permission mode: auto, manual, accept_edits or bypass (once it has been turned on)."""
+    project = _project(ctx)
+    permissions.set_mode(project, str(ctx.get("mode") or ""))
+    return permissions.status(project)
 
 
 @route("GET", r"/lifecycle/(?P<project>[^/]+)")
@@ -809,8 +898,13 @@ def change_decide(ctx: dict) -> Any:
     """Approve, revise or cancel the plan shown in the chat."""
     project = _project(ctx)
     excluded = ctx.get("excluded_stages")
+    try:
+        feedback = privacy.screen(project, str(ctx.get("feedback") or ""))
+    except privacy.NotSent as exc:
+        bus.agent_msg(project, str(exc), title="Not sent")
+        return {"ok": False, "detail": str(exc)}
     return changes.decide(project, unquote(ctx["_match"].group("change")), str(ctx.get("decision") or ""),
-                          str(ctx.get("feedback") or ""), str(ctx.get("model") or ""),
+                          feedback, str(ctx.get("model") or ""),
                           excluded_stages=excluded if isinstance(excluded, list) else None)
 
 
@@ -902,14 +996,6 @@ def srs_pdf(ctx: dict) -> Any:
                "application/pdf", "SRS.pdf")
 
 
-@route("GET", r"/srs/projects/(?P<project>[^/]+)/wireframes/html")
-def wireframe_page(ctx: dict) -> Any:
-    project = _project(ctx)
-    route_name = str(ctx.get("_query", {}).get("route") or "/")
-    return Raw(srs_document.wireframe_html(project, route_name).encode("utf-8"),
-               "text/html; charset=utf-8")
-
-
 # The rest of `/srs/...` is the SRS router, read directly on GET. `jobs` is
 # excluded because the job endpoints below own that prefix; without it, the
 # catch-all answers every poll with "no SRS route for /jobs/...".
@@ -922,25 +1008,43 @@ def srs_get(ctx: dict) -> Any:
 # the prototype
 # =========================================================================
 
-@route("GET", r"/prototype/(?P<project>[^/]+)/(?P<name>.+)")
-def prototype_file(ctx: dict) -> Any:
-    """The prototype as a small static site.
+@route("GET", r"/web/(?P<project>[^/]+)/(?P<kind>wireframe|prototype)/status")
+def web_app_status(ctx: dict) -> Any:
+    """Whether the wireframes or the prototype is bundled yet, and when (what the studio's frame reloads on)."""
+    app = web_app.app_dir(session_for(_project(ctx)).workspace, ctx["_match"].group("kind"))
+    built = web_app.built(app)
+    return {"built": built, "stale": built and web_app.stale(app),
+            "version": int((app / web_app.BUNDLE).stat().st_mtime) if built else 0}
 
-    The studio points an <iframe> straight at these URLs and lets the pages link
-    to each other, so every file under `.agentforge/prototype/` — the pages, the
-    stylesheet, the script, the images — is served at its own path.
-    """
+
+@route("GET", r"/web/(?P<project>[^/]+)/(?P<kind>wireframe|prototype)")
+def web_app_page(ctx: dict) -> Any:
+    """The wireframes or the prototype: one page, the bundled React app. The studio frames it and picks the screen with the
+    address hash (`#/orders`); `?as=<role or email>` opens a prototype signed in."""
     project = _project(ctx)
-    name = unquote(ctx["_match"].group("name")).split("?")[0]
-    body, kind = prototyper.asset(project, name)
-    return Raw(body, kind)
+    app = web_app.app_dir(session_for(project).workspace, ctx["_match"].group("kind"))
+    try:
+        return Raw(web_app.preview_page(web_app.page(app)), "text/html; charset=utf-8")
+    except FileNotFoundError as exc:
+        raise HttpError(404, f"the {ctx['_match'].group('kind')} is not drawn yet") from exc
 
 
-@route("GET", r"/prototype/(?P<project>[^/]+)")
-def prototype_index(ctx: dict) -> Any:
+_HTML_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+               ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".txt": "text/plain; charset=utf-8"}
+
+
+@route("GET", r"/web/(?P<project>[^/]+)/wireframe-html(?:/(?P<name>.*))?")
+def wireframe_html_file(ctx: dict) -> Any:
+    """The plain HTML version of the wireframes: its pages, its stylesheet and its script, each at its own address."""
     project = _project(ctx)
-    body, kind = prototyper.asset(project, "index.html")
-    return Raw(body, kind)
+    root = wireframer.html_path(project).resolve()
+    path = (root / (unquote(ctx["_match"].group("name") or "") or "index.html")).resolve()
+    if not path.is_relative_to(root) or not path.is_file():
+        raise HttpError(404, "that page is not in the HTML wireframes")
+    body = path.read_bytes()
+    if path.suffix.lower() in (".html", ".htm"):
+        body = web_app.preview_page(body, web_app.HTML_POLICY)
+    return Raw(body, _HTML_TYPES.get(path.suffix.lower(), "application/octet-stream"))
 
 
 @route("POST", r"/design-theme-preview")
@@ -1035,6 +1139,20 @@ def http_element_edit(ctx: dict) -> Any:
 @route("POST", r"/preview-start")
 def http_preview_start(ctx: dict) -> Any:
     return runs.preview_start(ctx)
+
+
+@route("POST", r"/connection/retry")
+def http_connection_retry(ctx: dict) -> Any:
+    """The person pressed "Try again" on the chat's notice that the model service is not answering: the run that waits
+    for it asks again at once (see connection.py)."""
+    return {"ok": connection.retry(str(ctx.get("project") or "").strip())}
+
+
+@route("POST", r"/review-screens")
+def http_review_screens(ctx: dict) -> Any:
+    """Look at the project's screens (the prototype's pages, the end-to-end tests' screenshots, or both) with a model that
+    can look at pictures, and fix what it finds; `fix: false` only reports."""
+    return runs.review_screens(ctx)
 
 
 # =========================================================================
@@ -1258,8 +1376,39 @@ def _queue(router, ctx: dict, label: str) -> Any:
     path = str(ctx.get("path") or "")
     method = str(ctx.get("method") or "POST")
     body = ctx.get("body") if isinstance(ctx.get("body"), dict) else {}
+    match = re.search(r"/projects/([^/]+)", path)
+    project = unquote(match.group(1)) if match and label == "srs" else ""
+    agent = (bus.DESIGNER if any(part in path for part in ("/wireframes", "/design-spec"))
+             else bus.DEVELOPER)
+    on_cancel = None
+    if project:
+        # Register the cancellation token before the queued worker exists. A
+        # Stop received immediately after this response can therefore never be
+        # erased later by ProjectSession.begin().
+        session = session_for(project)
+        session.prepare_run()
+        if path.rstrip("/").endswith("/wireframes/approve"):
+            direction = str(body.get("prompt") or "").strip()
+            store.update(project, build_available=False, status="prototype-generating")
+            if direction:
+                pending = session.record / prototyper.PROTOTYPE_DIR / "generation.json"
+                pending.parent.mkdir(parents=True, exist_ok=True)
+                (pending.parent / "routes.json").unlink(missing_ok=True)
+                pending.write_text(json.dumps({"complete": False, "draw_complete": False,
+                                               "direction": direction}, ensure_ascii=False, indent=2),
+                                   encoding="utf-8")
+        def on_cancel() -> None:
+            if path.rstrip("/").endswith("/wireframes/approve"):
+                bus.sync_state(project, "paused", "Prototype generation stopped.", source="prototype")
+            elif "/wireframes" in path or path.rstrip("/").endswith("/approve"):
+                bus.sync_state(project, "paused", "Wireframe generation stopped.", source="wireframe")
+            elif "/generate-srs" in path:
+                bus.sync_state(project, "paused", "Specification generation stopped.",
+                               source="srs", srs_status="paused")
+            bus.cancelled(project, "Stopped.", agent=agent)
     return {"job_id": jobs.start(lambda: router(method, path, body),
-                                 label=f"{label}{path}")}
+                                 label=f"{label}{path}", project=project,
+                                 agent=agent, on_cancel=on_cancel)}
 
 
 @route("POST", r"/srs/jobs")

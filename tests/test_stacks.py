@@ -66,8 +66,11 @@ class RegistryTests(unittest.TestCase):
                 self.assertTrue((ROOT / "prompts" / "deployment" / "skills" / row["skill"] / "SKILL.md").is_file())
 
     def test_a_server_stack_is_only_offered_where_a_server_can_run(self):
-        for stack in ("remix-mongo", "remix-mongo-only", "vite-mongo-only", "mern-microservices-only"):
+        for stack in ("vite-mongo-only", "mern-microservices-only"):
             self.assertEqual(deployment_stacks()[stack]["targets"], ["aws_ec2", "aws_ecs", "azure"], stack)
+        # Remix runs as one server, or as serverless functions on Vercel (its Vercel preset).
+        for stack in ("remix-mongo", "remix-mongo-only"):
+            self.assertEqual(deployment_stacks()[stack]["targets"], ["vercel", "aws_ec2", "aws_ecs", "azure"], stack)
         self.assertEqual(deployment_stacks()["nextjs-mongo-only"]["targets"], "all")
 
     def test_every_stack_has_a_template_a_guide_and_an_uploads_rule_where_it_needs_one(self):
@@ -180,6 +183,13 @@ class RemixMongoTemplateTests(unittest.TestCase):
 class BuildGateTests(StraightThroughCase):
     """`build.run` connects (or creates) the project's Supabase project only for a stack that uses Supabase."""
 
+    def setUp(self):
+        super().setUp()
+        # A MongoDB stack's database is not what these tests are about, and they must never reach a real cluster: with the
+        # Studio's own settings they did, and a cluster that did not answer held the build on its "Try again?" card.
+        self.enterContext(mock.patch.object(build.mongo_connect, "ensure_for_project",
+                                            return_value={"status": "not_connected", "database": "", "reason": ""}))
+
     def build_stack(self, stack: str) -> str:
         self.session.results.append({"status": "complete", "text": "done", "plan": "p"})
         with mock.patch.object(build.store, "require", return_value={"stack": stack, "name": "Shop"}), \
@@ -238,6 +248,45 @@ class ChangeGuidesFollowTheStackTests(unittest.TestCase):
 
     def test_a_change_with_no_project_keeps_the_guidance_it_always_had(self):
         self.assertIn("### pitfalls-supabase.md", changes._guides())  # noqa: SLF001
+
+
+class TheDatabaseIsTheStudiosToProvideTests(unittest.TestCase):
+    """The model is told at the root that the MongoDB connection is provided: never asked for, never looked for on this computer."""
+
+    def test_every_mongodb_stack_guide_says_the_database_is_already_connected_and_to_look_for_no_other(self):
+        for stack in (*MONGO_BUCKET, *MONGO_ONLY):
+            with self.subTest(stack=stack):
+                for files in (scaffold.build_guide_files(stack), scaffold.guide_files(stack)):
+                    guide = files[scaffold.STACK_GUIDES[stack]]
+                    self.assertIn("The database is already connected - never ask for one, never look for another", guide)
+                    for rule in ("Never ask the customer for the database", "Do not look for a MongoDB on this computer",
+                                 "`mongod`, `mongosh`, Docker", "Never drop a database"):
+                        self.assertIn(rule, guide)
+                    # What used to make the model ask for it, or go and check a local one, is gone.
+                    for old in ("value-only question", "asked for before the plan", "carry on with the local fallback",
+                                "customer's to supply"):
+                        self.assertNotIn(old, guide)
+
+    def test_the_templates_env_example_says_the_studio_sets_it_and_it_is_not_copied(self):
+        for template in ("nextjs-mongo", "remix-mongo", "vite-mongo", "mern-microservices"):
+            text = (scaffold.ROOT / template / ".env.example").read_text(encoding="utf-8")
+            self.assertIn("The Studio sets MONGODB_URI", text, template)
+            self.assertIn("do not copy", text, template)
+            self.assertNotIn("Local development and `npm test` only", text, template)
+
+    def test_the_build_prompts_say_it_too(self):
+        for name in ("builder/generate", "builder/update"):
+            text = (ROOT / "prompts" / f"{name}.md").read_text(encoding="utf-8")
+            self.assertIn("never look for a MongoDB on this computer", text.replace("Never look", "never look"), name)
+            self.assertIn("MONGODB_URI", text, name)
+        wiring = (ROOT / "prompts" / "builder" / "phase-wiring.md").read_text(encoding="utf-8")
+        self.assertIn("do not look for, start or test a MongoDB on this computer", wiring)
+        self.assertIn("names only, no real value", wiring)
+
+    def test_the_question_before_the_plan_no_longer_offers_a_connection_string_as_something_to_ask(self):
+        text = (ROOT / "prompts" / "builder" / "decide.md").read_text(encoding="utf-8")
+        self.assertNotIn("a provider account, a connection string", text)
+        self.assertIn("{{database}}", text)
 
 
 if __name__ == "__main__":

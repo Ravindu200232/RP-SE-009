@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowRight, Check, CloudUpload, FileText, FlaskConical, FolderOpen, Languages, PencilLine, Rocket, Search,
+  ArrowRight, Check, CloudUpload, FileText, FlaskConical, FolderOpen, Globe2, PencilLine, Rocket, Search,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { send } from '@/lib/ws'
@@ -13,6 +13,7 @@ import { useAttachments } from '@/lib/use-attachments'
 import { AttachButtons, AttachList } from './srs/Attachments'
 import LogoPanel from './LogoPanel'
 import BuildSetup from './BuildSetup'
+import PermissionMode from './PermissionMode'
 import PluginAccounts from './PluginAccounts'
 import DesignCustomize from './DesignCustomize'
 import AgentChat from './AgentChat'
@@ -23,6 +24,7 @@ import SrsActivity from './srs/SrsActivity'
 import { displaySrsLanguages, SRS_LANGUAGES } from '@/lib/languages'
 import { TIERS, tierDisplayName } from '@/lib/models'
 import { DEFAULT_STACK, stackNeeds } from '@/lib/stacks'
+import BrandIcon from './BrandIcon'
 
 const CONNECTION_NAMES = { supabase: 'Supabase', mongodb: 'MongoDB' }
 
@@ -210,7 +212,7 @@ export default function Home({
     s.setProgress('Starting…', 0)
     const selected = config?.model || builderModel
     s.addLog('INFO', `Build mode — ${tierDisplayName(selected)} · Thinking — ${(config?.think ?? think) ? 'on' : 'off'}`)
-    if (prototypeOnly) s.addLog('INFO', '🎨 Prototype Build mode — generating interactive HTML prototype first')
+    if (prototypeOnly) s.addLog('INFO', '🎨 Prototype Build mode — generating the interactive React prototype first')
     if (logo) s.addLog('INFO', 'Building around the logo you accepted')
     if (srs) s.addLog('INFO', 'Building from the SRS you approved')
 
@@ -224,6 +226,7 @@ export default function Home({
       stack: config?.stack || stack,
       think: config?.think ?? think,
       thinking_level: config?.thinking_level || s.thinkingLevel,
+      permission_mode: s.defaultPermissionMode,
       qa_model: models.qa,
       logo,
       srs_id: srs || '',
@@ -268,6 +271,7 @@ export default function Home({
         // What is picked beside this input is what the interview and the specification run on.
         model: builderModel,
         thinking_level: s.thinkingLevel,
+        permission_mode: s.defaultPermissionMode,
       })
       const id = created.project.id
       if (useStore.getState().accountEpoch !== epoch || useStore.getState().srsPhase !== 'planning') return
@@ -470,6 +474,7 @@ export default function Home({
                     onPluginsOpen={() => setPluginsOpen(true)}
                   />
                   <AttachButtons attach={attach} cell />
+                  <PermissionMode />
 
                   {/* Language stays available without adding another text label. */}
                   <div className="relative" ref={langRef}>
@@ -480,7 +485,7 @@ export default function Home({
                       className="grid size-8 place-items-center rounded-xl border border-line bg-panel2 text-muted shadow-sm transition-all hover:bg-raised hover:border-line2 hover:text-ink"
                       title={`Interview language: ${currentLangLabel}. SRS and builder handoff stay in English.`}
                     >
-                      <Languages className="size-3 shrink-0 text-accent" aria-hidden="true" />
+                      <Globe2 className="size-3 shrink-0 text-accent" aria-hidden="true" />
                     </button>
 
                     {/* Hidden contract select */}
@@ -547,20 +552,23 @@ export default function Home({
                     )}
                   </div>
 
-                  {/* What this stack builds on: connected, or one click from Settings › Integrations. */}
+                  {/* What this stack builds on: connected, or one click from that service's page in Settings. */}
                   {needs.map(need => {
                     const name = CONNECTION_NAMES[need] || need
                     const state = connections[need]
                     return state ? (
-                      <span key={need} className="inline-flex h-8 items-center gap-1 rounded-xl border border-ok/35 px-2.5 text-[11px] font-medium text-ok">
-                        <Check className="size-3 shrink-0" aria-hidden="true" /> {name} connected
+                      <span key={need} title={`${name} connected`} aria-label={`${name} connected`}
+                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-ok/35 px-2.5 text-ok">
+                        <BrandIcon name={need} className="size-4 shrink-0" />
+                        <Check className="size-2.5 shrink-0" aria-hidden="true" />
                       </span>
                     ) : (
                       <button key={need} type="button" disabled={state === null}
-                              onClick={() => onSettings?.('integrations')}
-                              title={`Connect ${name} in Settings › Integrations`}
-                              className="inline-flex h-8 items-center gap-1 rounded-xl border border-bad/35 px-2.5 text-[11px] font-medium text-bad transition-colors hover:bg-bad/10 disabled:opacity-60">
-                        {state === null ? `Checking ${name}…` : <>{name} not connected · <span className="underline">Connect</span></>}
+                              onClick={() => onSettings?.(need)}
+                              title={`Connect ${name} in Settings › ${name}`}
+                              aria-label={state === null ? `Checking ${name}` : `Connect ${name}`}
+                              className="inline-flex h-8 items-center rounded-xl border border-bad/35 px-2.5 text-bad transition-colors hover:bg-bad/10 disabled:opacity-60">
+                        <BrandIcon name={need} className="size-4 shrink-0" />
                       </button>
                     )
                   })}

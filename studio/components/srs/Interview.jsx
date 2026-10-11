@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, FileText, Loader2, SkipForward, Sparkles,
 } from 'lucide-react'
-import { api } from '@/lib/api'
+import { api, isJobCancelled } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { TYPE_ANOTHER } from '@/lib/srs-constants'
 import { useAttachments } from '@/lib/use-attachments'
@@ -64,7 +64,9 @@ export default function Interview({ projectId, onDone, onCancel }) {
     setText(!options.length && prefill?.length ? String(prefill[0]) : '')
   }, [q?.id])
 
-  function draftPlanNow() {
+  // Nothing answered yet: the interview is skipped for good, so the plan says it assumed what it was not told.
+  async function draftPlanNow() {
+    if (!(state.answers || []).length) await api.srs(`/projects/${projectId}/interview/skip`, {}).catch(() => {})
     onDone?.(state)
   }
 
@@ -89,9 +91,9 @@ export default function Interview({ projectId, onDone, onCancel }) {
 
       await refresh()
     } catch (e) {
-      setError(e.message)
+      if (!isJobCancelled(e)) setError(e.message)
       setPending(null)
-      addLog('WARN', `The SRS could not record that answer — ${e.message}`)
+      if (!isJobCancelled(e)) addLog('WARN', `The SRS could not record that answer — ${e.message}`)
       setPhase('asking')
     }
   }

@@ -13,9 +13,10 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from typing import Callable
 from urllib.request import urlopen
 
-from . import bus, config, deploy_vars, plugins, secrets_guard, supabase_connect
+from . import bus, config, deploy_vars, node_hooks, plugins, secrets_guard, supabase_connect
 
 _lock = threading.RLock()
 _processes: dict[str, dict] = {}
@@ -279,11 +280,12 @@ def _log_secrets(project: str) -> list[str]:
     hidden = list(deploy_vars.secret_values())
     supabase = supabase_connect.env_for(project)
     hidden += [value for key, value in supabase.items() if "KEY" in key or "DB_URL" in key]
-    uri = deploy_vars.environment().get("MONGODB_URI", "")
+    uri = deploy_vars.environment(project=project).get("MONGODB_URI", "")
     if uri:
         from urllib.parse import unquote, urlparse
 
-        hidden += [uri, unquote(urlparse(uri).password or "")]
+        hidden += [uri, *(row for row in deploy_vars.build_databases(project) if row),
+                   unquote(urlparse(uri).password or "")]
     return [value for value in hidden if value and len(value) >= 6]
 
 
@@ -455,10 +457,13 @@ def ports(project: str) -> dict:
             "current": bool(declared["runtime"] and declared["runtime"] == current_runtime)}
 
 
-def wait_part(project: str, part: str, since: float, seconds: float = 60) -> bool:
+def wait_part(project: str, part: str, since: float, seconds: float = 60,
+              cancelled: Callable[[], bool] | None = None) -> bool:
     """Whether `part`, as the run started after `since` lists it, comes to listen within `seconds`."""
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
+        if cancelled and cancelled():
+            return False
         try:
             fresh = _ports_file(project).stat().st_mtime >= since
         except OSError:
@@ -467,18 +472,55 @@ def wait_part(project: str, part: str, since: float, seconds: float = 60) -> boo
             return True
         if status(project)["status"] in {"failed", "stopped"}:
             return False
-        time.sleep(1.5)
+        time.sleep(0.1)
     return False
 
 
-def wait_settled(project: str, seconds: float = READY_SECONDS + 15) -> dict:
+def wait_settled(project: str, seconds: float = READY_SECONDS + 15,
+                 cancelled: Callable[[], bool] | None = None) -> dict:
     """The preview's state once it is no longer starting, or after `seconds`."""
     deadline = time.monotonic() + seconds
     while True:
+        if cancelled and cancelled():
+            return {"status": "cancelled", "url": "", "detail": "Stopped."}
         state = status(project)
         if state["status"] != "starting" or time.monotonic() >= deadline:
             return state
-        time.sleep(1)
+        time.sleep(0.1)
+
+
+# What a production build writes last; a server that started before it holds the build it started with.
+BUILD_MARKERS = (".next/BUILD_ID", "build/server/index.js")
+
+
+def build_is_newer(root: Path, started_ms: int) -> bool:
+    """Whether a build was written after the preview server started.
+
+    A production Next.js (or Remix) server keeps the build manifest it started with, so after a newer build (the tests
+    build the app again) the pages it serves name chunks and styles that are no longer on disk, and the preview shows an
+    app that never comes alive. The server has to be replaced.
+    """
+    if not started_ms:
+        return False
+    for marker in BUILD_MARKERS:
+        try:
+            if (root / marker).stat().st_mtime * 1000 > started_ms + 1000:
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def refresh_if_stale(project: str) -> bool:
+    """After work on the project ends: replace its preview server when a newer build was written under it."""
+    with _lock:
+        current = status(project)
+        saved = _processes.get(project) or _read_metadata(project)
+        stale = (current["status"] == "running" and saved.get("script") not in (None, "dev")
+                 and build_is_newer(config.workspace_for(project), int(current.get("revision") or 0)))
+    if stale:
+        reopen(project)
+    return stale
 
 
 def open_preview(project: str) -> dict:
@@ -507,7 +549,8 @@ def open_preview(project: str) -> dict:
             relaunch = saved.get("framework") is not None and saved["framework"] != _framework(package)
             stale = not current_port or \
                 (current["status"] == "running" and not _port_open(current_port)) \
-                or (saved.get("script") and saved["script"] != script) or bool(relaunch)
+                or (saved.get("script") and saved["script"] != script) or bool(relaunch)                 or (current["status"] == "running" and saved.get("script") not in (None, "dev")
+                    and build_is_newer(root, int(current.get("revision") or 0)))
             if not stale:
                 return current
             stop(project)
@@ -535,15 +578,19 @@ def open_preview(project: str) -> dict:
         # The same variables the build ran and tested this app with (session.py's command_env): a
         # MongoDB-stack preview reads the database the build seeded, not a local fallback.
         environment = {**os.environ, **plugins.environment(enabled),
-                       **supabase_connect.env_for(project), **deploy_vars.environment(),
+                       **supabase_connect.env_for(project), **deploy_vars.environment(build=True, project=project),
                        "PORT": str(port), "HOST": "127.0.0.1", "BROWSER": "none",
                        # A runner that starts several parts says where each one is (the Ports view).
                        "AGENTFORGE_PORTS_FILE": str(_ports_file(project)),
                        "AGENTFORGE_PREVIEW_RUNTIME_ID": runtime_id}
         # The Studio frames this app. Let this machine's pages do that, whatever the app's
-        # own headers say; only this preview process is affected (see preview_hooks).
-        environment["NODE_OPTIONS"] = " ".join(
-            part for part in (environment.get("NODE_OPTIONS", ""), f'--require "{FRAME_HOOK.as_posix()}"') if part)
+        # own headers say; only this preview process is affected (see preview_hooks). And a cluster name
+        # this computer's DNS could not look up is asked of public DNS, as in the build's own commands.
+        node_hooks.add(environment, FRAME_HOOK, node_hooks.DNS_FALLBACK)
+        # In the desktop app the Studio is at agentforge://app, another site than this preview: its cookies have to be ones a
+        # framed page may keep, or nothing the app signs in survives (frame-headers.cjs).
+        if os.environ.get("AGENTFORGE_TRANSPORT") == "stdio":
+            environment["AGENTFORGE_FRAMED_CROSS_SITE"] = "1"
         process = _launch(command, root, environment, log_path)
         url = f"http://127.0.0.1:{port}/"
         _processes[project] = {"process": process, "status": "starting", "url": url,

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown, Layers, Plug } from 'lucide-react'
+import { Blocks, BrainCircuit, Check, ChevronDown, Puzzle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STACKS } from '@/lib/stacks'
 import { TIERS, isCloud, tierFromModel } from '@/lib/models'
+import { useVisionModels } from '@/lib/vision'
+import VisionBadge from './VisionBadge'
 
 /** The choices for the next build stay beside the brief they belong to. */
 export default function BuildSetup({
@@ -13,6 +15,7 @@ export default function BuildSetup({
   const currentTier = tierFromModel(model, think)
   const [stackOpen, setStackOpen] = useState(false)
   const [modelOpen, setModelOpen] = useState(false)
+  const seeing = useVisionModels(modelOpen)
   const stackRef = useRef(null)
   const modelRef = useRef(null)
 
@@ -77,6 +80,7 @@ export default function BuildSetup({
                       : 'inline-flex h-8 items-center gap-1.5 rounded-full border border-line bg-panel2/80 px-2.5 text-[11px] font-medium text-muted shadow-sm transition-all hover:bg-raised hover:border-line2 hover:text-ink'
             )}
           >
+            {compact && <BrainCircuit className="size-3 shrink-0 text-accent" aria-hidden="true" />}
             <span className={cn(compact ? 'truncate text-ink' : 'max-w-36 truncate')}>{model || 'Choose model'}</span>
             {compact && <span className="shrink-0 text-muted2">{effortLabel}</span>}
             <ChevronDown className={cn(compact ? 'size-3 shrink-0 transition-transform' : 'size-2.5 transition-transform', modelOpen && 'rotate-180')} />
@@ -99,6 +103,7 @@ export default function BuildSetup({
                                 className={cn('flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left text-[11.5px] transition-colors',
                                   selected ? 'text-accent' : 'text-ink hover:bg-panel2')}>
                           <span className="min-w-0 flex-1 truncate">{item.label || id}</span>
+                          {seeing.vision.has(id) && <VisionBadge />}
                           {selected && <Check className="size-3 shrink-0 text-accent" />}
                         </button>
                       )
@@ -106,6 +111,11 @@ export default function BuildSetup({
                   </section>
                 ))}
                 {!modelRows.length && <p className="px-2 py-3 text-[10px] text-muted2">No models are available yet.</p>}
+                {seeing.vision.size > 0 && (
+                  <p className="px-1.5 py-1.5 text-[9.5px] leading-snug text-muted2">
+                    A model marked <b>vision</b> can look at pictures, so the prototype's screens are checked by looking at them. Other models skip that check.
+                  </p>
+                )}
               </div>
 
               <div className="mt-1 border-t border-line pt-2">
@@ -140,7 +150,7 @@ export default function BuildSetup({
                                       : 'inline-flex h-8 items-center gap-1.5 rounded-xl border px-2.5 text-[11.5px] font-medium transition-colors',
                   plugins.length ? 'border-accent/50 bg-accent text-ink'
                                  : 'border-line bg-panel2/60 text-muted hover:text-ink')}>
-          <Plug className="size-3.5" />
+          <Puzzle className="size-3.5" aria-hidden="true" />
           {!compact && (plugins.length ? `${plugins.length} plugin${plugins.length === 1 ? '' : 's'}`
                                       : 'Plugins')}
         </button>
@@ -159,7 +169,7 @@ export default function BuildSetup({
             stack && 'border-accent/40 bg-accent text-ink'
           )}
         >
-          <Layers className={cn(compact ? 'size-3.5' : 'size-2.5 shrink-0', 'text-accent')} aria-hidden="true" />
+          <Blocks className={cn(compact ? 'size-3.5' : 'size-2.5 shrink-0', 'text-accent')} aria-hidden="true" />
           {!compact && <span>{currentStackLabel}</span>}
           {!compact && <ChevronDown className={cn('size-2.5 shrink-0 text-muted2 transition-transform duration-200', stackOpen && 'rotate-180 text-ink')} />}
         </button>

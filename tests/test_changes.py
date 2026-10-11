@@ -101,10 +101,12 @@ class ChangesTestCase(unittest.TestCase):
         # them; register the intentional reuse before subscribing to events.
         bus.project_created(PROJECT)
         changes._threads.clear()
+        self.reconciled = mock.Mock(return_value={"status": "done"})
         patches = [
             mock.patch.object(changes, "session_for", lambda project: self.session),
             mock.patch.object(config, "record_dir", lambda project: self.workspace / ".agentforge"),
             mock.patch.object(changes, "_guides", lambda *args: "GUIDES"),
+            mock.patch("srs_agent.document.reconcile", self.reconciled),
         ]
         for patch in patches:
             patch.start()
@@ -285,6 +287,34 @@ class ReviseApproveCancelTests(ChangesTestCase):
         self.assertTrue(self.of_type("prototype"))
         self.assertTrue([e for e in self.of_type("sync_state") if e.get("source") == "change"])
 
+    def test_a_change_to_the_specification_brings_its_overview_back_in_line_with_it(self):
+        change_id = self.proposed()
+        self.session.edits = [".agentforge/srs/srs.json"]
+        with mock.patch("builder_agent.build.built", lambda project: False):
+            changes.decide(PROJECT, change_id, "approve")
+            self.settle(change_id)
+        # The open decisions it settles and the quality review are redone, from the customer's own words and the agent's summary.
+        self.reconciled.assert_called_once_with(PROJECT, "add a due date to every task", "Done: changed what the plan said.", self.session)
+        self.assertEqual(changes._load(PROJECT, change_id)["status"], "done")
+
+    def test_a_change_that_leaves_the_specification_alone_does_not_touch_its_overview(self):
+        change_id = self.proposed()
+        self.session.edits = ["app/page.jsx"]
+        with mock.patch("builder_agent.build.built", lambda project: False):
+            changes.decide(PROJECT, change_id, "approve")
+            self.settle(change_id)
+        self.reconciled.assert_not_called()
+
+    def test_a_change_that_was_blocked_does_not_either(self):
+        change_id = self.proposed()
+        self.session.edits = [".agentforge/srs/srs.json"]
+        self.session.execution = {"status": "blocked", "text": "Could not do it.", "rounds": 1}
+        with mock.patch("builder_agent.build.built", lambda project: False):
+            changes.decide(PROJECT, change_id, "approve")
+            self.settle(change_id)
+        self.reconciled.assert_not_called()
+        self.assertEqual(changes._load(PROJECT, change_id)["status"], "failed")
+
     def test_excluding_a_stage_drops_its_steps_before_execution(self):
         change_id = self.proposed()
         changes.decide(PROJECT, change_id, "approve", excluded_stages=["Build"])
@@ -374,10 +404,10 @@ class RoutingTests(unittest.TestCase):
     def test_chat_requests_are_planned_when_there_is_a_specification_and_answered_directly_when_not(self):
         with mock.patch.object(runs.changes, "applies", lambda project: True), \
                 mock.patch.object(runs.changes, "submit", lambda *a, **k: {"planned": True}), \
-                mock.patch.object(runs, "agent_update_direct", lambda message: {"planned": False}):
+                mock.patch.object(runs, "agent_update_direct", lambda message, screened=False: {"planned": False}):
             self.assertEqual(runs.agent_update({"project": "p", "prompt": "change it"}), {"planned": True})
         with mock.patch.object(runs.changes, "applies", lambda project: False), \
-                mock.patch.object(runs, "agent_update_direct", lambda message: {"planned": False}):
+                mock.patch.object(runs, "agent_update_direct", lambda message, screened=False: {"planned": False}):
             self.assertEqual(runs.agent_update({"project": "p", "prompt": "change it"}), {"planned": False})
 
     def test_the_prompt_pack_carries_the_instructions(self):
@@ -440,3 +470,51 @@ class PlanModeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PrototypeRebundleTests(unittest.TestCase):
+    """A chat change that edits the prototype's (or the wireframe's) source bundles it again before the preview reloads: the
+    preview shows the bundle, and a theme made white in `src/index.css` used to stay dark on screen."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.session = mock.Mock(workspace=Path(self.temp.name), cancelled=False)
+        self.bundled: list[str] = []
+        self.stale = True
+        from server_modules import web_app
+
+        for patch in (mock.patch.object(changes, "session_for", lambda project: self.session),
+                      mock.patch.object(web_app, "stale", lambda app: self.stale),
+                      mock.patch.object(web_app, "build_for", lambda session, project, kind, agent="": self.bundled.append(kind)),
+                      mock.patch.object(bus, "prototype_changed", lambda project: self.bundled.append("reload"))):
+            self.enterContext(patch)
+
+    def announce(self, *paths):
+        changes._announce("p", {}, {path: "new" for path in paths})
+
+    def test_an_edited_theme_is_bundled_before_the_preview_reloads(self):
+        self.announce(".agentforge/prototype/app/src/index.css")
+        self.assertEqual(self.bundled, ["prototype", "reload"])
+
+    def test_the_wireframe_is_bundled_when_its_source_changed(self):
+        self.announce(".agentforge/wireframe/app/src/pages/home.tsx")
+        self.assertEqual(self.bundled, ["wireframe"])
+
+    def test_nothing_is_bundled_when_the_agent_already_did_or_nothing_in_the_app_changed(self):
+        self.stale = False
+        self.announce(".agentforge/prototype/app/src/index.css")
+        self.assertEqual(self.bundled, ["reload"])
+        self.bundled.clear()
+        self.stale = True
+        self.announce(".agentforge/prototype/app/bundle.html", ".agentforge/prototype/routes.json")
+        self.assertEqual(self.bundled, ["reload"])
+
+    def test_a_bundle_that_cannot_be_made_is_said_and_the_change_stands(self):
+        from server_modules import web_app
+
+        logged: list[str] = []
+        with mock.patch.object(web_app, "build_for", side_effect=web_app.BuildFailed("syntax error")), \
+                mock.patch.object(bus, "log", lambda project, level, text, agent="": logged.append(text)):
+            self.announce(".agentforge/prototype/app/src/index.css")
+        self.assertIn("could not be bundled again: syntax error", logged[0])

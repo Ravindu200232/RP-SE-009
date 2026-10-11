@@ -260,6 +260,7 @@ def forget(project: str) -> None:
         _discarded.add(project)
         _history.pop(project, None)
         _runs.pop(project, None)
+        _last_failure.pop(project, None)
         _loaded.discard(project)
         for decision_id, question in list(_pending_decisions.items()):
             if question.get("project") == project:
@@ -278,7 +279,10 @@ def user_msg(project: str, text: str, agent: str = DEVELOPER) -> None:
 
 
 def agent_msg(project: str, text: str, agent: str = DEVELOPER,
-              title: str = "", kind: str = "", design: Any = None) -> None:
+              title: str = "", kind: str = "", design: Any = None, images: list[dict[str, str]] | None = None,
+              actions: list[dict[str, str]] | None = None) -> None:
+    """A message in the chat stream. `images` are pictures shown under it: [{"path": workspace-relative, "label": ...}].
+    `actions` are buttons under it, each sending its `prompt` as if the person had typed it: [{"label": ..., "prompt": ...}]."""
     event = {"type": "agent_msg", "project": project, "agent": agent, "text": text}
     if title:
         event["title"] = title
@@ -286,6 +290,12 @@ def agent_msg(project: str, text: str, agent: str = DEVELOPER,
         event["kind"] = kind
     if design is not None:
         event["design"] = design
+    if images:
+        event["images"] = [{"path": str(row.get("path") or ""), "label": str(row.get("label") or "")}
+                           for row in images if row.get("path")]
+    if actions:
+        event["actions"] = [{"label": str(row.get("label") or ""), "prompt": str(row.get("prompt") or "")}
+                            for row in actions if row.get("label") and row.get("prompt")]
     emit(event)
 
 
@@ -293,8 +303,21 @@ def run_state(project: str, status: str, run_id: str = "", agent: str = DEVELOPE
     """queued | running | completed | paused | failed."""
     with _lock:
         _runs.setdefault(project, {})[agent] = {"status": status, "run_id": run_id}
+        if status in {"queued", "running"}:
+            _last_failure.pop(project, None)       # a new run: its failure is its own, never an echo of the last one
     emit({"type": "run_state", "project": project, "agent": agent,
           "status": status, "run_id": run_id})
+
+
+def connection(project: str, state: str, agent: str = DEVELOPER, **fields: Any) -> None:
+    """The model service is not answering, or answers again: what the chat shows, with its "Try again".
+
+    `state` is "retrying" (it failed, and is asked again after `pause` seconds: `failed` of `of` tries so far, `detail` says
+    what the service said), "waiting" (it was asked as many times as it will be on its own: the run holds still until the
+    person presses "Try again", or Stop) or "ok" (it answered). Not `DURABLE`: it is about now, never worth keeping.
+    """
+    emit({"type": "connection", "project": project, "agent": agent, "state": state,
+          **{key: value for key, value in fields.items() if key in {"failed", "of", "pause", "detail", "hold"}}})
 
 
 def agent_state(project: str, state: str, thinking: bool = False, agent: str = DEVELOPER,
@@ -372,7 +395,7 @@ class StreamWriter:
     """One file's live stream, front to back — `start()`, `token()` per
     delta, `end()` once the true final content is known.
 
-    A focused call like `llm.complete_html()` can run several rounds behind
+    A focused call like `llm.complete()` can run several rounds behind
     one write: a tool round before the real content, a repair attempt if the
     first draft fails validation. Each of those calls `on_stream_start()`
     again before it writes — `start()` clears whatever this writer still had
@@ -427,6 +450,10 @@ def prototype_changed(project: str) -> None:
     emit({"type": "prototype", "project": project, "agent": DESIGNER})
 
 
+def wireframe_changed(project: str) -> None:
+    emit({"type": "wireframe", "project": project, "agent": DESIGNER})
+
+
 def change(project: str, change: dict, agent: str = DEVELOPER) -> None:
     """A request typed into the chat, at the stage it has reached (see `changes.py`).
 
@@ -475,7 +502,20 @@ def done(project: str, text: str = "", agent: str = DEVELOPER) -> None:
     emit({"type": "done", "project": project, "agent": agent, "text": text})
 
 
+# A run that fails is reported by the session that was running it and then, when the exception reaches the worker thread,
+# by the worker as well, in the same words. The chat read "Run failed" twice. The second report of the same failure within
+# a few seconds is dropped; a new run clears the memory (`run_state`), so a retry that fails the same way is still shown.
+FAILURE_ECHO_SECONDS = 5.0
+_last_failure: dict[str, tuple[str, float]] = {}
+
+
 def failed(project: str, text: str, agent: str = DEVELOPER) -> None:
+    now = time.time()
+    with _lock:
+        before = _last_failure.get(project)
+        if before and before[0] == text and now - before[1] < FAILURE_ECHO_SECONDS:
+            return
+        _last_failure[project] = (text, now)
     run_state(project, "failed", agent=agent)
     emit({"type": "error", "project": project, "agent": agent, "text": text})
 
@@ -559,7 +599,8 @@ def waiting_question(project: str) -> dict | None:
     """The question a run of this project is holding still for, as it is on screen."""
     with _lock:
         return next((dict(_pending_decisions[i]) for i, w in _waiters.items()
-                     if w["project"] == project and i in _pending_decisions), None)
+                     if w["project"] == project and i in _pending_decisions
+                     and _pending_decisions[i].get("kind") != "permission"), None)   # permission cards are answered on the card, never by typing
 
 
 def run_status(project: str) -> dict[str, dict]:

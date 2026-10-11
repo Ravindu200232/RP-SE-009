@@ -105,6 +105,271 @@ class RunEnvironmentTests(SettingsCase):
         env = self._command_env("deploy")
         self.assertEqual(env["SUPABASE_URL"], "https://a-different-project.supabase.co")
 
+    PRODUCTION = "mongodb+srv://u:p4ssw0rd-long@cluster0.ab1cd.mongodb.net/app?retryWrites=true&w=majority"
+    # The saved string names the shared `app`, so a project gets databases named after itself (`build_databases`).
+    BUILD = "mongodb+srv://u:p4ssw0rd-long@cluster0.ab1cd.mongodb.net/prj_deploy_vars_test_build?retryWrites=true&w=majority"
+    TEST = "mongodb+srv://u:p4ssw0rd-long@cluster0.ab1cd.mongodb.net/prj_deploy_vars_test_test?retryWrites=true&w=majority"
+
+    def setUp(self):
+        super().setUp()
+        deploy_vars._checked.clear()
+        deploy_vars._noted.clear()
+        self.told: list[dict] = []
+        for patch in (mock.patch.object(bus, "agent_msg", lambda project, text, agent="", title="", kind="", design=None, images=None:
+                                        self.told.append({"project": project, "text": text, "title": title})
+                                        if title == "MongoDB cluster not reachable" else None),     # not the command lines
+                      mock.patch.object(bus, "log", lambda *a, **k: None)):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def connected(self, answers=True, why=""):
+        config.save_settings({"deploy_mongodb_uri": self.PRODUCTION})
+        patcher = mock.patch.object(deploy_vars, "cluster_answers", return_value=(answers, why))
+        self.addCleanup(patcher.stop)
+        return patcher.start()
+
+    def test_a_builds_commands_get_databases_of_their_own_on_the_cluster_the_customer_connected(self):
+        # Not a MongoDB on this computer, which may not exist, and not the database the deployed application will use.
+        self.connected()
+        for stage in ("build", "build-edit"):
+            env = self._command_env(stage)
+            self.assertEqual((env["MONGODB_URI"], env["TEST_MONGODB_URI"]), (self.BUILD, self.TEST), stage)
+            self.assertEqual(env["ADMIN_EMAIL"], "a@b.example", stage)        # the other saved variables still arrive
+
+    def test_the_stage_that_starts_the_preview_reads_the_database_the_seed_filled(self):
+        self.connected()
+        self.assertEqual(self._command_env("preview_start")["MONGODB_URI"], self.BUILD)
+
+    def test_a_deployment_is_handed_the_database_the_build_ran_on_not_the_saved_string_as_it_stands(self):
+        # So the deployed application finds the data the build's seed made.
+        asked = self.connected()
+        env = self._command_env("deploy")
+        self.assertEqual(env["MONGODB_URI"], self.BUILD)
+        self.assertNotEqual(env["MONGODB_URI"], self.PRODUCTION)
+        self.assertNotIn("TEST_MONGODB_URI", env)                              # the unit tests' database is for the build only
+        asked.assert_not_called()                                              # a deployment is handed it, not asked first
+
+    def test_a_deployment_is_handed_it_even_when_the_cluster_does_not_answer_and_says_nothing_about_it_here(self):
+        self.connected(answers=False, why="no answer")
+        self.assertEqual(self._command_env("deploy")["MONGODB_URI"], self.BUILD)
+        self.assertEqual(self.told, [])
+
+    def test_what_looks_at_the_deployed_data_looks_at_the_database_the_build_made(self):
+        from server_modules import cli_monitor
+
+        self.connected()
+        self.assertEqual(cli_monitor.mongodb_uri(PROJECT), self.BUILD)
+        with mock.patch.object(supabase_connect, "env_for", lambda project: {}):
+            env, hidden = cli_monitor._project_environment(PROJECT)           # noqa: SLF001 - the terminal's variables
+        self.assertEqual(env["MONGODB_URI"], self.BUILD)
+        self.assertIn(self.BUILD, hidden)
+        rows = (ROOT / "server_modules" / "database_rows.py").read_text(encoding="utf-8")
+        self.assertIn("cli_monitor.mongodb_uri(project)", rows)
+
+    def test_the_studios_preview_of_what_was_built_reads_the_same_database_as_the_build(self):
+        source = (ROOT / "server_modules" / "preview_runtime.py").read_text(encoding="utf-8")
+        self.assertIn("**deploy_vars.environment(build=True, project=project)", source)
+
+    def test_a_connection_string_the_customer_saved_by_name_reaches_the_build_as_it_is(self):
+        self.connected()
+        deploy_vars.save("MONGODB_URI", "mongodb+srv://u:p@their-own.ab1cd.mongodb.net/app", secret=True)
+        deploy_vars.save("TEST_MONGODB_URI", "mongodb+srv://u:p@their-own.ab1cd.mongodb.net/app_test", secret=True)
+        env = self._command_env("build")
+        self.assertEqual((env["MONGODB_URI"], env["TEST_MONGODB_URI"]),
+                         ("mongodb+srv://u:p@their-own.ab1cd.mongodb.net/app", "mongodb+srv://u:p@their-own.ab1cd.mongodb.net/app_test"))
+
+    def test_with_no_cluster_connected_nothing_is_handed_over_and_nothing_is_checked(self):
+        with mock.patch.object(deploy_vars, "cluster_answers") as asked:
+            env = self._command_env("build")
+        asked.assert_not_called()
+        self.assertNotIn("MONGODB_URI", env)
+        self.assertNotIn("TEST_MONGODB_URI", env)
+
+    def test_a_cluster_that_does_not_answer_is_not_handed_over_and_the_customer_is_told_why_once(self):
+        # A paused cluster has no address: every command would wait for it and fail.
+        self.connected(answers=False, why="querySrv ENOTFOUND _mongodb._tcp.cluster0.ab1cd.mongodb.net")
+        env = self._command_env("build")
+        self.assertNotIn("MONGODB_URI", env)
+        self.assertEqual(env["ADMIN_EMAIL"], "a@b.example")
+        self.assertEqual(len(self.told), 1)
+        self.assertEqual((self.told[0]["project"], self.told[0]["title"]), (PROJECT, "MongoDB cluster not reachable"))
+        self.assertIn("ENOTFOUND", self.told[0]["text"])
+        self.assertIn("resume it", self.told[0]["text"])
+        self._command_env("build")
+        self.assertEqual(len(self.told), 1)                                   # not on every command
+        self.assertNotIn("p4ssw0rd", self.told[0]["text"])
+
+    def test_the_customer_is_told_again_after_a_while_and_each_project_is_told_for_itself(self):
+        self.connected(answers=False, why="no answer")
+        deploy_vars.environment(build=True, project="prj_a")
+        deploy_vars.environment(build=True, project="prj_b")
+        self.assertEqual([row["project"] for row in self.told], ["prj_a", "prj_b"])
+        deploy_vars._noted["prj_a"] -= deploy_vars.NOTE_SECONDS + 1
+        deploy_vars.environment(build=True, project="prj_a")
+        self.assertEqual(len(self.told), 3)
+
+
+class BuildDatabaseTests(SettingsCase):
+    def setUp(self):
+        super().setUp()
+        deploy_vars._checked.clear()
+
+    def saved(self, uri):
+        config.save_settings({"deploy_mongodb_uri": uri})
+
+    def test_the_databases_are_named_after_the_one_the_saved_string_names(self):
+        self.saved("mongodb+srv://u:p@c.mongodb.net/Hotel-Booking?retryWrites=true")
+        self.assertEqual(deploy_vars.build_databases(),
+                         ("mongodb+srv://u:p@c.mongodb.net/hotel_booking_build?retryWrites=true",
+                          "mongodb+srv://u:p@c.mongodb.net/hotel_booking_test?retryWrites=true"))
+
+    def test_a_string_that_names_no_database_takes_the_name_of_the_project(self):
+        self.saved("mongodb+srv://u:p@c.mongodb.net/?retryWrites=true")
+        with mock.patch("server_modules.store.get", return_value={"name": "Example Hotel"}):
+            self.assertEqual(deploy_vars.build_databases("prj_x")[0], "mongodb+srv://u:p@c.mongodb.net/example_hotel_build?retryWrites=true")
+        with mock.patch("server_modules.store.get", return_value=None):
+            self.assertEqual(deploy_vars.build_databases("prj_x")[1], "mongodb+srv://u:p@c.mongodb.net/prj_x_test?retryWrites=true")
+        self.assertEqual(deploy_vars.build_databases()[0], "mongodb+srv://u:p@c.mongodb.net/app_build?retryWrites=true")
+
+    def test_the_test_database_always_ends_in_the_suffix_the_templates_require_and_credentials_and_options_are_kept(self):
+        self.saved("mongodb://user:p%40ss%2Fword@h1.example.net:27017,h2.example.net:27017/shop?replicaSet=rs0&tls=true")
+        build, test = deploy_vars.build_databases()
+        self.assertTrue(test.split("?")[0].endswith("_test"))
+        self.assertIn("user:p%40ss%2Fword@h1.example.net:27017,h2.example.net:27017/shop_build?replicaSet=rs0&tls=true", build)
+
+    def test_nothing_connected_means_no_databases(self):
+        self.assertEqual(deploy_vars.build_databases(), ("", ""))
+
+    def test_whether_the_cluster_answers_is_asked_for_real_once_and_remembered_for_a_couple_of_minutes(self):
+        from server_modules import mongo_check
+
+        with mock.patch.object(mongo_check, "check", return_value={"ok": True, "message": "Connected and signed in."}) as asked:
+            self.assertEqual(deploy_vars.cluster_answers("mongodb+srv://u:p@c.mongodb.net/app"), (True, "Connected and signed in."))
+            self.assertEqual(deploy_vars.cluster_answers("mongodb+srv://u:p@c.mongodb.net/app")[0], True)
+            self.assertEqual(asked.call_count, 1)
+            stamp, ok, why = deploy_vars._checked["mongodb+srv://u:p@c.mongodb.net/app"]
+            deploy_vars._checked["mongodb+srv://u:p@c.mongodb.net/app"] = (stamp - deploy_vars.BUILD_CHECK_SECONDS - 1, ok, why)
+            deploy_vars.cluster_answers("mongodb+srv://u:p@c.mongodb.net/app")
+            self.assertEqual(asked.call_count, 2)
+
+    def test_a_refused_login_is_remembered_as_that_and_not_as_any_other_failure(self):
+        from server_modules import mongo_check
+
+        uri = "mongodb+srv://agentforge_app:old@c.mongodb.net/app"
+        with mock.patch.object(mongo_check, "check", return_value={"ok": False, "stage": "auth", "message": "refused the password"}):
+            self.assertEqual(deploy_vars.cluster_answers(uri), (False, "refused the password"))
+        self.assertTrue(deploy_vars.refused_login(uri))
+        other = "mongodb+srv://agentforge_app:old@d.mongodb.net/app"
+        with mock.patch.object(mongo_check, "check", return_value={"ok": False, "stage": "network", "message": "no answer"}):
+            deploy_vars.cluster_answers(other)
+        self.assertFalse(deploy_vars.refused_login(other))
+        self.assertFalse(deploy_vars.refused_login("mongodb+srv://never:seen@e.mongodb.net/app"))
+
+    def test_a_cluster_that_refuses_or_a_check_that_cannot_run_is_not_an_answer_yes(self):
+        from server_modules import mongo_check
+
+        with mock.patch.object(mongo_check, "check", return_value={"ok": False, "message": "the cluster refused the password"}):
+            self.assertEqual(deploy_vars.cluster_answers("mongodb+srv://u:p@a.mongodb.net/app"), (False, "the cluster refused the password"))
+        with mock.patch.object(mongo_check, "check", side_effect=RuntimeError("node is not installed")):
+            ok, why = deploy_vars.cluster_answers("mongodb+srv://u:p@b.mongodb.net/app")
+        self.assertFalse(ok)
+        self.assertIn("node is not installed", why)
+
+    def test_what_a_build_was_handed_is_hidden_wherever_a_tool_might_print_it(self):
+        self.saved("mongodb+srv://u:p4ssw0rd-long@c.mongodb.net/app")
+        hidden = deploy_vars.secret_values()
+        self.assertIn("mongodb+srv://u:p4ssw0rd-long@c.mongodb.net/app", hidden)
+        self.assertIn("mongodb+srv://u:p4ssw0rd-long@c.mongodb.net/app_build", hidden)
+        self.assertIn("p4ssw0rd-long", hidden)                                  # whatever name the database goes by
+
+
+class ProjectDatabaseTests(SettingsCase):
+    """Two projects on one cluster never share a database; the name a project got never changes afterwards."""
+
+    CLUSTER = "mongodb+srv://u:p4ssw0rd-long@c.mongodb.net/{path}?retryWrites=true"
+
+    def setUp(self):
+        super().setUp()
+        self.records: dict[str, dict] = {}
+        self.updates: list[tuple[str, dict]] = []
+        self.built: set[str] = set()
+        folder = Path(self.temp.name)
+
+        def record_dir(project):
+            return folder / project / ".agentforge"
+
+        def update(project, **patch):
+            self.updates.append((project, patch))
+            self.records[project].update(patch)
+
+        for patch in (mock.patch("server_modules.store.get", lambda project: self.records.get(project)),
+                      mock.patch("server_modules.store.update", update),
+                      mock.patch.object(config, "record_dir", record_dir)):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def project(self, project, name):
+        self.records[project] = {"id": project, "name": name}
+
+    def build_report(self, project):
+        report = Path(self.temp.name) / project / ".agentforge" / "build" / "report.json"
+        report.parent.mkdir(parents=True)
+        report.write_text("{}", encoding="utf-8")
+
+    def database(self, project):
+        return deploy_vars.build_databases(project)[0].split("?")[0].rsplit("/", 1)[-1]
+
+    def test_projects_on_the_shared_app_database_each_get_one_named_after_themselves(self):
+        config.save_settings({"deploy_mongodb_uri": self.CLUSTER.format(path="app")})
+        self.project("prj_a", "Quick Notes")
+        self.project("prj_b", "Pet Clinic")
+        self.assertEqual((self.database("prj_a"), self.database("prj_b")), ("quick_notes_build", "pet_clinic_build"))
+        self.assertEqual(deploy_vars.build_databases("prj_a")[1].split("?")[0].rsplit("/", 1)[-1], "quick_notes_test")
+
+    def test_a_string_that_names_no_database_does_the_same(self):
+        config.save_settings({"deploy_mongodb_uri": self.CLUSTER.format(path="")})
+        self.project("prj_a", "Quick Notes")
+        self.assertEqual(self.database("prj_a"), "quick_notes_build")
+
+    def test_the_choice_is_kept_in_the_project_and_a_rename_never_moves_its_data(self):
+        config.save_settings({"deploy_mongodb_uri": self.CLUSTER.format(path="app")})
+        self.project("prj_a", "Quick Notes")
+        self.assertEqual(self.database("prj_a"), "quick_notes_build")
+        self.assertEqual(self.updates, [("prj_a", {"mongo_database": "quick_notes"})])
+        self.records["prj_a"]["name"] = "Notes Pro"                                 # renamed in the studio afterwards
+        self.assertEqual(self.database("prj_a"), "quick_notes_build")
+        self.assertEqual(len(self.updates), 1)                                      # and it is not written again
+
+    def test_a_project_already_built_on_the_shared_database_keeps_it_so_its_data_and_deployment_stay_where_they_are(self):
+        config.save_settings({"deploy_mongodb_uri": self.CLUSTER.format(path="app")})
+        self.project("prj_old", "Old Shop")
+        self.build_report("prj_old")
+        self.assertEqual(self.database("prj_old"), "app_build")
+        self.assertEqual(self.updates, [("prj_old", {"mongo_database": "app"})])
+        self.project("prj_new", "New Shop")
+        self.assertEqual(self.database("prj_new"), "new_shop_build")                # a new one beside it does not mix with it
+
+    def test_a_database_the_customer_named_in_their_string_is_theirs_and_used_as_it_always_was(self):
+        config.save_settings({"deploy_mongodb_uri": self.CLUSTER.format(path="hotel")})
+        self.project("prj_a", "Quick Notes")
+        self.assertEqual(self.database("prj_a"), "hotel_build")
+        self.assertEqual(self.updates, [])
+
+    def test_no_project_and_no_record_still_give_a_name(self):
+        config.save_settings({"deploy_mongodb_uri": self.CLUSTER.format(path="app")})
+        self.assertEqual(self.database(""), "app_build")
+        self.assertEqual(self.database("prj_unknown"), "prj_unknown_build")        # no record: named after its id, nothing written
+        self.assertEqual(self.updates, [])
+
+    def test_the_database_the_studio_reports_to_the_build_is_the_projects_own(self):
+        from server_modules import mongo_connect
+
+        config.save_settings({"deploy_mongodb_uri": self.CLUSTER.format(path="app")})
+        self.project("prj_a", "Quick Notes")
+        with mock.patch.object(mongo_connect, "cli_account", lambda: {}):
+            found = mongo_connect.ensure_for_project("prj_a")
+        self.assertEqual((found["status"], found["database"]), ("ready", "quick_notes_build"))
+
 
 class MongoDatabaseUriTests(SettingsCase):
     """The production MongoDB connection string: never a loopback address, tried for real before a question
@@ -140,10 +405,10 @@ class MongoDatabaseUriTests(SettingsCase):
         self.assertEqual(ok, "")
         self.assertEqual(deploy_vars.names(), [{"name": "MONGODB_URI", "hint": "/app"}])
 
-    def test_the_saved_production_uri_reaches_a_deployment_as_mongodb_uri(self):
+    def test_the_connected_cluster_reaches_a_deployment_as_mongodb_uri_on_the_database_the_build_used(self):
         config.save_settings({"deploy_mongodb_uri": "mongodb+srv://u:p@cluster0.ab1cd.mongodb.net/app"})
         env = deploy_vars.environment()
-        self.assertEqual(env["MONGODB_URI"], "mongodb+srv://u:p@cluster0.ab1cd.mongodb.net/app")
+        self.assertEqual(env["MONGODB_URI"], "mongodb+srv://u:p@cluster0.ab1cd.mongodb.net/app_build")
 
     def test_a_saved_deploy_env_variable_of_the_same_name_is_not_overridden(self):
         config.save_settings({"deploy_mongodb_uri": "mongodb+srv://u:p@cluster0.ab1cd.mongodb.net/app"})
@@ -300,6 +565,93 @@ class SecretsGuardTests(unittest.TestCase):
         text = secrets_guard.refusal(SECRET_URI)
         self.assertIn("Deployment variables", text)
         self.assertEqual(secrets_guard.refusal("hello"), "")
+
+
+class DatabaseQuestionTests(SettingsCase):
+    """The database connection is the studio's to provide: nobody is asked for a connection string, in a plan or in a run."""
+
+    URI = "mongodb+srv://u:p4ssw0rd-long@cluster0.ab1cd.mongodb.net/?retryWrites=true&w=majority"
+
+    def setUp(self):
+        super().setUp()
+        from server_modules import mongo_connect
+
+        self.atlas = False
+        for patch in (mock.patch.object(mongo_connect, "credentials_saved", lambda: False),
+                      mock.patch.object(mongo_connect, "cli_account", lambda: {"account": "me@example.com"} if self.atlas else {})):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def test_what_asks_for_the_connection_is_told_from_what_does_not(self):
+        for asked in ({"question": "What is your MongoDB connection string?"},
+                      {"question": "Where should the data live?", "why": "I need the Mongo URI for the cluster"},
+                      {"question": "Paste the connection URL.", "why": "the database address is missing"},
+                      {"question": "Which?", "variable": "mongodb_uri"}, {"question": "Which?", "variable": "DATABASE_URL"},
+                      {"question": "Which?", "check": "mongodb"}):
+            self.assertTrue(deploy_vars.asks_for_database(asked), asked)
+        for fine in ({"question": "Which region should the application and the cluster both run in?"},
+                     {"question": "Should the production database start empty or with the demo data?"},
+                     {"question": "What is the admin's first password?", "variable": "ADMIN_PASSWORD"},
+                     {"question": "Which payment provider should checkout use?"},
+                     # found live: a sign-in question whose reason mentions the database was answered "the database is provided"
+                     {"question": "The Netlify CLI is not signed in on this computer. Sign in with netlify login, then say done.",
+                      "why": "Tools proven: netlify-cli 27.10.0, MONGODB_URI set; netlify status says Not logged in."},
+                     {"question": "The site name athenaeum is taken. Which address should the site use?",
+                      "why": "the MongoDB connection string is already set"}):
+            self.assertFalse(deploy_vars.asks_for_database(fine), fine)
+
+    def test_where_the_connection_stands(self):
+        self.assertEqual(deploy_vars.database_state(), {"saved": False, "atlas": False})
+        self.atlas = True
+        self.assertEqual(deploy_vars.database_state(), {"saved": False, "atlas": True})
+        config.save_settings({"deploy_mongodb_uri": self.URI})
+        self.assertEqual(deploy_vars.database_state(), {"saved": True, "atlas": True})
+        config.save_settings({"deploy_mongodb_uri": ""})
+        deploy_vars.save("MONGODB_URI", self.URI)                       # saved by name counts as saved
+        self.assertTrue(deploy_vars.database_state()["saved"])
+
+    def test_a_question_for_it_is_not_asked_once_a_string_is_saved_or_an_account_is_signed_in(self):
+        ask = {"question": "What is your MongoDB connection string?", "variable": "MONGODB_URI"}
+        self.assertEqual(deploy_vars.provided(ask), "")                  # nothing connected: it may be asked
+        config.save_settings({"deploy_mongodb_uri": self.URI})
+        held = deploy_vars.provided(ask)
+        self.assertIn("MONGODB_URI", held)
+        self.assertIn("not the customer's to give", held)
+        config.save_settings({"deploy_mongodb_uri": ""})
+        self.atlas = True
+        self.assertIn("not the customer's to give", deploy_vars.provided(ask))
+
+    def test_a_build_never_asks_for_it_whatever_is_connected(self):
+        ask = {"question": "Paste your MongoDB connection string"}
+        self.assertEqual(deploy_vars.provided(ask), "")
+        self.assertIn("not the customer's to give", deploy_vars.provided(ask, always=True))
+
+    def test_any_other_question_is_left_alone(self):
+        config.save_settings({"deploy_mongodb_uri": self.URI})
+        for fine in ({"question": "Which region should the cluster run in?"}, {"question": "What is the admin's email?",
+                                                                               "variable": "ADMIN_EMAIL"}):
+            self.assertEqual(deploy_vars.provided(fine, always=True), "")
+
+    def test_the_planner_that_asks_for_it_is_sent_back_to_plan_without_it(self):
+        config.save_settings({"deploy_mongodb_uri": self.URI})
+        with self.assertRaisesRegex(ValueError, "not the customer's to give"):
+            changes.check_question({"question": "What is the MongoDB connection string?", "why": "to deploy", "options": [],
+                                    "variable": "MONGODB_URI", "secret": True, "check": "mongodb"}, True)
+        asked = changes.check_question({"question": "Which region should it run in?", "why": "latency",
+                                        "options": [{"label": "US East"}]}, True)
+        self.assertEqual(asked["question"], "Which region should it run in?")
+
+    def test_with_nothing_connected_a_planner_could_still_ask(self):
+        # The deployment is refused before it plans when nothing is connected (`deploy._require_mongodb`), so this only keeps
+        # the check from turning a question into a loop for someone who has no way to connect.
+        asked = changes.check_question({"question": "What is the MongoDB connection string?", "why": "to deploy", "options": [],
+                                        "variable": "MONGODB_URI", "secret": True, "check": "mongodb"}, True)
+        self.assertEqual(asked["variable"], "MONGODB_URI")
+
+    def test_the_model_is_told_it_in_words_that_name_the_variable(self):
+        text = (ROOT / "prompts" / "changes" / "database-provided.md").read_text(encoding="utf-8")
+        for needle in ("MONGODB_URI", "Settings", "localhost"):
+            self.assertIn(needle, text)
 
 
 class ChatRefusesSecretsTests(unittest.TestCase):
