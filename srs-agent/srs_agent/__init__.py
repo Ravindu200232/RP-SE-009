@@ -1,13 +1,11 @@
-"""
-The SRS agent — the step before a build.
+"""The SRS agent.
 
-It interviews the user about what they want, writes a plan, generates a full
-SRS document, and ends with a handoff prompt. AgentForge takes that prompt and
-builds the app; the SRS, the app and the QA results then all live together in
-the same project folder.
-
-`app/` is a verbatim copy of the standalone srs-generator at
-D:\\GITHUB\\srs-generator (apps/api/app). Only `app/config.py` differs. Keep it
-that way: everything AgentForge-specific belongs in `bridge.py`.
+Owns the first half of a project: the interview, the approval plan, and the
+specification itself — the document, its diagrams, its wireframes and the handoff
+the builder consumes. It runs in the project's one shared model context, so
+everything it learns here is still in front of the agents that come after it.
 """
-from .bridge import SRS_PORT, SRS_STAGING  # noqa: F401
+
+from . import document, interview, plan  # noqa: F401
+
+__all__ = ["interview", "plan", "document"]
