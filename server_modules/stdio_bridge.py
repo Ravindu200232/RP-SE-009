@@ -1,25 +1,4 @@
-"""The backend with no ports: the desktop app talks to it over this process's stdin and stdout.
-
-One JSON object per line, each way. The app sends
-
-    {"type": "request", "id": "7", "method": "GET", "path": "/models", "query": {}, "body": {}}
-    {"type": "feed", "message": {...}}          what the studio used to send over its WebSocket
-    {"type": "ping"}
-
-and reads back
-
-    {"type": "ready", "protocol": 1}
-    {"type": "response", "id": "7", "status": 200, "contentType": "application/json", "json": {...}}
-    {"type": "response", "id": "8", "status": 200, "contentType": "application/pdf", "base64": "...", "filename": "x.pdf"}
-    {"type": "event", "event": {...}}           every bus event, what the WebSocket feed used to broadcast
-    {"type": "pong"}
-
-A request is answered by `httpd.respond`, the same function behind the HTTP API, so both answer alike.
-
-stdout is the protocol and nothing else. Anything else that would write to it (a print, a traceback, a child
-process that inherits this one's output) goes to stderr instead, and stdin is closed to children for the same
-reason: the descriptors the protocol uses are private copies taken before anything else runs.
-"""
+"""The backend with no ports: the desktop app talks to it over this process's stdin and stdout."""
 from __future__ import annotations
 
 import base64

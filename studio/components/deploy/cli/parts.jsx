@@ -1,10 +1,6 @@
 'use client'
 
-/**
- * What every command's own page is made of: the hook that runs it, the frame around it (title, live status, formatted or
- * raw), and the pieces a page lays its answer out with (facts, tables, pills, stats and a few diagrams).
- * A command's page is a small file that says which of these to use for its answer.
- */
+/** What every command's own page is made of: the hook that runs it, the frame around it (title, live status, formatted or raw), and the pieces a page lays its... */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, CircleAlert, Copy, ExternalLink, Loader2, Play, Search, Square, Terminal as TerminalIcon } from 'lucide-react'
@@ -239,10 +235,7 @@ export function Terminal({ lines, running, error }) {
   )
 }
 
-/**
- * The page of one command: its title and what it shows, the live status and controls, and the answer laid out by the
- * page (or, one click away, exactly what the tool printed).
- */
+/** The page of one command: its title and what it shows, the live status and controls, and the answer laid out by the page (or, one click away, exactly what... */
 export function View({ project, item, title, about, icon: Icon, children, wide }) {
   const cmd = useCommand(project, item)
   const [mode, setMode] = useState('formatted')
@@ -416,8 +409,7 @@ export function Facts({ items, all, columns = 2 }) {
   )
 }
 
-/** Rows and columns, with a filter box when there are many. A column is `{ label, key | get, kind, mono }`.
- *  `onRow`, when given, makes each row a button (`rowTitle` says what clicking it does). */
+/** Rows and columns, with a filter box when there are many. */
 export function Table({ rows, columns, empty = 'Nothing here.', filter, limit = 200, onRow, rowTitle }) {
   const [query, setQuery] = useState('')
   const list = Array.isArray(rows) ? rows : []

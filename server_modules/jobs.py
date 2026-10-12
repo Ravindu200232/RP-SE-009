@@ -1,10 +1,4 @@
-"""Background jobs.
-
-The studio never blocks a request on a model. It posts the work, gets a job id
-back, and polls — which is what lets an interview answer, a specification and a
-deployment all take as long as they actually take without a proxy timing them
-out. This is the queue behind those three job endpoints.
-"""
+"""Background jobs."""
 from __future__ import annotations
 
 import threading
@@ -106,8 +100,7 @@ def cancel_project(project: str) -> int:
             if record.get("project") == project and record["status"] == "running":
                 record["cancel_event"].set()
                 matched.append(record)
-    # Mark queued jobs terminal immediately. A worker that is already inside a
-    # cancellation-aware operation will observe the same event and unwind.
+    # Mark queued jobs terminal immediately.
     for record in matched:
         _cancelled(record)
     return len(matched)

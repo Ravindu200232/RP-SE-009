@@ -1,9 +1,6 @@
 'use client'
 
-/**
- * The agent asks before an edit or a command (the mode decides which): a card in the chat stream, the way Claude Code asks —
- * what it wants to do, and numbered answers. The run holds still until one is given.
- */
+/** The agent asks before an edit or a command (the mode decides which). */
 import { useRef, useState } from 'react'
 import { ShieldAlert, ShieldQuestion } from 'lucide-react'
 

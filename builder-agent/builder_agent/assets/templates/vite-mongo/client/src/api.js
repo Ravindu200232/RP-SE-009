@@ -1,10 +1,4 @@
-/**
- * One place that knows how to talk to the server.
- *
- * Relative URLs only: the server serves this bundle from its own origin, so
- * an absolute localhost URL would work in development and break everywhere
- * else. The session cookie rides along because same-origin requests send it.
- */
+/** One place that knows how to talk to the server. */
 export async function request(path, { method = 'GET', body, signal } = {}) {
   const response = await fetch('/api' + path, {
     method,
@@ -14,7 +8,6 @@ export async function request(path, { method = 'GET', body, signal } = {}) {
   });
   const text = await response.text();
   // A server that errors can answer JSON or, if it crashed before the handler, HTML.
-  // Parsing defensively keeps the real status in the error.
   let payload = null;
   try { payload = text ? JSON.parse(text) : null; } catch { payload = null; }
   if (!response.ok) {

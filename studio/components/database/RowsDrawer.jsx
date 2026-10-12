@@ -1,9 +1,6 @@
 'use client'
 
-/**
- * The first rows of one table, or the newest documents of one collection, beside the page that listed it. Read-only,
- * read when opened, and masked on the server: a field whose name says it holds a credential shows as `<masked>`.
- */
+/** The first rows of one table, or the newest documents of one collection, beside the page that listed it. */
 
 import { useCallback, useEffect, useState } from 'react'
 import { Braces, Check, Copy, Loader2, RefreshCw, Table2, X } from 'lucide-react'

@@ -1,22 +1,4 @@
-"""Live monitors: the evidence a project's own command line tools can give, run on a click and streamed.
-
-What can be asked of each provider (`vercel ls`, `aws logs tail`, `az webapp show`, `gh run list`) is data, in
-`prompts/deployment/monitors.json`: per deployment type, a list of read-only commands. This module resolves the
-values each command needs from the deployment's own record (`.agentforge/deploy/run.json`), runs one when asked
-in the project's folder, and hands its output back as it is written, so the studio can show it live.
-
-The database panel is the same thing in a second scope: `prompts/database/monitors.json` lists what the Supabase
-command line tool and the project's own MongoDB driver can show, its values come from the project's database
-connections (`database_context`), and each set names the credentials its tool is given in its environment.
-
-Nothing here can run anything but that list: a command is chosen by its id, its arguments are the list's own,
-and a value taken from the record goes in as one plain argument (never through a shell) and only when it looks
-like a name, an id, an address or an ARN. What comes back is stripped of colour codes and of anything that looks
-like a secret, including every value the customer saved for deployments and every credential a set was given.
-
-The terminal's command box (`start_shell`) is the one exception: what the person types runs in the project folder,
-through the shell, with the same output reading, stopping and masking.
-"""
+"""Live monitors: the evidence a project's own command line tools can give, run on a click and streamed."""
 from __future__ import annotations
 
 import json
@@ -41,17 +23,16 @@ SHELL_TIMEOUT = 1800
 
 # Where each scope's commands are listed.
 CATALOGUES = {"deploy": "deployment/monitors", "database": "database/monitors"}
-# A file a database command reads: a query of the pack's own, or one of the studio's scripts. Only by name.
+# A file a database command reads: a query of the pack's own, or one of the studio's scripts.
 QUERIES = config.PROMPTS / "database" / "queries"
 SCRIPTS = Path(__file__).resolve().parent / "scripts"
 _ASSET = re.compile(r"^(file|script)\.([a-z0-9-]+)$")
 
-# A value taken from the record is used as a single argument, so it must be plain: a name, an id, an address, an ARN, a path such
-# as an AWS log group (/app/name). It may start with `/` but never with `-`, which a tool would read as an option.
+# A value taken from the record is used as a single argument, so it must be plain: a name, an id, an address, an ARN, a path such as an AWS log group (/app/name).
 _SAFE = re.compile(r"^[A-Za-z0-9/][A-Za-z0-9._:/@=+,~%\-]*$")
 _PLACEHOLDER = re.compile(r"\{\{([^{}]+)\}\}")
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
-# Settings a command may name. Never a secret.
+# Settings a command may name.
 _SETTINGS = {"aws_profile", "aws_region"}
 
 
@@ -343,7 +324,7 @@ class Monitors:
         self._jobs: dict[str, Job] = {}
         self._lock = threading.Lock()
 
-    # -- starting and stopping
+    # -- starting and stopping.
 
     def start(self, project: str, command_id: str, scope: str = "deploy") -> dict[str, Any]:
         run, targets = _context(project, scope)
@@ -406,8 +387,7 @@ class Monitors:
                          + ("project's databases" if scope == "database" else "deployment"))
 
     def _run(self, job: Job, cwd: str) -> None:
-        # The tools get this computer's environment, without what belongs to the assistant that may have started the
-        # server (some tools print a hint to it, and its keys are not theirs to have).
+        # The tools get this computer's environment, without what belongs to the assistant that may have started the server (some tools print a hint to it, and its...
         inherited = {k: v for k, v in os.environ.items() if not k.upper().startswith(("CLAUDE", "ANTHROPIC"))}
         env = {**inherited, "NO_COLOR": "1", "FORCE_COLOR": "0", "TERM": "dumb", "AWS_PAGER": "", "CI": "1",
                "PYTHONIOENCODING": "utf-8", "AZURE_CORE_NO_COLOR": "true", "AZURE_CORE_COLLECT_TELEMETRY": "false",
@@ -470,7 +450,7 @@ class Monitors:
             self._stop(job)
         return {"ok": True}
 
-    # -- reading
+    # -- reading.
 
     def poll(self, job_id: str, since: int = 0) -> dict[str, Any]:
         job = self._jobs.get(job_id)

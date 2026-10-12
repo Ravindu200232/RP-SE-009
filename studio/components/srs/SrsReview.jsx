@@ -25,7 +25,6 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack, onNew
   const [busy, setBusy] = useState('')
   const [viewing, setViewing] = useState(null)
   // What the editor said it changed, kept for the summary panel on the right.
-  // The revision itself lives in `SrsRevisions`, which owns the composer.
   const [lastChange, setLastChange] = useState('')
 
   /** Throw this specification away and leave. */

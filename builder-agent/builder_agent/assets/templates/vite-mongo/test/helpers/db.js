@@ -1,18 +1,6 @@
 import mongoose from 'mongoose';
 
-/**
- * The three things every suite that touches MongoDB needs, written once.
- *
- * Copied into each test file instead, they drift: one file forgets to clear
- * between tests, another connects per test and exhausts the pool, and the
- * failures read as product bugs in whichever suite happens to run second.
- *
- * Tests get a database of their own. This helper deliberately does NOT read
- * `MONGODB_URI`: that is the application's database, and `clearCollections()`
- * deletes every document in whatever it is connected to. Set `TEST_MONGODB_URI`
- * to use another server; its database name must end in `_test`, and anything else
- * is refused before a single document is touched.
- */
+/** The three things every suite that touches MongoDB needs, written once. */
 const TEST_URI = process.env.TEST_MONGODB_URI ?? 'mongodb://127.0.0.1:27017/__APP_DB___test';
 
 const databaseName = (uri) => decodeURIComponent(uri.split('?')[0].replace(/\/+$/, '').split('/').pop() ?? '');
@@ -37,13 +25,7 @@ export async function connectTestDb(uri = TEST_URI) {
   return mongoose.connection;
 }
 
-/**
- * Empty every collection.
- *
- * Call it in `beforeEach`, not `beforeAll`: a document left behind changes the
- * next test's result, and that failure reads as a defect in the code under
- * test rather than in the fixture.
- */
+/** Empty every collection. */
 export async function clearCollections() {
   assertTestDatabase(mongoose.connection.name);
   const { collections } = mongoose.connection;
@@ -55,8 +37,5 @@ export async function closeTestDb() {
   if (mongoose.connection.readyState !== 0) await mongoose.disconnect();
 }
 
-/**
- * The server's app is a value, so a suite drives it with supertest and never
- * binds a port. `createApp()` in `server/src/app.js` is what makes this possible.
- */
+/** The server's app is a value, so a suite drives it with supertest and never binds a port. */
 export { default as request } from 'supertest';

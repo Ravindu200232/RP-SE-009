@@ -1,17 +1,4 @@
-"""Focused model calls.
-
-A stage that writes fourteen pages in one agentic conversation spends its output
-budget on the first few and truncates the rest, and every later call drags the
-whole history behind it. So the artifacts are not written by the agent: each one
-is its own call, with only the context it needs, and independent ones run at the
-same time.
-
-This is the difference between a wireframe of four hundred characters and a
-wireframe of twenty thousand. `ProjectSession` still owns the conversation, and
-still owns anything that needs tools — the build, the tests, the deployment, and
-a change typed into the chat stream. Everything that is simply *written* comes
-through here.
-"""
+"""Focused model calls."""
 from __future__ import annotations
 
 import base64
@@ -31,8 +18,7 @@ from . import bus, config, connection
 
 T = TypeVar("T")
 
-# How many calls run at once. Quality is the point, so this is about not holding
-# the model's whole queue rather than about finishing quickly.
+# How many calls run at once.
 LANES = 3
 
 _JSON_BLOCK = re.compile(r"```(?:json)?\s*(.+?)```", re.DOTALL)
@@ -77,8 +63,7 @@ _local = threading.local()
 
 
 def bind_stop(event: threading.Event | None) -> None:
-    """The Stop of the run working on this thread. Every model call made here - and in the lanes it opens -
-    honours it, so Stop ends a page being drawn or a document being written at once rather than when it is done."""
+    """The Stop of the run working on this thread. Every model call made here - and in the lanes it opens -."""
     _local.stop = event
 
 
@@ -122,11 +107,7 @@ class _Linked(threading.Event):
 
 
 def within(seconds: float, function: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-    """`function(*args)`, but not for longer than `seconds`: a model call that has stopped answering (a service that keeps
-    failing and is asked again and again) must not stop a whole review or walk with it.
-
-    The call runs on its own thread, under the Stop of the run it belongs to; giving up on it stops it too, so it does not go
-    on asking the model service (or waiting for a "Try again" nobody will press) for work nobody wants any more."""
+    """`function(*args)`, but not for longer than `seconds`: a model call that has stopped answering (a service that keeps."""
     box: dict[str, Any] = {}
     done = threading.Event()
     stop = _Linked(_stop_event())
@@ -198,9 +179,7 @@ _context_cache: dict[str, int] = {}
 _context_lock = threading.Lock()
 _usage_lock = threading.Lock()
 _usage_by_run: dict[tuple[str, int], dict[str, int]] = {}
-# The largest single request each project's focused calls have needed. The interview, the SRS and
-# the wireframes are many independent calls of very different sizes, so "this request's" size jumps
-# up and down and read as the context being lost; the largest so far only ever holds or grows.
+# The largest single request each project's focused calls have needed.
 _peak_by_project: dict[str, int] = {}
 
 
@@ -229,11 +208,7 @@ def _context_for(model: str) -> int:
 
 
 def _tools_for(project: str, workspace: Path | None, role: str) -> Any:
-    """A `ReadOnlyTools` for this call, or `None` when no project/workspace was given.
-
-    Opt-in only: a caller that doesn't pass `project`/`workspace` gets exactly
-    today's tool-less behavior.
-    """
+    """A `ReadOnlyTools` for this call, or `None` when no project/workspace was given."""
     if not project or workspace is None:
         return None
     from . import llm_tools
@@ -309,13 +284,7 @@ def _user_message(user: str, images: Sequence[bytes | str] | None) -> dict[str, 
 def complete(system: str, user: str, model: str = "", think: bool | None = None,
             project: str = "", workspace: Path | None = None, role: str = "",
             thinking_fallback: bool = True, images: Sequence[bytes | str] | None = None) -> str:
-    """One call, one answer, no history — and, when `project`/`workspace` are
-    given, a read-only tool the model can call instead of being handed
-    pre-embedded file content.
-
-    `thinking_fallback=False` is for an answer that must be the thing asked for and nothing else (a diagram's
-    source): a reply with no content then comes back empty, never as the model's reasoning ("Let me read…").
-    """
+    """One call, one answer, no history — and, when `project`/`workspace` are."""
     from . import llm_tools
     _local.project, _local.role = project, role
     kwargs: dict[str, Any] = {
@@ -343,13 +312,7 @@ def complete_json(system: str, user: str, validator: Callable[[Any], Any] | None
                   label: str = "json", model: str = "", attempts: int = 3,
                   project: str = "", workspace: Path | None = None, role: str = "",
                   images: Sequence[bytes | str] | None = None) -> Any:
-    """One call answered as JSON, repaired in place when it is not.
-
-    The repair carries the model's own broken answer and what was wrong with it,
-    which is what makes the second attempt different from the first. When
-    `project`/`workspace` are given, the model gets a read-only tool instead
-    of pre-embedded file content.
-    """
+    """One call answered as JSON, repaired in place when it is not."""
     from . import llm_tools
     _local.project, _local.role = project, role
     tools = _tools_for(project, workspace, role)
@@ -359,10 +322,6 @@ def complete_json(system: str, user: str, validator: Callable[[Any], Any] | None
         kwargs: dict[str, Any] = {"model": _model(model), "messages": messages}
         kwargs["stream"] = bool(config.setting("cloud")) or served_from_cloud(kwargs["model"])
         # Local Ollama supports JSON mode and returns syntactically valid JSON.
-        # Ollama Cloud currently does not support constrained output, so keep
-        # the existing prompt-and-validator repair path for hosted models.
-        # Stacking constrained-JSON mode with tool-calling in one call is
-        # unverified, so a tool-enabled call relies on the repair loop alone.
         selected = kwargs["model"].lower()
         if tools is None and not config.setting("cloud") and not selected.endswith(":cloud"):
             kwargs["format"] = "json"
@@ -400,10 +359,7 @@ def complete_json(system: str, user: str, validator: Callable[[Any], Any] | None
 
 
 def web_search(query: str, max_results: int = 4) -> list[dict[str, str]]:
-    """Ollama's web search: `[{title, url, content}]`, empty when there is nothing or the search is not available.
-
-    The same route the agents' `web_search` tool takes: the local Ollama server needs no key, Ollama Cloud needs the saved one.
-    """
+    """Ollama's web search: `[{title, url, content}]`, empty when there is nothing or the search is not available."""
     saved = config.settings()
     query = " ".join(str(query or "").split())[:300]
     if not query:
@@ -424,11 +380,7 @@ def web_search(query: str, max_results: int = 4) -> list[dict[str, str]]:
 
 def in_lanes(items: Sequence[T], work: Callable[[T], Any], lanes: int = LANES,
              on_error: Callable[[T, Exception], Any] | None = None) -> list[Any]:
-    """Run `work` over `items`, a few at a time, keeping their order.
-
-    One item failing costs that item rather than the set — a page that does not
-    draw should not take the other thirteen with it.
-    """
+    """Run `work` over `items`, a few at a time, keeping their order."""
     if not items:
         return []
     results: list[Any] = [None] * len(items)

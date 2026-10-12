@@ -1,13 +1,6 @@
 'use strict'
 
-/**
- * The backend, as a child of this app: `server.py --stdio`, hidden, talked to over its stdin and stdout
- * (server_modules/stdio_bridge.py describes the lines). Nothing listens on a port.
- *
- * Requests wait for the backend to say it is ready; one that is cut short by a crash is answered 503 and the
- * backend is started again. Quitting closes its stdin, gives it a moment, then ends its whole process tree
- * (previews and commands included), so nothing of AgentForge outlives the window.
- */
+/** The backend, as a child of this app: `server.py --stdio`, hidden, talked to over its stdin and stdout (server_modules/stdio_bridge.py describes the lines). */
 const { spawn, execFile } = require('node:child_process')
 const path = require('node:path')
 const readline = require('node:readline')

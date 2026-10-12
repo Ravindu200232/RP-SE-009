@@ -189,8 +189,7 @@ def collect(workspace: Path, saved: dict) -> dict:
     # A project whose Testing stage has not run still has what its build proved.
     derived = build_evidence.derive(workspace, result)
     _fill(result, derived)
-    # This is calculated from the SRS artifact and runner-owned Playwright
-    # result, so it must not be masked by a stale or optimistic agent report.
+    # This is calculated from the SRS artifact and runner-owned Playwright result, so it must not be masked by a stale or optimistic agent report.
     journey_coverage = (((derived.get("report") or {}).get("e2e") or {})
                         .get("journeyCoverage"))
     if isinstance(journey_coverage, dict):

@@ -1,9 +1,4 @@
-"""Try a MongoDB connection string for real: address, network, credentials, ping.
-
-The check runs in Node, because that is what a deployed application uses to connect: the same driver, the same
-TLS, the same answers. The string goes in the environment, never on a command line, and nothing is returned that
-contains it.
-"""
+"""Try a MongoDB connection string for real: address, network, credentials, ping."""
 from __future__ import annotations
 
 import json
@@ -67,9 +62,7 @@ def check(uri: str = "", allow_local: bool = False) -> dict[str, Any]:
     result["message"] = _scrub(result.get("message", ""), uri)
     result["warnings"] = [_scrub(item, uri) for item in result.get("warnings") or []]
     if result.get("stage") == "auth":
-        # A password Atlas no longer accepts is the most common way a connection that worked stops working (another computer,
-        # or an earlier studio, set the database user's password again). When the studio made the string itself it can make
-        # this computer a database user of its own and a new string: say so, and say what is needed when it cannot.
+        # A password Atlas no longer accepts is the most common way a connection that worked stops working (another computer, or an earlier studio, set the database...
         from . import mongo_connect
 
         result["repairable"] = mongo_connect.can_repair(uri)

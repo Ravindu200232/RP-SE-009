@@ -88,9 +88,7 @@ export default function SrsResult({ onApprove }) {
   }
 
   useEffect(() => {
-    // Keep the last readable document on screen (blurred) while the SRS branch
-    // is actually rewriting it. As soon as that branch reports completed,
-    // reload even if Prototype/Builder are still busy in parallel.
+    // Keep the last readable document on screen (blurred) while the SRS branch is actually rewriting it.
     if (updatingSrs) return
     if (!busy || sync?.source === 'srs' || !srs) load()
   }, [project, busy, srsStamp, sync?.status, sync?.source, sync?.srs_status, Boolean(srs)])

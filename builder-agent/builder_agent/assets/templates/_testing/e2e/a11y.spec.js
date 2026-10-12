@@ -1,7 +1,4 @@
-// Accessibility: axe-core on every public page. Serious and critical violations fail.
-// Signed-in pages are checked from their journeys (sign in, open the page, run axe
-// with `new AxeBuilder({ page })`): a signed-out browser only sees the sign-in page
-// at those routes, so scanning them here would scan the wrong page.
+// Accessibility: axe-core on every public page.
 import AxeBuilder from '@axe-core/playwright'
 import { test, expect } from './fixtures.js'
 import { publicRoutes } from './routes.js'

@@ -26,13 +26,9 @@ from .mcp_client import MCPManager
 MAX_OUTPUT = 24_000
 MAX_READ = 32_000
 MAX_COMMAND_SECONDS = 600
-# A command that has finished but left a background process holding its output open (a server started with `Start-Process`, say)
-# is not waited for after this long: the output is only for the model to read, and waiting for the pipe to close would wait for
-# as long as that server runs.
+# A command that has finished but left a background process holding its output open (a server started with `Start-Process`, say) is not waited for after this...
 OUTPUT_GRACE_SECONDS = 5
-# `Start-Process` gives a program its own console, and on Windows that is a window on the person's screen (a terminal tab
-# titled "next-server" that opens for every server an agent starts to test an app). The command runs with no window of its
-# own, so what it starts is started hidden too, unless it says how it wants to be shown (-WindowStyle, -NoNewWindow, -Verb).
+# `Start-Process` gives a program its own console, and on Windows that is a window on the person's screen (a terminal tab titled "next-server" that opens for...
 POWERSHELL_HIDE_START = (
     "function Start-Process { if (-not ($args | Where-Object { $_ -is [string] -and $_ -match "
     "'^-(w(i(n(d(o(w(s(t(y(l(e)?)?)?)?)?)?)?)?)?)?|nonew\\w*|v(e(r(b)?)?)?)$' })) "
@@ -40,18 +36,15 @@ POWERSHELL_HIDE_START = (
     "else { Microsoft.PowerShell.Management\\Start-Process @args } }; "
 )
 SERVER_COMMAND_SECONDS = 75
-# A deployment's release (`netlify deploy --build`, `vercel deploy --prod`) builds the app and uploads it, which on this
-# computer took longer than ten minutes: killed at the usual limit, it left a half-made deploy and stale build output behind.
+# A deployment's release (`netlify deploy --build`, `vercel deploy --prod`) builds the app and uploads it, which on this computer took longer than ten...
 RELEASE_COMMAND_SECONDS = 1800
-# A command that starts the app's server: the program at the start of the command (or of one of its parts), never the
-# same words inside a string the command only reads or prints.
+# A command that starts the app's server: the program at the start of the command (or of one of its parts), never the same words inside a string the command...
 _SERVER_COMMAND = re.compile(
     r"(?:^|[;&|(/]\s*|\b(?:npx|pnpm|yarn|bunx|exec)\s+)(?:next\s+(?:dev|start)\b|npm\s+(?:run\s+)?(?:dev|start)\b|start\s+/b\b)",
     re.I)
 _RELEASE_COMMAND = re.compile(r"(?:^|[;&|(]\s*|\bnpx\s+)(?:netlify\s+deploy\b|vercel\b(?=[^;&|]*(?:\bdeploy\b|--prod\b|\bbuild\b))"
                               r"|npm\s+run\s+build\b|next\s+build\b)", re.I)
-# A run of the whole end-to-end suite. The Studio runs it itself, once (`qa_agent/e2e_run.py`); an agent runs one journey's
-# spec file, or a --grep of a few, while it writes or fixes them.
+# A run of the whole end-to-end suite.
 _E2E_SUITE = re.compile(r"\b(?:qa:e2e|test:e2e|playwright\s+test)\b", re.I)
 _E2E_NARROWED = re.compile(r"\.spec\.[cm]?[jt]sx?\b|\.test\.[cm]?[jt]sx?\b|(?:^|\s)(?:--grep|-g)(?:[\s=]|$)|--last-failed\b|--list\b"
                            r"|(?:^|\s)e2e/[\w./-]+", re.I)
@@ -69,16 +62,11 @@ def whole_e2e_suite(command: str) -> bool:
     """Whether `command` runs the whole end-to-end suite rather than one spec file or a --grep of a few tests."""
     return bool(_E2E_SUITE.search(command)) and not _E2E_NARROWED.search(command)
 
-# A CLI that colours its own output (netlify, vercel, npm...) still does so once piped,
-# leaving raw escape codes ("[32m...[39m") in what both the model and the chat card see.
+# A CLI that colours its own output (netlify, vercel, npm...) still does so once piped, leaving raw escape codes ("[32m...[39m") in what both the model and...
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 
-# What a web-app build/test/deploy stage legitimately runs. Not a security
-# sandbox on its own (a shell string can still be obfuscated past a prefix
-# check) — this is a defense-in-depth floor against a command that is simply
-# not one of these things: an accidental `rm -rf`, a project's own compromised
-# script, or a prompt-injected instruction from a file the model read.
+# What a web-app build/test/deploy stage legitimately runs.
 _ALLOWED_PROGRAMS = {
     "npm", "npx", "node", "yarn", "pnpm", "corepack",
     "git", "gh",
@@ -99,18 +87,14 @@ _ALLOWED_PROGRAMS = {
     # PowerShell's short names for the cmdlets it allows by shape anyway.
     "gci", "gc", "sls", "ni", "ri", "mi", "ci", "select", "sort", "measure", "group", "ft", "fl", "write", "%", "?",
 }
-# PowerShell is a language, not only a list of programs: a line of it starts with a variable (`$ok = $true`), a printed string
-# (`"--- pages:"`), a comment, a keyword (`foreach (...) {`), a type (`[IO.File]::ReadAllText(...)`) or a brace. None of those is
-# a program to vet - taking them for one asked the person about almost every command the agent wrote, in Auto too.
+# PowerShell is a language, not only a list of programs.
 _POWERSHELL_KEYWORDS = {"foreach", "for", "if", "else", "elseif", "while", "do", "until", "switch", "try", "catch", "finally",
                         "function", "filter", "param", "return", "break", "continue", "begin", "process", "end", "throw",
                         "trap", "default", "in"}
 _NOT_A_PROGRAM = re.compile(r"""^[$"'#@\[{}]|^\d|^\W+$""")
 # The cmdlets that run code or another process are risky wherever they stand in a line, not only at its start.
 _RISKY_ANYWHERE = re.compile(r"\b(invoke-command|invoke-item|start-process|add-type)\b")
-# PowerShell's own Verb-Noun cmdlets (Set-Content, Copy-Item, Get-ChildItem,
-# ...) are allowed generically by that naming shape rather than enumerated —
-# except this explicit set, which can run arbitrary code or another process.
+# PowerShell's own Verb-Noun cmdlets (Set-Content, Copy-Item, Get-ChildItem, ...) are allowed generically by that naming shape rather than enumerated.
 _DANGEROUS_CMDLETS = {"invoke-expression", "invoke-command", "invoke-item",
                       "start-process", "new-object", "add-type"}
 _CMDLET_SHAPE = re.compile(r"^[a-z]+-[a-z]+$")
@@ -131,14 +115,7 @@ _DENY_PATTERNS = (
 
 
 def _split_top_level(command: str) -> list[str]:
-    """`command` split on `&&`/`||`/`;`/`|`-style separators, but never inside a quoted string.
-
-    Found live: `node -p "const r=JSON.parse(...); r.complete"` was cut in two at the JS
-    statement's own semicolon (perfectly ordinary inside a one-liner passed to `node -p`/`python
-    -c`), leaving `r.complete"` to be checked as if it were its own command — which it plainly is
-    not one of. A shell separator inside quotes is not a separator; only a quote-aware split can
-    tell the difference between the two.
-    """
+    """`command` split on `&&`/`||`/`;`/`|`-style separators, but never inside a quoted string."""
     segments: list[str] = []
     current: list[str] = []
     quote = ""  # "" outside any quote, else the quote character currently open
@@ -203,11 +180,7 @@ def _segment_program(segment: str) -> str:
 
 
 def command_check(command: str) -> tuple[str, str, str]:
-    """How `command` sits with what a build/test/deploy stage runs: (level, why, program).
-
-    `level` is "" when it is one of the usual commands; "unusual" when a program in it is not (`program` names it); "danger" when
-    it can wreck the computer or send a credential out. A host that asks the person (the studio's permission modes) asks about
-    both; one that does not (the terminal agent) refuses both."""
+    """How `command` sits with what a build/test/deploy stage runs: (level, why, program)."""
     lowered = command.lower()
     for pattern, message in _DENY_PATTERNS:
         if pattern.search(lowered):
@@ -266,28 +239,14 @@ def read_only(command: str) -> bool:
 
 
 def tools_unsupported(exc: Exception) -> bool:
-    """True for an Ollama error whose message says the model can't take tools.
-
-    Duck-typed on the exception's shape rather than `isinstance(exc,
-    ollama.ResponseError)`, so this file does not need to import `ollama`
-    just for this one check, and callers in either package (this one, or
-    `server_modules`, which already depends on it) can use it the same way.
-    """
+    """True for an Ollama error whose message says the model can't take tools."""
     return (type(exc).__name__ == "ResponseError"
             and getattr(exc, "status_code", None) == 400
             and "tool" in str(getattr(exc, "error", "") or exc).lower())
 
 
 def describe_call(name: str, args: dict[str, Any]) -> str:
-    """A short human label for a tool call, e.g. `read_file(srs/spec.md)`.
-
-    Used only for logging a *failed* call to the studio's activity feed —
-    the success path already has its own per-tool phrasing ("Listed X",
-    "Read X (N lines)", ...). Without this, a WARN line for a failure was
-    just the bare exception text ("Tool error: Not a directory") with no
-    way to tell which call produced it, even though the model recovers on
-    its own next turn.
-    """
+    """A short human label for a tool call, e.g. `read_file(srs/spec.md)`."""
     if name in ("list_files", "write_file", "replace_text"):
         return f"{name}({args.get('path') or '.'})"
     if name == "read_file":
@@ -349,18 +308,14 @@ class WorkspaceTools:
         self.shell = shell or ("powershell" if os.name == "nt" else "/bin/sh")
         self.web_host = web_host.rstrip("/")
         self.use_local_web = use_local_web
-        # Only a workspace inside the app can reach the app's own source by a relative path; a project
-        # folder elsewhere (C:\Projects\shop) cannot, and guarding it only risks undoing the app's own updates.
+        # Only a workspace inside the app can reach the app's own source by a relative path.
         self.source_guard = (SourceGuard(protected_app_root)
                              if protected_app_root and self.root.is_relative_to(Path(protected_app_root).resolve())
                              else None)
         self.mcp = mcp
-        # A host that asks the person before an edit or a command (the studio's permission modes) sets this: it is given what the
-        # agent wants to do ({"kind": "edit" | "command", ...}) and returns "" to go ahead, else what to tell the model. Without
-        # it `approve` is asked, and a command that is not a usual one is refused.
+        # A host that asks the person before an edit or a command (the studio's permission modes) sets this.
         self.permission: Callable[[dict[str, Any]], str] | None = None
-        # Pictures the screenshot tool took, until the agent has shown them to the model (once), and whether this
-        # model can look at pictures at all (the studio sets it from what Ollama says of the model).
+        # Pictures the screenshot tool took, until the agent has shown them to the model (once), and whether this model can look at pictures at all (the studio sets...
         self._pictures: list[tuple[str, bytes]] = []
         self.sees_pictures: Callable[[], bool] = lambda: False
 
@@ -412,9 +367,7 @@ class WorkspaceTools:
         except Exception as exc:
             return f"Tool error: {exc}"
 
-    # The base tool is useful outside the studio too. These hooks let the
-    # studio stream command activity without coupling the terminal package to
-    # its event bus.
+    # The base tool is useful outside the studio too.
     def command_started(self, _command: str, _timeout: int) -> None:
         pass
 
@@ -522,17 +475,12 @@ class WorkspaceTools:
         level, why, program = command_check(command)
         if level and self.permission is None:
             raise ValueError(f"Command blocked: {why}")
-        # A generated app may own one or more Node processes. Killing every
-        # `node.exe` also kills the Studio, unrelated previews and the build
-        # itself. Commands must target a known PID when cleanup is needed.
+        # A generated app may own one or more Node processes.
         if ("taskkill" in command.lower() and "/im" in command.lower()
                 and "node.exe" in command.lower()) or "stop-process -name node" in command.lower():
             raise ValueError("Do not terminate every node.exe process. Target a known child PID instead.")
         starts_server = server_command(command)
-        # The Studio has one managed preview process and takes care of its
-        # port, environment and lifecycle.  Letting an agent run a server in a
-        # foreground terminal always looks successful ("Ready in 439ms") but
-        # never exits, consuming the build turn until it times out.
+        # The Studio has one managed preview process and takes care of its port, environment and lifecycle.
         if starts_server and getattr(self, "managed_preview", False):
             raise ValueError("Do not run a development or production server from the agent. "
                              "The Studio starts the managed preview automatically after the build.")
@@ -560,8 +508,7 @@ class WorkspaceTools:
         timed_out = False
         stopped_at = 0.0
         exit_code = 1
-        # The host can ask a running command to stop (the Stop button): it is checked while the command runs,
-        # so Stop does not wait for a build or a test run to finish on its own.
+        # The host can ask a running command to stop (the Stop button).
         stop_requested = getattr(self, "stop_requested", None)
 
         def append(text: str) -> None:
@@ -582,8 +529,7 @@ class WorkspaceTools:
                                capture_output=True, check=False,
                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             else:
-                # The command runs in its own process group, so the shell's children (npm, node, a test
-                # runner) stop with it instead of holding the output open after the shell is gone.
+                # The command runs in its own process group, so the shell's children (npm, node, a test runner) stop with it instead of holding the output open after the...
                 try:
                     os.killpg(child.pid, signal.SIGTERM)
                 except OSError:
@@ -599,11 +545,7 @@ class WorkspaceTools:
         try:
             process = subprocess.Popen(shell_args, cwd=self.root, stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                                       # A child's stdout is UTF-8 (npm/Next.js/Node all emit it once
-                                       # piped, not a TTY) regardless of the Windows console's own active
-                                       # code page. `text=True` without this decoded with that code page
-                                       # instead - every box-drawing/checkmark character npm and Next.js
-                                       # print came out as mojibake ("â–²" for "▲", "Æ’" for "ƒ").
+                                       # A child's stdout is UTF-8 (npm/Next.js/Node all emit it once piped, not a TTY) regardless of the Windows console's own active code page.
                                        text=True, encoding="utf-8", errors="replace",
                                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                                        start_new_session=os.name != "nt",

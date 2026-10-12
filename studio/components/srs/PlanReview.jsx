@@ -91,9 +91,7 @@ export default function PlanReview({ projectId, onGenerated, onGenerating, onCan
       return
     }
 
-    // The specification is written in the workspace: the chat streams each
-    // file as it lands and the SRS tab stays blurred under the generating
-    // animation until the server reports it finished.
+    // The specification is written in the workspace.
     const st = useStore.getState()
     const sync = (status, extra) => st.applyProjectEvent({
       type: 'sync_state', project: projectId, status, source: 'srs', ...extra })
@@ -264,8 +262,7 @@ export default function PlanReview({ projectId, onGenerated, onGenerating, onCan
   )
 }
 
-/** One calm generation state. Detailed work belongs in the shared chat, not a
- * second animated checklist that competes with it. */
+/** One calm generation state. */
 function GenerationPreview({ title, message, seconds }) {
   return (
     <div className="grid min-h-0 flex-1 place-items-center p-5 sm:p-8">

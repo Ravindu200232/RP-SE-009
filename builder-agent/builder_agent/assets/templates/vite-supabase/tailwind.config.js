@@ -6,8 +6,7 @@ export default {
     './src/**/*.{js,jsx}',
   ],
   theme: {
-    // The design contract writes these custom properties; reading them here is
-    // what makes a Tailwind class and a token the same decision.
+    // The design contract writes these custom properties; reading them here is what makes a Tailwind class and a token the same decision.
     extend: {
       colors: {
         background: 'var(--background)', foreground: 'var(--text)',

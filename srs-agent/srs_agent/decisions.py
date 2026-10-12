@@ -1,16 +1,4 @@
-"""The specification's open decisions, asked as questions in their own tab and settled by the customer's answers.
-
-The decisions are the document's `ambiguities` that still `needs_clarification`: places where the specification had to assume
-something the customer never said. The overview used to say only "12 decisions needed" and point at chapter 10. Now each one is
-a question with answers to choose from (the first is always the assumption already made) and a box for an answer of one's own:
-
-- choosing the assumption settles the decision at once: the specification already follows it;
-- any other answer settles it at once too, and is then written into the specification by the agent (`decision-apply`), the
-  next time no other run is working on the project; when that cannot be done, the decision is open again, saying so, and is
-  answered again.
-
-The questions are written once by a model, from the decisions themselves, and kept with them in `srs.json`.
-"""
+"""The specification's open decisions, asked as questions in their own tab and settled by the customer's answers."""
 from __future__ import annotations
 
 import threading
@@ -96,8 +84,7 @@ def _questions_validator(ids: set[str]):
 
 
 def prepare(project: str) -> dict[str, Any]:
-    """Write the questions of the open decisions that have none yet (once: they are kept), then return the listing. A model that
-    cannot be reached leaves each decision asked as it is, with its assumption as the one answer to choose."""
+    """Write the questions of the open decisions that have none yet (once: they are kept), then return the listing. A model that."""
     envelope, doc = _load(project)
     rows = [entry for entry in _rows(doc) if _is_open(entry) and not entry.get("options")]
     if rows:
@@ -162,8 +149,7 @@ def _pending(project: str) -> list[dict[str, Any]]:
 
 
 def _resume(project: str) -> None:
-    """Make sure answers still to be written into the specification are being written: one waiting worker per project, which
-    also picks up answers left waiting by a Studio that was closed."""
+    """Make sure answers still to be written into the specification are being written: one waiting worker per project, which."""
     if not _pending(project):
         return
     with _lock:
@@ -195,8 +181,7 @@ def _wait_and_apply(project: str) -> None:
 
 
 def apply_answers(project: str) -> None:
-    """One run of the agent that writes the customer's answers into the specification. An answer that could not be written in
-    opens its decision again, with why, so it is answered again."""
+    """One run of the agent that writes the customer's answers into the specification. An answer that could not be written in."""
     pending = _pending(project)
     if not pending:
         return

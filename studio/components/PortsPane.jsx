@@ -1,11 +1,6 @@
 'use client'
 
-/**
- * Ports: every part of the app its preview starts (the client a browser opens, a gateway, each service, or just the one
- * server of a single-server app), its port, and whether something listens there now. A part that is not listening has
- * a Start button: it sends the agent a silent request, with no plan, to start that part with its own commands and fix
- * what stops it; the Studio then restarts the preview and checks the part answers.
- */
+/** Ports: every part of the app its preview starts (the client a browser opens, a gateway, each service, or just the one server of a single-server app), its... */
 
 import { useCallback, useEffect, useState } from 'react'
 import { Bot, EthernetPort, ExternalLink, Loader2, Play, RefreshCw } from 'lucide-react'

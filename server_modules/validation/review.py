@@ -1,16 +1,4 @@
-"""The specification review's own rules.
-
-Ported from RP-SE-009 `srs-agent/srs_agent/app/agents/reviewer.py`.
-
-Two things are load-bearing here and both are deliberate:
-
-* A finding against a requirement id that is not in the document cannot be
-  fixed, so the verdict is rejected and asked for again. A round spent on a
-  phantom requirement is a round the cap has already spent.
-* Python decides whether the draft passed, not the model. A reviewer asked to
-  judge its own judgement tends to accept, so `verdict` is kept for the record
-  and `satisfied()` is what actually gates the stage.
-"""
+"""The specification review's own rules."""
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -18,8 +6,7 @@ from typing import Any, Callable
 SEVERITIES = ("blocker", "major", "minor")
 SCORES = ("functional", "non_functional", "security", "ambiguity", "traceability")
 
-# A score below this is a blocking judgement even when no single requirement was
-# named — "the security section is thin" is a real finding without a culprit.
+# A score below this is a blocking judgement even when no single requirement was named — "the security section is thin" is a real finding without a culprit.
 FLOOR = 3
 
 AUDIT_SKILLS = ("functional-requirements", "non-functional-quality", "security-architecture")

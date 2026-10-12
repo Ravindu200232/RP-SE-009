@@ -23,15 +23,11 @@ _processes: dict[str, dict] = {}
 _last: dict[str, dict] = {}
 _revision = 0
 
-# Every preview has its own private loopback port.  The old fixed 3001/5173
-# model made unrelated applications collide and forced the studio to stop a
-# preview merely because somebody opened another project.  Ports are stable
-# per project where possible, but are always checked before use.
+# Every preview has its own private loopback port.
 PREVIEW_PORT_FIRST = 3100
 PREVIEW_PORT_LAST = 5099
 
-# How long a preview may take to answer before it is shown as not started. It is watched a while
-# longer after that, so a slow first compile still turns into a running preview on its own.
+# How long a preview may take to answer before it is shown as not started.
 READY_SECONDS = 90
 LATE_READY_SECONDS = 300
 
@@ -62,8 +58,7 @@ def _preview_port(project: str, package: dict, exclude: set[int] | None = None) 
             return port
     raise RuntimeError("No private preview port is available. Stop one of this Studio's previews and try again.")
 
-# Preloaded into the preview process so a hardened app (X-Frame-Options, `frame-ancestors 'none'`)
-# can still be shown in the Studio's iframe.
+# Preloaded into the preview process so a hardened app (X-Frame-Options, `frame-ancestors 'none'`) can still be shown in the Studio's iframe.
 FRAME_HOOK = Path(__file__).resolve().with_name("preview_hooks") / "frame-headers.cjs"
 
 
@@ -97,12 +92,7 @@ def _port_open(port: int) -> bool:
 
 
 def _listening_pids(port: int) -> list[int]:
-    """Return only processes that own a LISTEN socket for ``port``.
-
-    `taskkill /IM node.exe` is intentionally never used: it kills the Studio
-    and every unrelated app.  A port guard may only target the PID that owns
-    the requested listener.
-    """
+    """Return only processes that own a LISTEN socket for ``port``."""
     if os.name == "nt":
         completed = subprocess.run(
             ["netstat", "-ano", "-p", "tcp"], capture_output=True, text=True,
@@ -123,7 +113,6 @@ def _listening_pids(port: int) -> list[int]:
         return sorted(pids)
 
     # `lsof` is available on supported macOS/Linux developer installations.
-    # If it is absent, return no PID rather than terminating an unknown process.
     try:
         completed = subprocess.run(["lsof", "-ti", f"tcp:{port}", "-sTCP:LISTEN"],
                                    capture_output=True, text=True, check=False)
@@ -169,8 +158,6 @@ def status(project: str) -> dict:
         if not entry:
             saved = _read_metadata(project)
             # A random process may reuse a saved port after the backend restarts.
-            # A matching listener PID is the minimum proof that it is still this
-            # project's preview; older metadata without it is intentionally stale.
             if (saved.get("port") and saved.get("listenerPid")
                     and int(saved["listenerPid"]) in _listening_pids(int(saved["port"]))):
                 return _state(project, "running", **_without_status(saved))
@@ -215,12 +202,7 @@ def _framework(package: dict) -> str:
 
 
 def _preview_command(root: Path, package: dict, script: str, port: int) -> list[str]:
-    """Start known frameworks directly so their checked private port always wins.
-
-    Generated Next projects used to hard-code 3001 in their npm scripts. Vite
-    and Remix receive PORT through their configs, while Next gets its CLI port
-    here. Unknown stacks retain their own start script and receive PORT/HOST.
-    """
+    """Start known frameworks directly so their checked private port always wins."""
     dependencies = {**(package.get("dependencies") or {}),
                     **(package.get("devDependencies") or {})}
     node = _node_program()
@@ -229,9 +211,7 @@ def _preview_command(root: Path, package: dict, script: str, port: int) -> list[
         if cli:
             return [node, str(cli), "start" if script == "start" else "dev",
                     "--port", str(port), "--hostname", "127.0.0.1"]
-    # Remix uses Vite during development but its production server is
-    # `remix-serve`; retain those scripts so SSR continues to work. Its config
-    # already honours the PORT environment variable supplied above.
+    # Remix uses Vite during development but its production server is `remix-serve`; retain those scripts so SSR continues to work.
     remix = any(name.startswith("@remix-run/") for name in dependencies)
     if "vite" in dependencies and not remix:
         cli = _node_module(root, "vite/bin/vite.js")
@@ -290,11 +270,7 @@ def _log_secrets(project: str) -> list[str]:
 
 
 def read_log(project: str, since: int = -1) -> dict:
-    """What the running app printed from byte `since` on, for the terminal; -1 starts at the current run.
-
-    Colour codes are kept (the terminal draws them); credentials are not. A read stops at the last whole line, so
-    a character or a line is never split between two reads.
-    """
+    """What the running app printed from byte `since` on, for the terminal; -1 starts at the current run."""
     state = status(project)
     answer = {"status": state["status"], "url": state["url"], "port": state["port"], "detail": state["detail"],
               "cwd": str(config.workspace_for(project)), "text": "", "start": 0, "next": 0}
@@ -305,7 +281,7 @@ def read_log(project: str, since: int = -1) -> dict:
         return answer
     with path.open("rb") as handle:
         if since < 0 or since > size:
-            # The current run: from the last start's line, within the window. A log that shrank was replaced.
+            # The current run: from the last start's line, within the window.
             base = max(0, size - LOG_WINDOW)
             handle.seek(base)
             window = handle.read()
@@ -344,14 +320,7 @@ def _run_line(variables: dict, command: str, folder: str = ".") -> str:
 
 
 def start_brief(project: str, seen: str = "", part: str = "") -> dict:
-    """How the Studio starts this app's preview, for an agent asked to make it start.
-
-    The same command, port and variables `open_preview` uses, so what the agent proves on its
-    own run is what the Studio's next start does. `seen` is what the failed preview reported,
-    read before it was stopped to free its ports. `part` narrows it to one part of the app (a
-    service, the gateway, the client) the Ports view showed as not listening: how that part alone
-    is started, and what it printed.
-    """
+    """How the Studio starts this app's preview, for an agent asked to make it start."""
     root = config.workspace_for(project)
     manifest = root / "package.json"
     if not manifest.is_file():
@@ -430,11 +399,7 @@ def _listeners() -> dict[int, int]:
 
 
 def ports(project: str) -> dict:
-    """Every part of the app the preview starts, its port, and whether something listens there now.
-
-    A runner that starts several parts (a gateway, services, a client) lists them itself; an app that is one server is
-    the preview's own port. Parts listed by an earlier run are still shown when the app is stopped, as not started.
-    """
+    """Every part of the app the preview starts, its port, and whether something listens there now."""
     state = status(project)
     declared = _declared(project)
     listening = _listeners()
@@ -494,12 +459,7 @@ BUILD_MARKERS = (".next/BUILD_ID", "build/server/index.js")
 
 
 def build_is_newer(root: Path, started_ms: int) -> bool:
-    """Whether a build was written after the preview server started.
-
-    A production Next.js (or Remix) server keeps the build manifest it started with, so after a newer build (the tests
-    build the app again) the pages it serves name chunks and styles that are no longer on disk, and the preview shows an
-    app that never comes alive. The server has to be replaced.
-    """
+    """Whether a build was written after the preview server started."""
     if not started_ms:
         return False
     for marker in BUILD_MARKERS:
@@ -539,13 +499,10 @@ def open_preview(project: str) -> dict:
     with _lock:
         current = status(project)
         if current["status"] in {"running", "starting"}:
-            # Already this project's preview: keep it, unless it is not really there (the
-            # port no longer answers) or it was started before the production build existed
-            # and is still the slow dev server.
+            # Already this project's preview: keep it, unless it is not really there (the port no longer answers) or it was started before the production build existed...
             saved = _processes.get(project) or _read_metadata(project)
             current_port = int(current.get("port") or 0)
-            # ... or the app is now served by another framework (Vite became Next.js): the old process would keep
-            # serving the old app.
+            # ...
             relaunch = saved.get("framework") is not None and saved["framework"] != _framework(package)
             stale = not current_port or \
                 (current["status"] == "running" and not _port_open(current_port)) \
@@ -555,8 +512,7 @@ def open_preview(project: str) -> dict:
                 return current
             stop(project)
         elif _processes.get(project):
-            # A preview shown as failed because it never answered is still alive, and still holds
-            # its ports (and its child processes theirs).
+            # A preview shown as failed because it never answered is still alive, and still holds its ports (and its child processes theirs).
             stop(project)
         _last.pop(project, None)
         try:
@@ -575,20 +531,16 @@ def open_preview(project: str) -> dict:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         enabled_path = config.record_dir(project) / "plugins.json"
         enabled = json.loads(enabled_path.read_text(encoding="utf-8")) if enabled_path.is_file() else []
-        # The same variables the build ran and tested this app with (session.py's command_env): a
-        # MongoDB-stack preview reads the database the build seeded, not a local fallback.
+        # The same variables the build ran and tested this app with (session.py's command_env).
         environment = {**os.environ, **plugins.environment(enabled),
                        **supabase_connect.env_for(project), **deploy_vars.environment(build=True, project=project),
                        "PORT": str(port), "HOST": "127.0.0.1", "BROWSER": "none",
                        # A runner that starts several parts says where each one is (the Ports view).
                        "AGENTFORGE_PORTS_FILE": str(_ports_file(project)),
                        "AGENTFORGE_PREVIEW_RUNTIME_ID": runtime_id}
-        # The Studio frames this app. Let this machine's pages do that, whatever the app's
-        # own headers say; only this preview process is affected (see preview_hooks). And a cluster name
-        # this computer's DNS could not look up is asked of public DNS, as in the build's own commands.
+        # The Studio frames this app.
         node_hooks.add(environment, FRAME_HOOK, node_hooks.DNS_FALLBACK)
-        # In the desktop app the Studio is at agentforge://app, another site than this preview: its cookies have to be ones a
-        # framed page may keep, or nothing the app signs in survives (frame-headers.cjs).
+        # In the desktop app the Studio is at agentforge.
         if os.environ.get("AGENTFORGE_TRANSPORT") == "stdio":
             environment["AGENTFORGE_FRAMED_CROSS_SITE"] = "1"
         process = _launch(command, root, environment, log_path)
@@ -606,11 +558,7 @@ def open_preview(project: str) -> dict:
 
 
 def reopen(project: str) -> dict:
-    """Serve the project as it is now: what a finished build or change leaves on disk.
-
-    A running production server keeps serving the build it started with, so a new build is
-    only visible after the server is replaced.
-    """
+    """Serve the project as it is now: what a finished build or change leaves on disk."""
     stop(project)
     return open_preview(project)
 
@@ -630,12 +578,7 @@ def _launch(command: list[str], root: Path, environment: dict, log_path: Path) -
         log.close()
 
 
-# `next dev` writes its webpack cache into `.next` continuously; force-killing it
-# mid-write (switching projects, stopping the preview) can leave a numbered chunk
-# half-written, which then 500s every request for it forever until `.next` is
-# cleared. A genuinely missing package/app import never looks like this - only a
-# webpack-internal, purely numeric chunk id does - so this pattern is specific
-# enough to self-heal on rather than something a real app bug could trigger.
+# `next dev` writes its webpack cache into `.next` continuously.
 _CORRUPT_CACHE = re.compile(r"Cannot find module '\.[/\\]\d+\.js'|PackFileCacheStrategy\] Restoring pack failed")
 
 
@@ -676,9 +619,7 @@ def _heal(project: str, process: subprocess.Popen, url: str, root: Path, command
 
 def _wait_ready(project: str, process: subprocess.Popen, url: str, root: Path, command: list[str],
                 environment: dict, log_path: Path, script: str, healed: bool = False) -> None:
-    # Self-healing only ever applies to `next dev`: `next start` only ever reads a
-    # `.next` a prior `next build` already finished writing, so it cannot itself
-    # get corrupted this way, and deleting it would just delete the real build.
+    # Self-healing only ever applies to `next dev`: `next start` only ever reads a `.next` a prior `next build` already finished writing, so it cannot itself get...
     healable = not healed and script == "dev"
     for second in range(LATE_READY_SECONDS):
         if second == READY_SECONDS:
@@ -698,9 +639,6 @@ def _wait_ready(project: str, process: subprocess.Popen, url: str, root: Path, c
                             entry["status"] = "running"
                             entry.pop("detail", None)
                             # The npm shell is not necessarily the listener.
-                            # Store the actual listener PID so a backend restart
-                            # can distinguish this preview from an unrelated app
-                            # that later reuses the same port.
                             listener_pids = _listening_pids(int(entry["port"]))
                             entry["listenerPid"] = listener_pids[0] if listener_pids else 0
                             _write_metadata(project, entry)
@@ -742,8 +680,7 @@ def stop(project: str) -> dict:
     else:
         port = int(saved.get("port") or 0)
         listener_pid = int(saved.get("listenerPid") or 0)
-        # A persisted port by itself is not ownership proof.  It is safe to
-        # terminate only the exact listener that this runtime recorded.
+        # A persisted port by itself is not ownership proof.
         if port and listener_pid and listener_pid in _listening_pids(port):
             _terminate_tree(listener_pid)
             bus.runtime_state(project, "stopped", server_id=server_id, revision=revision)

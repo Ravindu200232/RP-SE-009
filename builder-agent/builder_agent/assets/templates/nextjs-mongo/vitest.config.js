@@ -5,8 +5,7 @@ import path from 'node:path';
 export default defineConfig({
   // Apply JSX transformation to .js files used in Next.js App Router routes.
   plugins: [react({ include: /\.(js|jsx)$/ })],
-  // The same `@/` alias the application uses. A test that reaches past it with
-  // a relative path breaks the moment a file moves.
+  // The same `@/` alias the application uses.
   resolve: {
     alias: {
       '@': path.resolve(process.cwd()),
@@ -14,14 +13,10 @@ export default defineConfig({
     },
   },
   test: {
-    // jsdom is for components and pages. Server code (route handlers, Mongo, auth, `jose`,
-    // `bcrypt`) must run in Node: under jsdom, `jose` rejects its keys ("payload must be an
-    // instance of Uint8Array") because jsdom has its own `Uint8Array`. Name such a suite
-    // `*.node.test.js`, or start the file with `// @vitest-environment node`.
+    // jsdom is for components and pages.
     environment: 'jsdom',
     environmentMatchGlobs: [['test/**/*.node.test.{js,jsx}', 'node']],
-    // The suites share one test database. In parallel, one file's `clearCollections()` deletes
-    // the rows another file is asserting on, and the failure looks like a product bug.
+    // The suites share one test database.
     fileParallelism: false,
     // Enable global assertions required by test matchers setup file.
     globals: true,
@@ -29,8 +24,7 @@ export default defineConfig({
     unstubGlobals: true,
     setupFiles: ['vitest.env.js', 'vitest.setup.js'],
     include: ['test/**/*.test.{js,jsx}'],
-    // `npm run test:coverage`. Every source file is listed, tested or not, so a page nothing tests
-    // shows as 0 % instead of being missing. `npm run qa:inventory` says which unit is untested.
+    // `npm run test:coverage`.
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'json-summary'],

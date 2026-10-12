@@ -8,11 +8,7 @@ import { Empty } from '../ui'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 
-/**
- * The specification told for someone who is not technical: what the app is, who it is for, what you can do with it, a day with
- * it, how it feels to use, how it keeps things safe and what the business gets. A model writes it once from the specification
- * (`srs_agent/plain_summary.py`); it is written again when the specification changes.
- */
+/** The specification told for someone who is not technical. */
 export default function Overview({ srs, onSelectView }) {
   const openProject = useStore(s => s.project)
   const project = srs?.project || openProject || ''

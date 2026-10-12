@@ -1,33 +1,4 @@
-"""Signing in to GitHub, AWS, Vercel, Netlify, Azure and MongoDB Atlas through their own command line tools.
-
-Each of these tools has a `login` that completes a sign-in in the browser and keeps the credential
-where it always does (GitHub's keyring, AWS's login cache, Vercel's and Netlify's config files,
-Azure's token cache). So that is what this drives: run the tool's login, show whatever it prints (a
-code to type, a link to open), and when it finishes read what the deployment needs out of the
-tool's own store. Nobody pastes a token, and nothing here ever sees a password.
-
-Three more things follow from it. A tool that is not installed is not an error to hide: the studio
-is told, with the command that installs it. A tool already signed in is used as it is, with no
-browser at all (`use_existing`). And what is signed in is asked of the tool itself (`gh auth
-status`, `az account show`, ...), so the studio shows the account a deployment will really use.
-
-Azure is signed in but no service principal is created here: that gives an identity the deployment
-can run as, and creating one changes the customer's tenant, so it stays a step they take on purpose.
-
-MongoDB Atlas is here because its own CLI signs in with MongoDB's OAuth app: the browser and a one-time
-code, with nothing for the customer to register. (Atlas's OAuth for other apps is only issued to approved
-MongoDB partners, so this studio has no app of its own to sign in with.) Its `login` opens with an
-interactive menu and exits at once without a terminal, so it is the one provider run in a pseudo-terminal
-(`pty_process.py`) and answered where it asks (`Provider.answers`).
-
-Supabase does not belong here, on purpose, not by oversight: its CLI's `login` refuses to run at all
-outside a real interactive terminal ("Cannot use automatic login flow inside non-TTY environments"),
-which every provider above works around by having a device- or browser-code flow that needs no TTY.
-Supabase has none - its only non-interactive path is a pasted personal access token
-(`SUPABASE_ACCESS_TOKEN` / `supabase login --token`). That one credential is handled in
-`supabase_connect.py` instead, the same paste-and-verify shape `DeployAccounts.jsx`'s
-`HostedCredential` already uses for Netlify's and Azure's own tokens.
-"""
+"""Signing in to GitHub, AWS, Vercel, Netlify, Azure and MongoDB Atlas through their own command line tools."""
 from __future__ import annotations
 
 import json
@@ -45,8 +16,7 @@ from typing import Any, Callable
 
 from . import config, pty_process
 
-# How long a sign-in may stay open. The browser half is a person reading a page, so this is
-# generous; the flow is dropped either way once it passes.
+# How long a sign-in may stay open.
 TTL_SECONDS = 600
 # What the tools say about who is signed in is asked again after this long, not on every look.
 IDENTITY_TTL = 20
@@ -66,13 +36,7 @@ def _first_file(*candidates: Path | None) -> Path | None:
 
 
 def _where(name: str) -> str:
-    """The tool's path, looking past whatever PATH this process inherited.
-
-    `shutil.which` is right when the server was started from a shell the person also uses. It is
-    wrong often enough not to rely on: a service, a launcher or a desktop shell can start the server
-    with a PATH from before a tool was installed, and the studio would say it is not installed on a
-    machine where it runs fine in a terminal.
-    """
+    """The tool's path, looking past whatever PATH this process inherited."""
     found = shutil.which(name)
     if found:
         return found
@@ -113,11 +77,7 @@ def _run(command: list, timeout: int = 30) -> subprocess.CompletedProcess:
 # --- what each tool leaves behind ---------------------------------------------------------------
 
 def _vercel_auth() -> dict:
-    """What `vercel login` wrote, wherever this platform keeps it: the token and when it lapses.
-
-    The CLI keeps it in a `Data` folder beside its config (`%APPDATA%\\com.vercel.cli\\Data` on Windows), not
-    in the folder itself, and an older CLI kept it in the folder itself, so both are looked at.
-    """
+    """What `vercel login` wrote, wherever this platform keeps it: the token and when it lapses."""
     appdata, local = os.environ.get("APPDATA", ""), os.environ.get("LOCALAPPDATA", "")
     found = _first_file(
         Path(appdata) / "com.vercel.cli" / "Data" / "auth.json" if appdata else None,
@@ -168,10 +128,7 @@ def _netlify_token() -> str:
 
 
 def env_tokens() -> dict[str, str]:
-    """For a deployment's commands: the token saved in the Studio for a deploy CLI that is not signed in by itself, under the name
-    that CLI reads it from (`VERCEL_TOKEN`, `NETLIFY_AUTH_TOKEN`). A token pasted in the Deploy panel used to show the account as
-    connected while the CLI the agent runs was signed out, and the deployment stopped halfway to ask. A CLI that is signed in by
-    itself is left to its own login, which it renews."""
+    """For a deployment's commands: the token saved in the Studio for a deploy CLI that is not signed in by itself, under the name."""
     out: dict[str, str] = {}
     vercel, netlify = str(config.setting("vercel_token", "") or ""), str(config.setting("netlify_token", "") or "")
     if vercel and not _vercel_token():
@@ -199,20 +156,19 @@ class Provider:
     title: str
     tool: str
     install: str
-    # identity(tool) -> {"account": "...", ...} when signed in, else None
+    # identity(tool) -> {"account": "...", ...} when signed in, else None.
     identity: Callable[[str], dict | None]
-    # login(tool, options, identity) -> the command that starts a sign-in
+    # login(tool, options, identity) -> the command that starts a sign-in.
     login: Callable[[str, dict, dict | None], list]
-    # read(tool, options) -> {setting: value}: what to keep, read from the tool's own store
+    # read(tool, options) -> {setting: value}: what to keep, read from the tool's own store.
     read: Callable[[str, dict], dict]
     # Whether the tool opens the browser itself (the studio then only offers the link again).
     opens_browser: bool = False
     # Whether the tool prints a code to type at the link.
     shows_code: bool = True
-    # note(values) -> something worth telling the person about what was kept, or ""
+    # note(values) -> something worth telling the person about what was kept, or "".
     note: Callable[[dict], str] | None = None
-    # A login that insists on a terminal (menus, prompts) is run in a pseudo-terminal, and each prompt it prints that
-    # matches one of these (pattern, keys to type) is answered once, by the title in the pattern's group 1.
+    # A login that insists on a terminal (menus, prompts) is run in a pseudo-terminal, and each prompt it prints that matches one of these (pattern, keys to type)...
     needs_terminal: bool = False
     answers: tuple = ()
     # What the tool prints when the sign-in has worked; it may then sit at a prompt of its own, so it is not waited on.
@@ -338,10 +294,7 @@ ATLAS_PROFILE_SETTING = "mongodb_atlas_profile"
 
 
 def atlas_profile_args(profile: str | None = None) -> list:
-    """`-P name` for a profile of the Atlas CLI other than its default one (the active profile when none is given).
-
-    Each account signed in through the CLI is a profile of its own, which is how there can be several at once;
-    the studio's active account is the one named in settings ("" is the CLI's own default profile)."""
+    """`-P name` for a profile of the Atlas CLI other than its default one (the active profile when none is given)."""
     name = str((config.setting(ATLAS_PROFILE_SETTING) or "") if profile is None else profile or "")
     return ["-P", name] if name and name != "default" else []
 
@@ -379,8 +332,7 @@ def _atlas_identity(tool: str) -> dict | None:
 
 
 def _atlas_login(tool: str, options: dict, identity: dict | None) -> list:
-    """Signing in again keeps the profile in use; adding an account gets a profile of its own, so the account
-    already signed in stays signed in. The profile is recorded in `options` for `_atlas_read` to look at."""
+    """Signing in again keeps the profile in use; adding an account gets a profile of its own, so the account."""
     if options.get("add"):
         taken, number = set(atlas_profiles(tool)), 2
         while f"agentforge-{number}" in taken:
@@ -389,9 +341,7 @@ def _atlas_login(tool: str, options: dict, identity: dict | None) -> list:
     elif "profile" not in options:
         options["profile"] = str(config.setting(ATLAS_PROFILE_SETTING) or "")
     if identity and not options.get("add"):
-        # The CLI will not sign in over an account that is signed in ("already authenticated with an account ... To log
-        # out, run: atlas auth logout"), so signing in again starts by signing this profile out. If that fails, the login
-        # that follows says what is wrong.
+        # The CLI will not sign in over an account that is signed in ("already authenticated with an account ...
         _run([tool, "auth", "logout", "--force", *atlas_profile_args(options["profile"])], timeout=30)
     return [tool, "auth", "login", "--noBrowser", *atlas_profile_args(options["profile"])]
 
@@ -415,9 +365,7 @@ PROVIDERS: dict[str, Provider] = {
     "azure": Provider("azure", "Azure", "az", "winget install Microsoft.AzureCLI  (or: brew install azure-cli)",
                       _azure_identity, lambda tool, options, identity: [tool, "login", "--use-device-code"],
                       _azure_read),
-    # `--noBrowser`: the studio shows the code and the link itself. The first menu is "Select authentication type";
-    # its first entry, a user account, is the browser sign-in. Any later question (a default organisation or project)
-    # takes its default: every command run afterwards names its project explicitly.
+    # `--noBrowser`: the studio shows the code and the link itself.
     "atlas": Provider("atlas", "MongoDB Atlas", "atlas", "winget install MongoDB.AtlasCLI  (or: brew install mongodb-atlas-cli)",
                       _atlas_identity, _atlas_login, _atlas_read,
                       needs_terminal=True, answers=((re.compile(r"^\?\s+([^:\[]+?):"), "\r"),),
@@ -432,7 +380,7 @@ _CODES = (
     re.compile(r"[?&]user_code=([A-Z0-9-]{6,})", re.I),                       # vercel: ".../device?user_code=ABCD-EFGH"
     re.compile(r"\bcode:\s*([A-Z0-9-]{6,})\b", re.I),
 )
-# atlas prints the code on a line of its own, after "... copy your one-time verification code:".
+# atlas prints the code on a line of its own, after "...
 _CODE_ALONE = re.compile(r"^[A-Z0-9]{3,6}-[A-Z0-9]{3,6}$")
 _URL = re.compile(r"https://[^\s\"'<>]+")
 
@@ -506,9 +454,7 @@ class CliSignins:
         return out
 
     def forget(self) -> None:
-        """Drop what was remembered of who is signed in, so the next look asks the tools again. Called when something a
-        sign-in depends on has just changed (a token saved, an account connected): what the panels would otherwise show
-        for the next `IDENTITY_TTL` seconds is the state from before."""
+        """Drop what was remembered of who is signed in, so the next look asks the tools again. Called when something a."""
         self._seen.clear()
 
     def use_existing(self, provider_key: str, options: dict | None = None) -> dict:
@@ -560,8 +506,7 @@ class CliSignins:
                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             except OSError as exc:
                 raise ValueError(f"{provider.title} could not be started: {exc}") from exc
-            # Read on a thread: the tool prints as it goes, and a blocking read here would hold the
-            # request until the person finished in the browser.
+            # Read on a thread: the tool prints as it goes, and a blocking read here would hold the request until the person finished in the browser.
             threading.Thread(target=self._drain, args=(flow,), daemon=True).start()
         with self._lock:
             self._prune()

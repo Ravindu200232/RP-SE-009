@@ -1,19 +1,4 @@
-"""A minimal Model Context Protocol (MCP) client: stdio transport only.
-
-MCP servers are ordinary subprocesses that speak newline-delimited JSON-RPC
-2.0 over stdin/stdout (https://modelcontextprotocol.io/specification/2025-06-18).
-This client only implements the lifecycle and the `tools/*` methods — enough
-to let an MCP server's tools show up as more entries in the same tool-calling
-loop `Agent`/`WorkspaceTools` already run. It never touches resources or
-prompts, and it never speaks the Streamable HTTP transport: stdio is what the
-spec says a client SHOULD support first, and it is what every general-purpose
-MCP server (filesystem, git, fetch, ...) ships as by default.
-
-One `_StdioServer` owns one subprocess and blocks the calling thread for the
-one in-flight JSON-RPC request/response pair it cares about; that matches how
-every other tool call in this codebase already works (synchronous, one call
-at a time), so no asyncio is introduced just for this.
-"""
+"""A minimal Model Context Protocol (MCP) client: stdio transport only."""
 from __future__ import annotations
 
 import json
@@ -29,10 +14,7 @@ START_TIMEOUT = 20
 CALL_TIMEOUT = 120
 MAX_OUTPUT = 24_000
 
-# MCP tool names are only unique within one server. Prefixing them with the
-# server id keeps two servers from colliding, and the double underscore
-# matches the `mcp__<server>__<tool>` shape this same host environment already
-# uses for its own first-party MCP tools.
+# MCP tool names are only unique within one server.
 NAME_PREFIX = "mcp__"
 
 
@@ -81,9 +63,7 @@ class _StdioServer:
                 self._replies.put(message)
 
     def _read_stderr(self) -> None:
-        # The spec reserves stderr for the server's own logging, not protocol
-        # traffic. Draining it (rather than leaving it unread) is what keeps a
-        # chatty server from filling its pipe buffer and deadlocking.
+        # The spec reserves stderr for the server's own logging, not protocol traffic.
         assert self._process.stderr is not None
         for line in iter(self._process.stderr.readline, ""):
             if line.strip():
@@ -114,9 +94,7 @@ class _StdioServer:
                 except queue.Empty:
                     break
                 if message.get("id") != request_id:
-                    # Another request's response, or a server-initiated request
-                    # this minimal client doesn't serve — put it back for
-                    # whoever is actually waiting on it and keep looking.
+                    # Another request's response, or a server-initiated request this minimal client doesn't serve.
                     misdirected.append(message)
                     continue
                 if "error" in message:
@@ -198,16 +176,7 @@ class _StdioServer:
 
 
 class MCPManager:
-    """Every configured MCP server for one agent session.
-
-    `configs` is the saved `mcp_servers` setting: a list of
-    `{"id", "command", "args", "env", "enabled"}`. Servers are started lazily,
-    on the first call to `tool_schemas()`/`is_mcp_tool()`/`call()` — most
-    agent turns never touch a tool at all, so nothing is spawned until one is
-    actually needed. A server that fails to start or answer `tools/list` is
-    skipped (logged via `on_log`) rather than failing the whole agent: one
-    broken server should not cost every other tool, built-in or MCP.
-    """
+    """Every configured MCP server for one agent session."""
 
     def __init__(self, configs: list[dict[str, Any]] | None,
                  on_log: Callable[[str], None] | None = None):
@@ -279,12 +248,7 @@ class MCPManager:
 
 
 def probe(config: dict[str, Any], timeout: float = START_TIMEOUT) -> list[dict[str, Any]]:
-    """Start one server just long enough to list its tools, then stop it.
-
-    Used by the settings UI's "test connection" action, where the customer
-    wants to see what a server offers before saving it — never adds anything
-    to a running agent's own tool list.
-    """
+    """Start one server just long enough to list its tools, then stop it."""
     server_id = str(config.get("id") or "probe")
     server = _StdioServer(server_id, str(config.get("command") or ""),
                           [str(a) for a in (config.get("args") or [])],

@@ -1,11 +1,6 @@
 'use client'
 
-/**
- * The project's terminal. **App** is the running app's own output (the preview process the Studio started), live, in
- * colour, with Start / Restart / Stop. **Shell** runs what you type in the project's folder, with the same variables
- * the app's build and preview get, one command after another the way a terminal does. Output is masked on the server:
- * credentials print as `<hidden>`.
- */
+/** The project's terminal. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Copy, CornerDownLeft, Eraser, ExternalLink, Loader2, Play, RotateCw, Square, SquareTerminal } from 'lucide-react'

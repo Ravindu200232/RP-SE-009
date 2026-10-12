@@ -59,16 +59,13 @@ async function req(path, opts = {}) {
   try {
     r = await fetch(API + path, { ...opts, headers })
   } catch (cause) {
-    // Browser fetch rejects without a response for offline, proxy and server
-    // restart failures.  Give every screen the same actionable message rather
-    // than exposing an unhelpful browser-specific "Failed to fetch".
+    // Browser fetch rejects without a response for offline, proxy and server restart failures.
     throw networkError(cause)
   }
   const text = await r.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = { raw: text } }
-  // The session expired, or was ended elsewhere: back to the sign-in page
-  // rather than a studio full of errors about someone who is not signed in.
+  // The session expired, or was ended elsewhere: back to the sign-in page rather than a studio full of errors about someone who is not signed in.
   if (r.status === 401 && data?.auth === 'required' && token === getAuthToken()) onSignedOut?.()
   if (!r.ok) {
     const error = new Error((data && (data.error || data.detail)) || `HTTP ${r.status}`)
@@ -78,11 +75,7 @@ async function req(path, opts = {}) {
   return data
 }
 
-/**
- * Download an authenticated API artifact without exposing the session token in
- * a URL. A normal <a href> cannot attach the Bearer header, so protected PDFs
- * otherwise open as the API's "sign in to continue" JSON response.
- */
+/** Download an authenticated API artifact without exposing the session token in a URL. */
 async function download(path, filename) {
   const token = getAuthToken()
   const headers = token ? { Authorization: `Bearer ${token}` } : {}
@@ -102,8 +95,7 @@ async function download(path, filename) {
   document.body.appendChild(link)
   link.click()
   link.remove()
-  // The browser has consumed the object URL by now; defer revocation one turn
-  // so downloads remain reliable in Chromium and Firefox alike.
+  // The browser has consumed the object URL by now; defer revocation one turn so downloads remain reliable in Chromium and Firefox alike.
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
@@ -114,8 +106,7 @@ const post = (path, body) => req(path, {
 })
 
 export const api = {
-  // Lightweight Studio API readiness check. It stays available even when
-  // Ollama, previews, or cloud integrations are still starting up.
+  // Lightweight Studio API readiness check.
   health: () => req('/health'),
   auth: {
     signup: (data) => post('/auth/signup', data),
@@ -123,8 +114,7 @@ export const api = {
     me: () => req('/auth/me'),
     logout: () => post('/auth/logout', {}),
   },
-  // A project belongs to whoever built it, from the moment it is created;
-  // there is nothing for the studio to assign.
+  // A project belongs to whoever built it, from the moment it is created; there is nothing for the studio to assign.
   projects: () => req('/projects'),
   chooseWorkspace: () => post('/workspace/pick', {}),
   models: () => req('/models'),
@@ -150,8 +140,7 @@ export const api = {
   previewLink: (project) => post('/preview-link', { project }),
   previewActivity: (project, runtimeId) => post(`/runtime/${encodeURIComponent(project)}/activity`, { runtimeId }),
 
-  // Look at the end-to-end tests' screenshots again with a model that can look at pictures. `fix: false` only looks and
-  // reports; the model is the one the studio last used.
+  // Look at the end-to-end tests' screenshots again with a model that can look at pictures.
   reviewScreens: (project, what = 'tests', fix = true) => post('/review-screens', { project, what, fix }),
   // "Try again", pressed while a run waits for a model service that is not answering: it asks again at once.
   connectionRetry: (project) => post('/connection/retry', { project }),
@@ -177,8 +166,7 @@ export const api = {
   stream: (project) => req(`/stream/${encodeURIComponent(project)}`),
   retrySync: project => post('/sync/retry', { project }),
 
-  // Every user-approved update is retained before a run starts. The execution
-  // still uses the existing SRS transaction; this adds the company audit trail.
+  // Every user-approved update is retained before a run starts.
   createChangeRequest: body => post('/change-requests/draft', body),
   approveChangeRequest: (project, id, targets) =>
     post(`/change-requests/${encodeURIComponent(id)}/approve`, { project, targets }),
@@ -218,8 +206,7 @@ export const api = {
   // Retype words on a page of the wireframes or the prototype (`kind`): swapped in the app's source when they are written in one place.
   editAppText: (project, kind, old, text) =>
     api.srs(`/projects/${encodeURIComponent(project)}/app/text-edit`, { kind, old, new: text }),
-  // The wireframes or the prototype is one bundled page the <iframe> loads; the screen is the address hash, and `version`
-  // (when the bundle was made) makes the frame load the new bundle after a change.
+  // The wireframes or the prototype is one bundled page the <iframe> loads.
   webUrl: (project, kind, route = '', version = 0, as = '') =>
     `${API}/web/${encodeURIComponent(project)}/${kind}`
       + (version || as ? `?${[version ? `v=${version}` : '', as ? `as=${encodeURIComponent(as)}` : ''].filter(Boolean).join('&')}` : '')
@@ -246,8 +233,7 @@ export const api = {
                         content_type: file.type || '', data_base64 }))
   }),
 
-  // Hold one file for a build that has no project yet. Over HTTP on purpose:
-  // the build message itself goes over the socket, which refuses this size.
+  // Hold one file for a build that has no project yet.
   buildAttach: (token, file, opts = {}) => Promise.resolve(tooBig(file)).then(big => {
     if (big) throw big
     return fileToBase64(file).then(data_base64 =>
@@ -307,31 +293,23 @@ export const api = {
 
   deployRead: (path, opts) => deployJob('GET', path, null, opts),
 
-  // Signing in to GitHub in the browser. The token is written into this
-  // person's settings by the server; it never comes back through here.
+  // Signing in to GitHub in the browser.
   githubDeviceStart: (clientId = '') => post('/github/device/start', { client_id: clientId }),
   githubDevicePoll: (flowId) => post('/github/device/poll', { flow_id: flowId }),
 
-  // Every deployment provider's own command line tool signs in (`gh`, `aws`, `vercel`, `netlify`, `az`):
-  // the server runs its login, shows what it prints, and reads what it leaves behind. `available` also says
-  // whether the tool is installed and who it is signed in as; `useExisting` keeps that account with no browser.
-  // What a deployment's own command line tools can show, run when opened and read back as it is written.
-  // `scope: 'database'` is the same thing for the project's databases: the Supabase CLI and the MongoDB driver.
+  // Every deployment provider's own command line tool signs in (`gh`, `aws`, `vercel`, `netlify`, `az`).
   cliMonitorList: (project, scope = 'deploy') => post('/cli-monitor/list', { project, scope }),
   cliMonitorStart: (project, command, scope = 'deploy') => post('/cli-monitor/start', { project, command, scope }),
   cliMonitorPoll: (job, since) => post('/cli-monitor/poll', { job, since }),
   cliMonitorStop: (job) => post('/cli-monitor/stop', { job }),
 
-  // A few rows of one table (`{source: 'supabase', schema, table}`) or collection (`{source: 'mongodb', collection}`),
-  // credential-like fields masked; and the Atlas cluster behind the MongoDB connection.
+  // A few rows of one table (`{source: 'supabase', schema, table}`) or collection (`{source: 'mongodb', collection}`), credential-like fields masked; and the...
   databaseRows: (project, body, opts) => localJob('/database/rows', { project, ...body }, opts),
   databaseAtlas: () => post('/database/atlas', {}),
 
-  // The terminal: what the running app printed (from byte `since`; -1 = its current run), and a command typed in the
-  // project folder, read back with cliMonitorPoll / stopped with cliMonitorStop.
+  // The terminal: what the running app printed (from byte `since`; -1 = its current run), and a command typed in the project folder, read back with...
   previewLog: (project, since = -1) => post('/preview/log', { project, since }),
-  // Every part of the running app and whether it listens; a part that does not is started with
-  // send({ type: 'preview_start', project, part }).
+  // Every part of the running app and whether it listens; a part that does not is started with send({ type: 'preview_start', project, part }).
   previewPorts: (project) => post('/preview/ports', { project }),
   terminalRun: (project, command) => post('/terminal/run', { project, command }),
 
@@ -349,17 +327,12 @@ export const api = {
   supabaseOauthSwitch: (id) => post('/supabase/oauth/switch', { id }),
   supabaseOauthRemove: (id) => post('/supabase/oauth/remove', { id }),
 
-  // The providers this person has an account with. `plugins()` answers with the
-  // catalogue and, for each one, which settings are saved and the last four
-  // characters of each — never a value, because a browser that can read a key
-  // back is a browser that can leak one.
+  // The providers this person has an account with.
   plugins: () => req('/plugins'),
   savePlugin: (plugin, mode, values, project = '') => post('/plugins/save', { plugin, mode, values, project }),
   forgetPlugin: (plugin) => post('/plugins/forget', { plugin }),
 
-  // Which plugins one app uses. Saving this is the whole opt-in: the next run
-  // merges their settings into that project's .env.local and hands the model
-  // their skill pages to read.
+  // Which plugins one app uses.
   projectPlugins: (project) => req(`/plugins/project/${encodeURIComponent(project)}`),
   setProjectPlugins: (project, enabled) => post('/plugins/project', { project, enabled }),
 }

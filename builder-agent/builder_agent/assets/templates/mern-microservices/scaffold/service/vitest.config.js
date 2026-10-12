@@ -2,8 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    // Server code runs in Node. Moving it into a browser-like environment to
-    // make something pass hides the environment the code actually runs in.
+    // Server code runs in Node.
     environment: 'node',
     include: ['test/**/*.test.js'],
     // Run service test suites sequentially to prevent shared database collisions.

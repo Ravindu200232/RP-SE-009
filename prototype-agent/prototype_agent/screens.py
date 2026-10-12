@@ -1,9 +1,4 @@
-"""Silent screenshots of the prototype's pages, for a model that can look at them.
-
-The prototype is one bundled HTML page (`app/bundle.html`) that shows the screen named in its address hash, so any screen can be
-photographed by opening that page at `#/route`, in a browser that is already on the computer (`ollama_terminal.screenshot`). A screen
-that needs a signed-in role is shown signed in as one that can open it: the page opens signed in as the account in `?as=`.
-"""
+"""Silent screenshots of the prototype's pages, for a model that can look at them."""
 from __future__ import annotations
 
 import re
@@ -95,10 +90,7 @@ def shoot_page(root: Path, row: dict[str, Any], accounts: list[dict[str, Any]], 
 def capture_all(root: Path, rows: list[dict[str, Any]], accounts: list[dict[str, Any]],
                 viewports: tuple[str, ...] = VIEWPORTS, on_done=None,
                 cancelled: Callable[[], bool] | None = None) -> list[dict[str, Any]]:
-    """Pictures of every page in `rows` (the prototype's routes) at each of `viewports`, under `root/review/`.
-
-    Each answer is {"route", "file", "viewport", "path" (relative to root, "" when it failed), "error"}; one page that will
-    not draw costs that page, never the rest."""
+    """Pictures of every page in `rows` (the prototype's routes) at each of `viewports`, under `root/review/`."""
     try:
         browser = screenshot.working_browser(cancelled=cancelled)
     except InterruptedError as exc:

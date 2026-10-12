@@ -43,8 +43,7 @@ const PALETTES = [
 
 const GROUPS = ['All', 'Popular', 'Pastel', 'Vintage', 'Retro', 'Neon', 'Warm', 'Cold', 'Nature', 'Earth', 'Light', 'Dark', 'Summer']
 
-// These families are served on demand through the Google Fonts CSS API. Keeping
-// the popular catalogue locally means the picker is fast and needs no API key.
+// These families are served on demand through the Google Fonts CSS API.
 const FONT_OPTIONS = [
   'ABeeZee', 'Abril Fatface', 'Acme', 'Alata', 'Albert Sans', 'Alegreya', 'Alegreya Sans', 'Alex Brush', 'Alfa Slab One', 'Amatic SC',
   'Anton', 'Archivo', 'Archivo Black', 'Archivo Narrow', 'Arimo', 'Arsenal', 'Asap', 'Assistant', 'B612', 'Bebas Neue',
@@ -215,8 +214,7 @@ export default function DesignCustomize({ projectId, onContinue, onBack }) {
     if (!file) return
     setError('')
     try {
-      // Dropping an image removes both its manifest entry and its project-media
-      // file, so it cannot appear again after visiting another design step.
+      // Dropping an image removes both its manifest entry and its project-media file, so it cannot appear again after visiting another design step.
       const answer = await api.siteImageDrop(projectId, file)
       save({ images: answer?.images || state.images.filter(image => image.file !== file) })
     } catch (failure) {

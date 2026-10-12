@@ -2,8 +2,7 @@ import * as React from "react";
 import { accounts, signInRoute, signUp, type Account } from "@/demo";
 import { navigate } from "@/lib/router";
 
-// Who is signed in, for a prototype that has sign-in. The accounts are fictitious, one for each role, and they are the ones the
-// finished application is seeded with. Nothing is stored: a reload signs out. `src/demo.ts` is written by the Studio.
+// Who is signed in, for a prototype that has sign-in.
 
 export type User = Account;
 

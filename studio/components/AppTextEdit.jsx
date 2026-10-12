@@ -1,12 +1,6 @@
 'use client'
 
-/**
- * The T tool: click any words on the page, type the new ones, press Enter.
- *
- * The words are swapped in the app's own source when they are written there in exactly one place, and the app is bundled again. When
- * they are put together in code, or written in several places, a plain swap could change the wrong one: the box says so and offers to
- * hand the change to the agent, which can follow it wherever it comes from.
- */
+/** The T tool: click any words on the page, type the new ones, press Enter. */
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Sparkles, Type, X } from 'lucide-react'
 

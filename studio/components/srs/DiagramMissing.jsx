@@ -5,13 +5,7 @@ import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react'
 import { api, isJobCancelled } from '@/lib/api'
 import { useStore } from '@/lib/store'
 
-/**
- * What stands where a diagram's picture should be when there is none and the saved source is not Mermaid: why, and a
- * way to draw it again. Never the saved text itself — it is whatever the model said instead of drawing (a sentence
- * about reading a file), not something to read as a diagram.
- *
- * The screen reloads on its own when the redraw finishes: the server announces the SRS change.
- */
+/** What stands where a diagram's picture should be when there is none and the saved source is not Mermaid: why, and a way to draw it again. */
 export default function DiagramMissing({ diagram }) {
   const project = useStore(s => s.project)
   const [busy, setBusy] = useState(false)

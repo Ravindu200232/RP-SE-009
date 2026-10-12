@@ -1,19 +1,4 @@
-"""A request typed into the chat is planned first, and carried out only once the plan is approved.
-
-    request ──► plan (read-only, may ask a question) ──► the customer reads it in the chat
-                    ▲                                        │ approve ──► carried out, with full
-                    └──────── revise (their words) ◄─────────┘             access to the project
-                                                              cancel ──► dropped
-
-Nothing here decides what a request touches. The wording that tells the model to update the
-specification, the wireframes, the prototype and the build when the request reaches them lives in
-`prompts/changes/`, and the plan the model writes is what says which of them it does. This module
-keeps the state, shows it, and runs the two halves.
-
-State is one small file per request under `<project>/.agentforge/changes/`, so a plan waiting for
-approval, or a question waiting for an answer, survives a restart. The plan card in the chat is
-rebuilt from the durable `change` events.
-"""
+"""A request typed into the chat is planned first, and carried out only once the plan is approved."""
 from __future__ import annotations
 
 import json
@@ -29,14 +14,12 @@ from . import bus, config, deploy_vars, plugins, prompts, store, versions
 from .session import RunCancelled, session_for
 
 CHANGES = "changes"
-# The planner may ask this many questions about one request before it has to decide and say what it
-# assumed. A guard against an endless interview, not something the customer is shown.
+# The planner may ask this many questions about one request before it has to decide and say what it assumed.
 MAX_QUESTIONS = 3
 OPEN = ("planning", "asking", "proposed", "approved", "running")
 BUSY = ("planning", "approved", "running")
 
-# What a project's tree holds that is not its own work: dependencies, build output, and what a run
-# writes about itself. Kept out of the map the planner reads and out of the "what changed" check.
+# What a project's tree holds that is not its own work: dependencies, build output, and what a run writes about itself.
 _NOISE = {"node_modules", ".next", ".git", ".turbo", ".cache", "dist", "coverage", "test-results",
           "playwright-report", "__pycache__", ".lighthouseci", ".vercel"}
 _RUN_LOG = {"events.jsonl", "context.json", "preview.log", "preview-runtime.json", CHANGES, versions.VERSIONS}
@@ -46,9 +29,7 @@ _SNAPSHOT_FILES = 20000
 _lock = threading.RLock()
 _threads: dict[str, threading.Thread] = {}
 
-# A request can belong to a flow of its own: a deployment is planned, asked about, approved and revised
-# exactly like a change typed in the chat, but its plan is written from other prompts and carried out
-# by other code. The flow's module says how; everything else here is shared.
+# A request can belong to a flow of its own: a deployment is planned, asked about, approved and revised exactly like a change typed in the chat, but its plan...
 FLOWS = {"deploy": "deploy_agent.deploy"}
 
 
@@ -142,10 +123,7 @@ def _language(project: str) -> str:
 
 
 def applies(project: str) -> bool:
-    """Whether a typed change goes through propose->approve: a project with a
-    specification is planned against it, unless the customer turned plan mode
-    off for this project (a real per-project choice — a project that has
-    never set it behaves exactly as it always has, plan mode on)."""
+    """Whether a typed change goes through propose->approve: a project with a."""
     from srs_agent import document as srs_document
 
     record = store.get(project)
@@ -165,11 +143,7 @@ def _size(path: Path) -> str:
 
 
 def project_map(workspace: Path) -> str:
-    """The project's folders and files, as one listing, so the planner knows what exists.
-
-    The record folder is shown in depth (it is where every stage keeps its work); the application
-    beside it two levels down. Nothing is interpreted: a folder that is not there is not listed.
-    """
+    """The project's folders and files, as one listing, so the planner knows what exists."""
     record = workspace / config.RECORD_DIR
     lines: list[str] = []
 
@@ -236,11 +210,7 @@ def _turns(change: dict) -> str:
 
 
 def _excluding(plan: dict, excluded: set[str]) -> dict:
-    """The plan with excluded stages' steps dropped and their impact rows marked not affected.
-
-    Excluded work is simply never described to the executing agent — there is
-    no instruction, and so no reason, for it to touch that stage's files.
-    """
+    """The plan with excluded stages' steps dropped and their impact rows marked not affected."""
     if not excluded:
         return plan
     return {**plan,
@@ -301,8 +271,7 @@ def _check(data: Any, may_ask: bool) -> dict:
                             flags=re.IGNORECASE).strip()
         asked = {"kind": "question", "question": question, "why": str(data.get("why") or "").strip(),
                  "options": options[:4], "assumption": assumption}
-        # A question can ask for a value only the customer has: it names the variable it is saved as, and the
-        # studio asks for it in a private box and keeps it out of the conversation (see `deploy_vars.accept`).
+        # A question can ask for a value only the customer has.
         variable = str(data.get("variable") or "").strip()
         if variable:
             deploy_vars.valid_name(variable)
@@ -311,8 +280,7 @@ def _check(data: Any, may_ask: bool) -> dict:
                 allowed = ", ".join(deploy_vars.CHECKS) or "nothing right now"
                 raise ValueError(f'"check" must be left out ({allowed} is offered)')
             asked.update(variable=variable, secret=bool(data.get("secret", True)), check=check)
-        # The database connection is the studio's to provide: a model that asks the customer for it is told why not (the
-        # repair turn), so the customer is never asked for a connection string in the chat.
+        # The database connection is the studio's to provide.
         held = deploy_vars.provided(asked)
         if held:
             raise ValueError(held)
@@ -351,12 +319,7 @@ def check_question(data: dict, may_ask: bool) -> dict:
 
 def submit(project: str, request: str, model: str = "", echo: bool = True, flow: dict | None = None,
            answering: bool = False) -> dict:
-    """Something typed in the chat. It answers a question, revises the plan on screen, or starts a request.
-
-    `flow` starts a request of another kind (a deployment): its keys are kept on the request, and a
-    request already open is not answered or revised by it, so it is refused instead. `answering` says the
-    text is the answer to the question on screen, already taken by whoever asked (see `answer`).
-    """
+    """Something typed in the chat. It answers a question, revises the plan on screen, or starts a request."""
     request = str(request or "").strip()
     if not request:
         raise ValueError("say what to change")
@@ -475,9 +438,7 @@ def restore_questions() -> list[dict]:
         for row in store.listing():
             project = str(row.get("name") or row.get("id") or "")
             change = active(project) if project else None
-            # Threads do not survive a process restart. Leaving their durable
-            # state as planning/approved/running makes the chat show an endless
-            # active plan even though no worker exists to finish it.
+            # Threads do not survive a process restart.
             if change and change["status"] in BUSY and not _alive(change["id"]):
                 change.update(status="failed", error="interrupted by a restart")
                 _save(change)
@@ -599,11 +560,7 @@ def _propose(project: str, change_id: str, model: str) -> None:
 
 
 def _execute_flow(project: str, change: dict, flow: Any, model: str) -> None:
-    """Carry out an approved request of another kind; the flow does the work and says how it ended.
-
-    It ends as `complete`, as `failed`, or as `asking`: it stopped on a question only the customer can
-    answer, and it is taken up again from where it stopped once they have.
-    """
+    """Carry out an approved request of another kind; the flow does the work and says how it ended."""
     change_id = change["id"]
     session = session_for(project)
     session.begin(getattr(flow, "STAGE_RUN", "change"), run_id=str(change.get("run_id") or ""))
@@ -673,8 +630,7 @@ def _execute(project: str, change_id: str, model: str) -> None:
         after = _snapshot(session.workspace)
         _announce(project, before, after)
         if result["status"] == "complete" and _srs_changed(before, after):
-            # The specification was changed: what its overview says (the open decisions, the quality review) is brought back
-            # in line with what it says now, instead of staying as it was when it was first written.
+            # The specification was changed: what its overview says (the open decisions, the quality review) is brought back in line with what it says now, instead of...
             from srs_agent import document as srs_document
 
             srs_document.reconcile(project, change["request"], result["text"], session)
@@ -707,8 +663,7 @@ def _execute(project: str, change_id: str, model: str) -> None:
 
 
 def _run_fixed_journeys(project: str, session: Any, journeys: list[str]) -> None:
-    """After a fix of failed journeys the person asked for: only those journeys run again, and the chat says how they did.
-    What still fails is offered to be fixed again, never run again by itself."""
+    """After a fix of failed journeys the person asked for: only those journeys run again, and the chat says how they did."""
     from qa_agent import e2e_run
     from qa_agent.screen_keeper import Keeper
 
@@ -768,11 +723,7 @@ def _announce(project: str, before: dict, after: dict) -> None:
 
 
 def _rebundle(project: str, changed: set[str]) -> None:
-    """A change that edited the wireframe's or the prototype's source bundles that app again, before the preview reloads.
-
-    The preview shows the bundled page (`bundle.html`), never the source: a chat change that turned the theme white edited
-    `src/index.css`, the preview reloaded the bundle made before it, and the screen stayed dark as if nothing had changed. A
-    bundle that cannot be made is said in the chat; it never undoes a change that worked."""
+    """A change that edited the wireframe's or the prototype's source bundles that app again, before the preview reloads."""
     from . import web_app
 
     for kind in web_app.KINDS:

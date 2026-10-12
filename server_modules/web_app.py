@@ -1,17 +1,4 @@
-"""The React apps the wireframe and the prototype are made of.
-
-Both are the same kind of thing: a small Vite + React + Tailwind + shadcn/ui app the project's agent writes with its own file tools,
-following Anthropic's `web-artifacts-builder` skill (`prompts/skills/web-artifacts-builder/`). The skill's steps are done here, in code,
-because they are the same for every app: the project is created (step 1) and the finished app is bundled into one HTML file (step 3).
-What the pages look like is the agent's.
-
-    <workspace>/.agentforge/wireframe/app/      the wireframe: source, and `bundle.html`, the page the studio shows
-    <workspace>/.agentforge/prototype/app/      the prototype: a new app, written after reading the wireframes
-    <state>/web-kit/                            the packages, installed once and linked into every app as `node_modules`
-
-An app is bundled with Vite and `vite-plugin-singlefile` (the skill bundles with Parcel; Vite is what the app is built with, so it
-bundles itself), which leaves every script, style and small image inlined in `bundle.html`.
-"""
+"""The React apps the wireframe and the prototype are made of."""
 from __future__ import annotations
 
 import hashlib
@@ -29,8 +16,7 @@ from . import bus, config, prompts
 
 SKILL = "web-artifacts-builder"
 SKILL_SOURCE = config.PROMPTS / "skills" / SKILL
-# shadcn/ui's own skill (https://github.com/shadcn-ui/ui, `skills/shadcn`, unchanged) and the components of that repository the skill's
-# archive does not have (`web_kit/components`, ported to Tailwind 3 and the single Radix packages the kit installs).
+# shadcn/ui's own skill (https://github.com/shadcn-ui/ui, `skills/shadcn`, unchanged) and the components of that repository the skill's archive does not have...
 SHADCN = "shadcn"
 SHADCN_SOURCE = config.PROMPTS / "skills" / SHADCN
 KIT_SOURCE = Path(__file__).resolve().parent / "web_kit"
@@ -38,8 +24,7 @@ COMPONENTS_ARCHIVE = SKILL_SOURCE / "scripts" / "shadcn-components.tar.gz"
 KINDS = ("wireframe", "prototype")
 BUNDLE = "bundle.html"
 BUILT = ".built"
-# Only the policy of the page the studio frames: the app can run scripts and style itself and show any picture, but it can
-# neither call out nor load anything else (but Google's fonts), so nothing it was written to do can reach the studio's own address.
+# Only the policy of the page the studio frames.
 PREVIEW_POLICY = ("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; "
                   "img-src * data: blob:; font-src * data:; media-src * data: blob:; connect-src 'none'; frame-src 'none'; "
                   "base-uri 'none'; form-action 'none'")
@@ -227,9 +212,7 @@ def _extract_components(app: Path) -> None:
 
 
 def _add_components(app: Path) -> None:
-    """The shadcn/ui components the skill's archive lacks (`Field`, `InputGroup`, `Empty`, `Spinner`...), beside the others; one the
-    agent already has is left as it is, except a copy with the one mistake an earlier kit had in it (`Slot.Root`, which is the name in
-    the single Radix package; the kit's own is `Slot`)."""
+    """The shadcn/ui components the skill's archive lacks (`Field`, `InputGroup`, `Empty`, `Spinner`...), beside the others; one the."""
     target = app / "src" / "components" / "ui"
     target.mkdir(parents=True, exist_ok=True)
     for source in sorted((KIT_SOURCE / "components").glob("*.tsx")):
@@ -238,9 +221,7 @@ def _add_components(app: Path) -> None:
             shutil.copyfile(source, copy)
 
 
-# A wireframe is black, white and grey. The Studio writes this palette into a wireframe's Tailwind config, so that no page can bring colour
-# in whatever it says: every colour name Tailwind has (`red-500`, `green-600`, ...) is the same grey scale, and the shadcn `destructive`
-# colour is a dark grey.
+# A wireframe is black, white and grey.
 GREY_SCALE = {"50": "#fafafa", "100": "#f4f4f5", "200": "#e4e4e7", "300": "#d4d4d8", "400": "#a1a1aa", "500": "#71717a",
               "600": "#52525b", "700": "#3f3f46", "800": "#27272a", "900": "#18181b", "950": "#09090b"}
 COLOUR_NAMES = ("slate", "gray", "zinc", "neutral", "stone", "red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal",
@@ -281,10 +262,7 @@ def lock_palette(app: Path) -> None:
 
 def create_app(app: Path, title: str, pages: list[dict[str, Any]], *, accounts: list[dict] | None = None,
                sign_in: str = "", sign_up: dict | None = None) -> list[dict[str, Any]]:
-    """Step 1 of the skill, in code: a project with React, TypeScript, Vite, Tailwind and the shadcn/ui components in it.
-
-    Files that are already there are left alone (an app a stopped run left behind keeps what the agent wrote); the route table and
-    the demo accounts are always written again from the specification."""
+    """Step 1 of the skill, in code: a project with React, TypeScript, Vite, Tailwind and the shadcn/ui components in it."""
     app.mkdir(parents=True, exist_ok=True)
     for source in sorted(p for p in (KIT_SOURCE / "app").rglob("*") if p.is_file()):
         target = app / source.relative_to(KIT_SOURCE / "app")
@@ -376,8 +354,7 @@ def stale(app: Path) -> bool:
     return not built(app) or not marker.is_file() or marker.read_text(encoding="utf-8").strip() != fingerprint(app)
 
 
-# What the Studio owns in every app and writes again each time it is bundled: the agent imports them and never edits them, so an app made
-# before they changed gets the change too.
+# What the Studio owns in every app and writes again each time it is bundled.
 KIT_OWNED = ("src/lib/router.tsx", "src/lib/session.tsx")
 
 
@@ -446,11 +423,7 @@ def _jsx_text(text: str) -> str:
 
 
 def edit_text(app: Path, old: str, new: str) -> dict[str, Any]:
-    """Change the words `old` on a page to `new` in the app's source, when they are written there in exactly one place.
-
-    The words must be a whole piece of text (the text of one element, or one whole string), so that "Cart" is never found inside
-    "Cartographer". Returns {"ok": True, "file", "line"}, or {"ok": False, "reason"}: "found in several places" when a swap could change
-    the wrong one, "built in code" when no file writes them out that way (the app puts them together, or they are not text at all)."""
+    """Change the words `old` on a page to `new` in the app's source, when they are written there in exactly one place."""
     old = " ".join(str(old or "").split())
     new = str(new or "").strip()
     if not old:
@@ -493,10 +466,7 @@ _SELFTEST = re.compile(r'<pre id="af-selftest"[^>]*>(.*?)</pre>', re.DOTALL)
 
 
 def check_pages(app: Path) -> list[tuple[str, str]] | None:
-    """Open every screen of the bundled app in a browser that is already on the computer; the screens that crash, as (route, what
-    went wrong). `[]` when none does; None when it could not be checked (no browser, or the page said nothing).
-
-    A page can bundle and still crash the moment it is opened (a name it uses that is not there), which no bundler can see."""
+    """Open every screen of the bundled app in a browser that is already on the computer; the screens that crash, as (route, what."""
     import html as htmllib
     import tempfile
 
@@ -527,9 +497,7 @@ def _crashing(rows: list[tuple[str, str]]) -> str:
 
 
 def ensure_built(app: Path, repair: Callable[[str], None] | None = None, rounds: int = 2) -> None:
-    """Bundle the app and open its screens. When it does not bundle, or a screen crashes, give what was said to `repair` (the agent
-    fixes the files) and try again. An app that does not bundle after the agent's tries is an error; a screen that still crashes is
-    not: it shows what is wrong in its own place, and the rest of the app works."""
+    """Bundle the app and open its screens. When it does not bundle, or a screen crashes, give what was said to `repair` (the agent."""
     tries = 0
     while True:
         ok, text = bundle(app)
@@ -547,9 +515,7 @@ def ensure_built(app: Path, repair: Callable[[str], None] | None = None, rounds:
 
 
 def build_for(session, project: str, kind: str, agent: str = "") -> None:
-    """Bundle the project's `kind` app; when the bundler complains, the project's agent fixes the files and it is bundled again.
-
-    Raises `BuildFailed` when it still does not bundle after the agent has tried."""
+    """Bundle the project's `kind` app; when the bundler complains, the project's agent fixes the files and it is bundled again."""
     app = app_dir(session.workspace, kind)
     relative = app.relative_to(session.workspace).as_posix()
 

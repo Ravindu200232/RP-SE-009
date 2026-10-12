@@ -1,8 +1,4 @@
-"""Account sign-in and cloud-credit status for the built-in AgentForge engine.
-
-The engine proxy authorizes and meters cloud model calls. Local Ollama and a
-person's own direct Ollama API key do not spend AgentForge cloud credit.
-"""
+"""Account sign-in and cloud-credit status for the built-in AgentForge engine."""
 from __future__ import annotations
 
 import os
@@ -121,8 +117,7 @@ def status_of(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def current(fresh: bool = False) -> dict[str, Any]:
-    """What is known about the signed-in account ({} when nobody is signed in), asked of the admin app when it is older than a
-    few seconds. When the service cannot be reached, the last answer stands."""
+    """What is known about the signed-in account ({} when nobody is signed in), asked of the admin app when it is older than a."""
     token = str(config.setting(TOKEN, "") or "")
     if not token:
         return {}

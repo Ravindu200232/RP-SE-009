@@ -14,10 +14,7 @@ import DeployResult from './DeployResult'
 import { DeployDanger } from './DeployDanger'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
-/**
- * Deploy: choose where it goes, and the plan is made, asked about, approved and carried out (the plan card is in the chat).
- * Once there is a deployment, the navigation above is what its own command line tools can show, each one run live when opened.
- */
+/** Deploy: choose where it goes, and the plan is made, asked about, approved and carried out (the plan card is in the chat). */
 export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   const project = useStore(s => s.project)
   const qa = useStore(s => s.qaReport)
@@ -105,9 +102,6 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   }, [view, monitors.loaded, current])
 
   // Which command line tools are installed and who each is signed in as: every deployment goes through the target's own tool.
-  // Read again whenever an account changes in Settings (`accountsRevision`) and whenever this window or tab is shown
-  // again (a sign-in finished in the browser, or a tool signed in from a terminal): asked fresh each time, so the list never
-  // says "not connected" about an account that was connected a moment ago. A quiet refresh keeps the last answer on screen.
   const [shownAgain, setShownAgain] = useState(0)
   const lastLook = useRef(0)
   useEffect(() => {
@@ -142,8 +136,7 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   const tested = Boolean(unit?.tested)
   const green = tested && failures === 0
 
-  // What the deployment needs from this computer: the target's own command line tool, signed in. GitHub is listed for
-  // the repository step but does not block: the plan asks about it when it is missing.
+  // What the deployment needs from this computer: the target's own command line tool, signed in.
   const providerOf = mine?.targets?.find(t => t.id === target)?.provider || target
   const toolNeed = (key, optional) => {
     const row = cli?.[key]
@@ -303,8 +296,7 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   )
 }
 
-/** Command monitors can be numerous, so this keeps the shared rail language
- * while exposing each command's name and CLI group for quick recognition. */
+/** Command monitors can be numerous, so this keeps the shared rail language while exposing each command's name and CLI group for quick recognition. */
 function DeployNav({ view, setView, items, last, running, runId, onDone }) {
   const [, tone] = last ? (STATE_TEXT[last.state] || [last.state, 'mute']) : ['', 'mute']
   const statusDot = tone === 'pass' ? 'bg-ok' : tone === 'fail' ? 'bg-bad' : running ? 'bg-ok' : 'bg-muted2'

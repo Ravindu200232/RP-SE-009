@@ -1,13 +1,6 @@
 'use client'
 
-/**
- * The verification ledger, exactly as the engine recorded it.
- *
- * Every other view here is an interpretation — a rate, a chart, a grouping.
- * This one is the raw claim: what the run promised to prove, which command or
- * journey proved it, and what is still unproved. When a number elsewhere looks
- * wrong, this is the page that says why.
- */
+/** The verification ledger, exactly as the engine recorded it. */
 
 import { Badge, Empty, Table, Tag, TD, TH, TR } from '../ui'
 import { cn } from '@/lib/utils'

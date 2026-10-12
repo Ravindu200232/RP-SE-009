@@ -1,13 +1,4 @@
-"""Fetch a licence-approved public SRS corpus with a local provenance receipt.
-
-Usage:
-    python tools/srs_corpus.py fetch pure-2017
-    python tools/srs_corpus.py list
-
-Only an explicit catalogue entry with a compatible licence may be downloaded.
-The downloaded archive and receipt remain local under ``srs-test-sources/srs-data``
-and are ignored by Git, avoiding accidental redistribution of third-party data.
-"""
+"""Fetch a licence-approved public SRS corpus with a local provenance receipt."""
 from __future__ import annotations
 
 import argparse
@@ -174,12 +165,7 @@ def _quality_rating(text: str) -> int:
 
 def build_evaluation(source_id: str = "promise-exp", size: int = 100,
                      destination: Path = DATA) -> dict:
-    """Create a deterministic, label-balanced local evaluation pack.
-
-    The pack stays in the ignored data directory and records source row number,
-    licence and the *AgentForge* rating formula. It is for offline validation,
-    never direct prompt injection.
-    """
+    """Create a deterministic, label-balanced local evaluation pack."""
     if size < 1:
         raise ValueError("evaluation pack size must be at least 1")
     source = find_source(source_id)

@@ -7,11 +7,7 @@ import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
-/**
- * The specification's open decisions, one question each: choose an answer (the first keeps what the specification assumed) or
- * write your own. A settled decision leaves the list and the "decisions needed" count goes down; an answer that could not be
- * written into the specification comes back here, saying so, to be answered again.
- */
+/** The specification's open decisions, one question each: choose an answer (the first keeps what the specification assumed) or write your own. */
 export default function Decisions({ srs }) {
   const openProject = useStore(s => s.project)
   const project = srs?.project || openProject || ''

@@ -1,11 +1,4 @@
-"""Markdown into a real PDF, with the headless browser the Studio already runs for Mermaid.
-
-No PDF library is bundled with the backend, but every Studio already has Node, `marked` and
-Puppeteer (studio/node_modules) and a Chrome or Edge to drive - the same pieces
-`mermaid.py` renders diagrams with - so `scripts/render-pdf.mjs` prints the page that browser
-lays out. Anything that stops it is a plain error the download shows, never a file that only
-looks like a PDF.
-"""
+"""Markdown into a real PDF, with the headless browser the Studio already runs for Mermaid."""
 from __future__ import annotations
 
 import os

@@ -1,10 +1,4 @@
-"""Provenance-safe SRS corpus grounding and deterministic quality evidence.
-
-This module deliberately consumes only the small local catalogue.  Raw public
-requirements archives can contain arbitrary prose and must never be treated as
-instructions to the SRS agent.  They are used offline by explicit evaluation
-tools, with their licence and attribution retained alongside the archive.
-"""
+"""Provenance-safe SRS corpus grounding and deterministic quality evidence."""
 from __future__ import annotations
 
 import json
@@ -69,12 +63,7 @@ def _rating(score: int) -> str:
 
 
 def audit_document(doc: dict[str, Any]) -> dict[str, Any]:
-    """Score objective SRS-writing evidence without grading product scope.
-
-    The score is an AgentForge diagnostic, not a claim that a corpus provider
-    rated this customer document.  It does not use an LLM, so it is stable and
-    can be supplied to the independent reviewer as a factual readout.
-    """
+    """Score objective SRS-writing evidence without grading product scope."""
     functional = _rows(doc, "functional_requirements")
     non_functional = _rows(doc, "non_functional_requirements")
     all_requirements = functional + non_functional
@@ -142,9 +131,7 @@ def audit_document(doc: dict[str, Any]) -> dict[str, Any]:
 
     passed = sum(1 for row in checks.values() if row["passed"])
     score = round(100 * passed / len(checks)) if checks else 0
-    # The individual wording/traceability checks are vacuously true for an
-    # empty list.  A document with no requirements must never look healthy
-    # merely because there was nothing for those checks to inspect.
+    # The individual wording/traceability checks are vacuously true for an empty list.
     if not checks["requirement_sets"]["passed"]:
         score = min(score, 50)
     return {
@@ -171,13 +158,7 @@ def audit_readout(audit: dict[str, Any]) -> str:
 
 
 def blocking_findings(audit: dict[str, Any]) -> list[str]:
-    """Objective repair reasons that must gate a finished SRS.
-
-    This is intentionally separate from the cloud critic's subjective scores:
-    a missing verification method or a missing traceability test case is a
-    deterministic defect and must not be accepted because a model says the
-    prose is otherwise good.
-    """
+    """Objective repair reasons that must gate a finished SRS."""
     if int(audit.get("score", 0)) >= 100:
         return []
     return [str(item) for item in (audit.get("findings") or []) if str(item).strip()]

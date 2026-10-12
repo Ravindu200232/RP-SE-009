@@ -1,20 +1,6 @@
 'use strict'
 
-/**
- * Where everything the app runs lives, installed or run from a checkout.
- *
- * Installed (AgentForgeSetup.exe), under %LOCALAPPDATA%\Programs\AgentForge:
- *   AgentForge.exe, resources\app\backend   the backend (server.py, its modules, agents, prompts)
- *                   resources\app\studio    the studio UI (a static build)
- *                   resources\app\python    the Python it runs on, with its packages
- *   tools\node, tools\git, tools\gh, ...    the command line tools a blank computer gets (see release/manifest)
- *
- * From a checkout (`npm start` in desktop/): the repository is the backend, studio/out the UI, and Python is the
- * one AGENTFORGE_PYTHON names (or the first `py -3.12` / `python` on PATH).
- *
- * The user's own things live outside both: settings and records in %APPDATA%\AgentForge, projects in
- * Documents\AgentForge, so an update or a reinstall never touches them.
- */
+/** Where everything the app runs lives, installed or run from a checkout. */
 const fs = require('node:fs')
 const path = require('node:path')
 const { execFileSync } = require('node:child_process')

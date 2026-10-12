@@ -1,12 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
-/**
- * Supabase Auth's session is a short-lived access token behind a refresh token in the cookie. A
- * Server Component cannot write a cookie, so nothing renews that token unless something upstream
- * does it on every request - this is that something. Skipped for static assets, where there is no
- * session to refresh and doing so would cost a network round trip per file.
- */
+/** Supabase Auth's session is a short-lived access token behind a refresh token in the cookie. */
 export async function middleware(request) {
   let response = NextResponse.next({ request });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {

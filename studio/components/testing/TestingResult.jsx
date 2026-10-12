@@ -47,8 +47,7 @@ export default function TestingResult() {
   const e2eLive = useStore(s => s.e2eParallel)
   const qa = useStore(s => s.qaReport)
   const addLog = useStore(s => s.addLog)
-  // While this project's build runs, what is here is half a run. It is shown
-  // blurred, the way the preview is, and read afresh when the build ends.
+  // While this project's build runs, what is here is half a run.
   const busy = useStore(s => s.busy)
   const busyProject = useStore(s => s.busyProject)
   const building = busy && (!busyProject || busyProject === project)

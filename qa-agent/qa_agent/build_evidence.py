@@ -1,15 +1,4 @@
-"""What the build itself proved, shaped for the Testing views.
-
-The builder verifies its own work: it writes tests, runs them, repairs what they
-find and records the outcome in `.agentforge/build/report.json`, next to the
-artifacts its runners left (Vitest JSON, Playwright output, Lighthouse, a route
-probe). The separate Testing stage may never run, so the Testing views read those
-files directly instead of showing an empty screen.
-
-Nothing here is invented. Every field comes from a file the build left, and a
-value that cannot be read is left out — never defaulted to a pass. A saved QA
-report always wins over what is derived here (see `evidence.collect`).
-"""
+"""What the build itself proved, shaped for the Testing views."""
 from __future__ import annotations
 
 import base64
@@ -30,8 +19,7 @@ ZAP_SUMMARY = ".agentforge/qa/zap/summary.json"
 INVENTORY = ".agentforge/qa/coverage-inventory.json"
 COVERAGE_SUMMARY = ".agentforge/qa/coverage/coverage-summary.json"
 PLAYWRIGHT_JSON = "test-results/results.json"
-# `scripts/with-server.mjs` keeps a copy of each run's Playwright JSON here, because the
-# runner overwrites PLAYWRIGHT_JSON on every run (journeys, visual, accessibility, ...).
+# `scripts/with-server.mjs` keeps a copy of each run's Playwright JSON here, because the runner overwrites PLAYWRIGHT_JSON on every run (journeys, visual...
 PLAYWRIGHT_RUNS = ".agentforge/qa/runs"
 PREVIEW_RUNTIME = ".agentforge/preview-runtime.json"
 VITEST_JSON = ".agentforge/qa/vitest.json"
@@ -121,8 +109,7 @@ def _from_line_log(text: str) -> dict | None:
     clean = not failed and not counts.get("flaky") and not counts.get("skipped") \
         and not counts.get("did not run")
     for row in tests:
-        # The line reporter names a test as it finishes; only a clean run says
-        # every one of them passed. Otherwise the per-test result is not known.
+        # The line reporter names a test as it finishes; only a clean run says every one of them passed.
         row["status"] = "passed" if clean else "unknown"
     return {"total": total, "passed": counts.get("passed", 0), "failed": failed,
             "flaky": counts.get("flaky", 0), "skipped": counts.get("skipped", 0),
@@ -130,8 +117,7 @@ def _from_line_log(text: str) -> dict | None:
 
 
 def _screenshot_of(result: dict, workspace: Path | None) -> str:
-    """The screenshot Playwright attached to a test result, workspace-relative, if it still exists - or its kept copy
-    (`screen_keeper`), because the next test run empties the folder the original was in."""
+    """The screenshot Playwright attached to a test result, workspace-relative, if it still exists - or its kept copy."""
     if workspace is None:
         return ""
     from . import screen_keeper
@@ -256,10 +242,7 @@ def _last_full_run(workspace: Path) -> float:
 
 
 def newest_tests(workspace: Path) -> list[dict]:
-    """Every test's newest result: a re-run of one journey replaces that journey's result and nothing else.
-
-    Only runs from the Studio's last full end-to-end run on count, when it has made one: a test renamed or removed since
-    then, and every earlier attempt, no longer speaks for a journey."""
+    """Every test's newest result: a re-run of one journey replaces that journey's result and nothing else."""
     since = _last_full_run(workspace)
     latest: dict[tuple[str, str, str], dict] = {}
     found = []
@@ -279,15 +262,7 @@ def newest_tests(workspace: Path) -> list[dict]:
 
 
 def browser_runs(workspace: Path) -> dict | None:
-    """What the build's browser runs proved, one answer per spec file and browser.
-
-    A build runs its layers separately (journeys, accessibility, visual, once per
-    browser) and repeats them while it repairs things, and Playwright's JSON reporter is
-    overwritten by every run. So no single run is "the" run. For each (browser, spec file)
-    the newest run that covered it fully speaks for it: a later re-run of just a few of its
-    tests does not shrink it, and an earlier failing attempt does not count once a later
-    run replaced it.
-    """
+    """What the build's browser runs proved, one answer per spec file and browser."""
     runs = _runs_found(workspace)
     if not runs:
         return None
@@ -563,9 +538,7 @@ def _build_repairs(build: dict) -> dict | None:
 
 
 def _as_template(build: dict) -> dict:
-    """A report written before the template (`prompts/builder/report-template.json`) existed,
-    read as the template's keys. Only shapes real builds wrote are mapped, and only where the
-    template's own key is absent, so a report that follows the template passes through unchanged."""
+    """A report written before the template (`prompts/builder/report-template.json`) existed,."""
     build = dict(build)
     routes = [{"route": r} if isinstance(r, str) else r for r in build.get("routes") or []] \
         if isinstance(build.get("routes"), list) else build.get("routes")
@@ -636,8 +609,7 @@ def derive(workspace: Path, have: dict) -> dict:
 
     commands = _rows(build.get("commands"))
     gaps = _rows(build.get("gaps"))
-    # The builder types `built_at` from memory (a local clock time labelled UTC,
-    # in the run this was written against), so the file's own time is the record.
+    # The builder types `built_at` from memory (a local clock time labelled UTC, in the run this was written against), so the file's own time is the record.
     report_file = workspace / BUILD_REPORT
     built_at = _iso(report_file) if report_file.is_file() else str(build.get("built_at") or "")
     if built_at:
@@ -661,8 +633,7 @@ def derive(workspace: Path, have: dict) -> dict:
         a11y = [t for t in tests if _A11Y.search(said(t))]
         visual = [t for t in tests if t not in a11y and _VISUAL.search(said(t))]
         journey_tests = [t for t in tests if t not in a11y and t not in visual]
-        # Coverage is judged on each journey test's newest result (one journey run again counts for itself), not on the
-        # newest run of a whole spec file, which ignored a re-run of a few of its tests.
+        # Coverage is judged on each journey test's newest result (one journey run again counts for itself), not on the newest run of a whole spec file, which ignored...
         journey_coverage = journey_contracts.e2e_coverage(workspace, [
             t for t in newest_tests(workspace) if not _A11Y.search(said(t)) and not _VISUAL.search(said(t))])
         flows = _group(journey_tests, lambda t: True)
@@ -699,8 +670,7 @@ def derive(workspace: Path, have: dict) -> dict:
     if visual:
         out["uiQualitySummary"] = visual
 
-    # Still expose a missing journey run when the SRS contract exists but no
-    # Playwright result was saved. A generic QA `complete: true` cannot hide it.
+    # Still expose a missing journey run when the SRS contract exists but no Playwright result was saved.
     if not runs:
         journey_coverage = journey_contracts.e2e_coverage(workspace, [])
     if journey_coverage is not None:

@@ -1,13 +1,4 @@
 // AgentForge's AI engine: a Cloudflare Worker between the app and ollama.com.
-//
-// The ollama.com API key lives here, as the Worker secret OLLAMA_API_KEY, and nowhere in the app: an installed
-// AgentForge sends its requests to this Worker with the app token (the secret APP_TOKEN), and the Worker sends them
-// on to ollama.com with the key. The app token is not a secret in the same way (it ships in every copy of the app),
-// so the Worker also limits how fast any one address may call it, and only the API the app uses is passed through.
-// A leaked or abused setup is fixed here, by changing a secret, with no new release of the app.
-//
-// The same Worker is also the sign-in broker for Supabase (see "Sign in with Supabase" below): the one OAuth app the
-// publisher registered keeps its client secret here, so nobody who installs AgentForge ever creates an OAuth app.
 
 const UPSTREAM = 'https://ollama.com'
 
@@ -20,8 +11,7 @@ const ALLOWED = new Set([
   'GET /api/version',
   'POST /api/web_search',
   'POST /api/web_fetch',
-  // The account's remaining credits (https://docs.ollama.com/api/balance), for the AgentForge admin app's balance bar:
-  // read with the key that stays here, so the admin app never holds it.
+  // The account's remaining credits (https://docs.ollama.com/api/balance), for the AgentForge admin app's balance bar: read with the key that stays here, so the...
   'GET /api/balance',
 ])
 
@@ -29,8 +19,6 @@ const ALLOWED = new Set([
 const FORWARD = ['content-type', 'accept', 'user-agent']
 
 // Standard per-million-token rates from https://ollama.com/pricing (2026-10-12).
-// Unknown models fail closed until their published rate is added. Cached input is
-// charged at the regular input rate, a conservative upper bound for the credit ledger.
 const PRICE = {
   'deepseek-v4.1-flash': [0.30, 1.20], 'deepseek-v4-flash': [0.44, 1.32],
   'deepseek-v4-pro': [1.32, 3.96],
@@ -121,24 +109,13 @@ async function tooMany(request, env) {
 }
 
 // --- Sign in with Supabase -------------------------------------------------------------------------------------------
-//
-// Supabase's token endpoint wants the OAuth app's client secret, and a secret cannot ship inside an app everyone
-// installs. So the publisher registers ONE Supabase OAuth app, whose only callback URL is this Worker's
-// /oauth/supabase/callback, and the secret stays here (SUPABASE_CLIENT_SECRET; the client id, which is public, is the
-// variable SUPABASE_CLIENT_ID). The flow, with nothing stored in the Worker:
-//
-//   start     the app asks for an authorize URL, sending its flow id, a PKCE challenge and the local address the
-//             browser should come back to. The state in that URL is signed, so it can only have come from here.
-//   callback  Supabase sends the browser here with the code; the signed state is checked and the browser is sent on
-//             to the app's local address. The app keeps the PKCE verifier, so a code seen on the way is no use.
-//   token     the app trades the code (or later a refresh token) for tokens; the Worker adds the client secret.
+// Supabase's token endpoint wants the OAuth app's client secret, and a secret cannot ship inside an app everyone installs.
 
 const SUPABASE_AUTHORIZE = 'https://api.supabase.com/v1/oauth/authorize'
 const SUPABASE_TOKEN = 'https://api.supabase.com/v1/oauth/token'
 const STATE_LIFETIME_MS = 10 * 60 * 1000
 
-// Only the app on this same computer may be sent back to: `localhost` (Supabase's authorize endpoint refuses a
-// loopback IP), any port, and the sign-in callback path the app serves.
+// Only the app on this same computer may be sent back to.
 const LOCAL_RETURN = /^http:\/\/localhost:\d{2,5}(\/[A-Za-z0-9_-]+)*\/supabase-oauth\/callback$/
 const FLOW_ID = /^[A-Za-z0-9_-]{8,100}$/
 const CHALLENGE = /^[A-Za-z0-9_-]{43,128}$/
@@ -273,7 +250,7 @@ async function supabaseToken(request, env, url) {
   })
 }
 
-// Route -> [handler, whether the app token is needed]. The callback is opened by a browser, which has no app token.
+// Route -> [handler, whether the app token is needed].
 const SIGN_IN = {
   'POST /oauth/supabase/start': [supabaseStart, true],
   'GET /oauth/supabase/callback': [supabaseCallback, false],

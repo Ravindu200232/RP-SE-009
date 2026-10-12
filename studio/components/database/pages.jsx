@@ -1,10 +1,6 @@
 'use client'
 
-/**
- * One page per database look in `prompts/database/monitors.json`, keyed `<set>/<id>`; a look without a page of its own
- * is laid out automatically. Every page is a `View` (it runs the command when opened and shows its live status), and
- * lays the answer out with the same pieces the deployment pages use.
- */
+/** One page per database look in `prompts/database/monitors.json`, keyed `<set>/<id>`; a look without a page of its own is laid out automatically. */
 
 import { useState } from 'react'
 import {

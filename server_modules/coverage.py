@@ -1,13 +1,4 @@
-"""The interview's requirement-coverage taxonomy.
-
-Unlike the fixed, ordered topic catalogue this replaces, there is no queue
-here and no question order. The categories below are the *shape* of a
-complete requirements picture — purpose, roles, workflows, data, and so on —
-hardcoded because that structure is what every project needs classified.
-Which of them still need asking, in what order, and with what exact wording
-is decided fresh each turn by the model, from the project's own accumulated
-answers — that decision does not belong in code.
-"""
+"""The interview's requirement-coverage taxonomy."""
 from __future__ import annotations
 
 from typing import Any
@@ -25,9 +16,7 @@ def categories() -> dict[str, dict[str, Any]]:
 
 
 def blank_coverage() -> dict[str, dict[str, Any]]:
-    """One entry per category, seeded UNKNOWN — except a category marked
-    `auto: not_applicable` in the taxonomy (deployment: decided elsewhere,
-    never a question here), which starts NOT_APPLICABLE."""
+    """One entry per category, seeded UNKNOWN — except a category marked."""
     out: dict[str, dict[str, Any]] = {}
     for key, entry in categories().items():
         status = "NOT_APPLICABLE" if entry.get("auto") == "not_applicable" else "UNKNOWN"

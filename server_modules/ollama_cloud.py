@@ -1,16 +1,4 @@
-"""ollama.com, reached directly with the saved API key: no Ollama app on this computer at all.
-
-The Ollama app names its cloud models for itself (`deepseek-v4.1-flash:cloud`, `gpt-oss:120b-cloud`); ollama.com
-names the same models plainly (`deepseek-v4.1-flash`, `gpt-oss:120b`). The studio keeps the app's names everywhere it
-shows or saves one, so a project chosen either way keeps working, and `client()` turns them into ollama.com's names on
-the way out.
-
-ollama.com's model list is public (any key, or none, gets it), so it cannot say whether a key works: `test()` asks
-for one token instead, which is what a wrong key is refused at.
-
-AgentForge's built-in engine (engine-proxy/, config.built_in_engine) is ollama.com's API behind a server that holds
-the key: `for_engine` gives the same client for it, sending the app's token to that server instead of a key.
-"""
+"""ollama.com, reached directly with the saved API key: no Ollama app on this computer at all."""
 from __future__ import annotations
 
 import threading
@@ -71,8 +59,7 @@ def studio_name(name: str) -> str:
 
 
 def remote_name(name: str, known: list[str] | None = None) -> str:
-    """The Ollama app's name as ollama.com takes it: the `:cloud` / `-cloud` mark dropped, and a bare name matched
-    to the one tagged model ollama.com lists for it (`deepseek-v4-pro` → `deepseek-v4-pro:0813`)."""
+    """The Ollama app's name as ollama.com takes it: the `:cloud` / `-cloud` mark dropped, and a bare name matched."""
     plain = str(name or "").strip()
     if plain.endswith(":cloud"):
         plain = plain[: -len(":cloud")]
@@ -105,8 +92,7 @@ class _Names:
     def show(self, model: str, *args: Any, **kwargs: Any) -> Any:
         return self._inner.show(remote_name(model), *args, **kwargs)
 
-    # The ollama library sends web search and fetch to ollama.com whatever its host is: through the built-in
-    # engine they go to that host instead, which adds the key (its own `_request`, relative to the host).
+    # The ollama library sends web search and fetch to ollama.com whatever its host is.
     def web_search(self, query: str, max_results: int = 3) -> Any:
         if self._host == HOST:
             return self._inner.web_search(query=query, max_results=max_results)

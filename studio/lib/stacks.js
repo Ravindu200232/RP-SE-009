@@ -1,14 +1,4 @@
-/**
- * The application shapes a build can take.
- *
- * These mirror `builder_agent/scaffold.py`'s STACK_GUIDES: fixed contracts, chosen once and
- * never migrated away from mid-build. "Auto" (no choice) starts as DEFAULT_STACK.
- *
- * `needs` is which account connections a build of that stack uses. Supabase on the Supabase-database
- * stacks (sign-in, uploads and Google login run on it) and on the MongoDB stacks that keep uploaded
- * files in a Supabase Storage bucket; MongoDB on every MongoDB stack. A `-only` stack runs on
- * MongoDB alone: no Supabase login, and uploaded files are kept in MongoDB itself.
- */
+/** The application shapes a build can take. */
 export const STACKS = [
   {
     id: 'nextjs-supabase',

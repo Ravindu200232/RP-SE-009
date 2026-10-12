@@ -1,15 +1,6 @@
 import pg from 'pg';
 
-/**
- * The one thing every suite that touches Postgres directly needs, written once.
- *
- * Tests never run against this project's real Supabase project: that project is real, the same one
- * shown in the Supabase dashboard, and a test truncating its tables would delete somebody's actual
- * data. This connects straight to the *local* Supabase stack's own Postgres instead (`supabase
- * start`), and refuses anything that is not a loopback address before touching it. Most component
- * and page tests do not need this at all - they mock `lib/supabase.js` instead; reach for this only
- * for a suite that is really testing a migration or an RLS policy against a live Postgres.
- */
+/** The one thing every suite that touches Postgres directly needs, written once. */
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 
 function assertLocalTestServer(url) {
@@ -32,12 +23,7 @@ export function testDb() {
   return pool;
 }
 
-/**
- * Truncate every table in the `public` schema.
- *
- * Call it in `beforeEach`, not `beforeAll`: a row left behind changes the next test's result, and
- * that failure reads as a defect in the code under test rather than in the fixture.
- */
+/** Truncate every table in the `public` schema. */
 export async function clearTables() {
   const db = testDb();
   const { rows } = await db.query("select tablename from pg_tables where schemaname = 'public'");

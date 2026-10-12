@@ -1,24 +1,6 @@
 import { vi } from 'vitest';
 
-/**
- * Replace `fetch` for a component or page test, so it runs without a server.
- *
- * Routes are `'METHOD /path'` (the query string is ignored, `:id` matches one path segment) mapped to
- * the answer: a value (sent as JSON, status 200), `{ status, body }`, or a function of the request that returns
- * either. A request nobody stubbed answers 404 and is listed in `api.unhandled`, so a test cannot pass by
- * accident on a call it never planned for; assert `expect(api.unhandled).toEqual([])`.
- *
- *   const api = stubFetch({
- *     'GET /api/items': { items: [] },
- *     'POST /api/items': ({ body }) => ({ status: 201, body: { item: { id: '1', ...body } } }),
- *     'DELETE /api/items/:id': { status: 403, body: { error: 'Not allowed' } },
- *   });
- *   render(<ItemsPanel />);
- *   await userEvent.click(screen.getByRole('button', { name: 'Add' }));
- *   expect(api.calls('POST', '/api/items')[0].body).toEqual({ name: 'x' });
- *
- * `vitest.config.js` sets `unstubGlobals`, so the real `fetch` is back after each test.
- */
+/** Replace `fetch` for a component or page test, so it runs without a server. */
 export function stubFetch(routes = {}) {
   const log = [];
   const unhandled = [];

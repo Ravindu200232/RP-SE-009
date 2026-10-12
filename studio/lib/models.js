@@ -23,7 +23,7 @@ const CURATED = [
     desc: 'Very capable — needs ~40GB.' },
 ]
 
-// Presentation aliases only. Requests always keep the exact Ollama model id.
+// Presentation aliases only.
 const CLOUD_UI_LABELS = {
   'qwen3.5:397b-cloud': 'Qwen 397B',
   'minimax-m3:cloud': 'MiniMax M3',
@@ -79,8 +79,7 @@ export function catalogue(payload) {
     if (!byId.has(id)) byId.set(id, { id, tag: 'local' })
   }
 
-  // Models to pull are only worth offering where an Ollama app runs: with the built-in engine, or just an
-  // ollama.com key, there is none.
+  // Models to pull are only worth offering where an Ollama app runs: with the built-in engine, or just an ollama.com key, there is none.
   if (p.ollama_ready || p.engine === 'local') {
     for (const m of CURATED) {
       if (!byId.has(m.id)) byId.set(m.id, { ...m, willPull: true })

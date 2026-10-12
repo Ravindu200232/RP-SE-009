@@ -9,9 +9,9 @@ import { useStore } from '@/lib/store'
 export default function AuthModal({ isOpen, onClose, onSuccess, initialScreen = 'methods', required = false }) {
   const { login, signup, loading, error, notice, clearError } = useAuthStore()
 
-  // screen: 'methods' | 'email'
+  // screen: 'methods' | 'email'.
   const [screen, setScreen] = useState(initialScreen)
-  // mode: 'signin' | 'signup'
+  // mode: 'signin' | 'signup'.
   const [mode, setMode] = useState('signin')
 
   const [formLogin, setFormLogin] = useState('')

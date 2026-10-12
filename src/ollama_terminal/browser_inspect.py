@@ -1,11 +1,4 @@
-"""Read a running local app in a real browser without touching it.
-
-The coding agent normally has file and terminal tools, which are not enough to
-tell whether a real rendered page has overflow, broken images or controls that
-have collapsed out of view. This helper opens only a loopback URL in an
-isolated headless Playwright browser, captures a screenshot for the Testing
-screen, and returns compact layout/accessibility facts to the model.
-"""
+"""Read a running local app in a real browser without touching it."""
 from __future__ import annotations
 
 import hashlib
@@ -24,8 +17,6 @@ MAX_BROWSER_SECONDS = 45
 
 
 # Every generated app already has @playwright/test for its journey suite.
-# `node -e` resolves it from the inspected workspace, so AgentForge itself
-# never downloads a browser merely because an agent was offered this tool.
 _PLAYWRIGHT_SCRIPT = r"""
 const input = JSON.parse(process.argv[1]);
 let chromium;
@@ -37,9 +28,7 @@ catch (_) { ({ chromium } = require('playwright')); }
   const consoleErrors = [], pageErrors = [];
   page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text().slice(0, 300)); });
   page.on('pageerror', error => pageErrors.push(String(error.message || error).slice(0, 300)));
-  // Navigation stays inside the local app. Static image/font/stylesheet assets
-  // are allowed so the screenshot reflects the UI the visitor actually sees;
-  // scripts and document navigation from another origin stay blocked.
+  // Navigation stays inside the local app.
   await page.route('**/*', route => {
     try {
       const target = new URL(route.request().url());
@@ -49,13 +38,11 @@ catch (_) { ({ chromium } = require('playwright')); }
     return route.abort();
   });
   const response = await page.goto(input.url, { waitUntil: 'domcontentloaded', timeout: 25000 });
-  // A DOM-ready page can still be painting its photos. Give images a bounded
-  // chance to finish so a slow but healthy image is not reported as broken.
+  // A DOM-ready page can still be painting its photos.
   await page.waitForFunction(() => [...document.images].every(image => image.complete), { timeout: 5000 }).catch(() => {});
   await page.waitForTimeout(150);
   const observed = await page.evaluate(() => {
-    // These run in the rendered page, so keep them inside evaluate rather
-    // than relying on Node's separate execution context.
+    // These run in the rendered page, so keep them inside evaluate rather than relying on Node's separate execution context.
     const visible = element => {
       const style = getComputedStyle(element), rect = element.getBoundingClientRect();
       return style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity || 1) > 0 && rect.width > 0 && rect.height > 0;
@@ -87,8 +74,7 @@ catch (_) { ({ chromium } = require('playwright')); }
         const rect = element.getBoundingClientRect();
         return rect.right > viewportWidth + 1 || rect.left < -1;
       })
-      // Parents of an overflowing control also extend off-screen. Prefer the
-      // concrete leaf controls/text that tell the model what to repair.
+      // Parents of an overflowing control also extend off-screen.
       .filter(element => ![...element.children].some(child => {
         const rect = child.getBoundingClientRect();
         return visible(child) && (rect.right > viewportWidth + 1 || rect.left < -1);

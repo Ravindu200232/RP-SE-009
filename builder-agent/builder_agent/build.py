@@ -20,8 +20,7 @@ DECISIONS = (BUILD_DIR, "decisions.json")
 # The most the customer is asked before one build is planned - a bound, not a list: what is asked is the model's call.
 QUESTIONS = 5
 REPORT_REPAIR_ROUNDS = 2
-# The stack's build guides, staged where the agent reads them - inside the record folder, never the app root: a
-# folder there would make `scaffold.install` take a fresh workspace for an existing app and copy no template.
+# The stack's build guides, staged where the agent reads them.
 GUIDES_DIR = f"{config.RECORD_DIR}/{BUILD_DIR}/guides"
 
 
@@ -35,29 +34,13 @@ def built(project: str) -> bool:
 
 
 def _recoverably_incomplete(qa_report: Any) -> bool:
-    """A `qa/report.json` missing its `complete` flag that is safe to backfill
-    rather than fail the build over.
-
-    Found live: a run interrupted after the real testing work finished but
-    before that one flag was written left every layer's evidence genuinely
-    passing on disk, yet resuming kept re-deriving "nothing left to do" from
-    that same evidence without ever writing the flag itself - failing this
-    exact check, forever, on every resume. A report that already holds real
-    recorded evidence (a summary, more than a bare placeholder) and was never
-    explicitly marked incomplete by the model itself only needs that one
-    field backfilled, not the whole run failed - `complete: False` set on
-    purpose is left alone; that is a real, honest gap, not this bug.
-    """
+    """A `qa/report.json` missing its `complete` flag that is safe to backfill."""
     return (isinstance(qa_report, dict) and qa_report.get("complete") is not False
            and bool(qa_report.get("summary")) and len(qa_report) > 2)
 
 
 def show_preview(project: str) -> None:
-    """The build is done: serve what it left on disk and bring the preview up on it.
-
-    Never fails the build. An app that will not start says so in the preview and in
-    `.agentforge/preview.log`; that is not a reason to call the build failed.
-    """
+    """The build is done: serve what it left on disk and bring the preview up on it."""
     try:
         from server_modules import preview_runtime
 
@@ -70,13 +53,7 @@ def show_preview(project: str) -> None:
 
 
 def _prototype_context_block(workspace: Path) -> str:
-    """Point the builder at the prototype it must read, map and reproduce.
-
-    `builder/generate.md` already tells the model to open `routes.json` and
-    read every prototype page and the components it imports in full; this only
-    says whether there is a prototype to read at all, rather than pasting its
-    routes or file lists in (the model lists the folder itself).
-    """
+    """Point the builder at the prototype it must read, map and reproduce."""
     if not (workspace / ".agentforge" / "prototype" / "routes.json").is_file():
         return ""
     return (
@@ -107,12 +84,7 @@ def _report_problems(session: Any) -> list[str]:
 
 
 def _conform_reports(project: str, session: Any, plan: str) -> None:
-    """Hold both report files to the template the Testing views read (`build_report.py`).
-
-    The same conversation continues, so nothing finished is redone - only the two report
-    files are rewritten. A build whose app and checks are done is never failed over its
-    report's shape: what is still off is logged, and the Testing views show what they can read.
-    """
+    """Hold both report files to the template the Testing views read (`build_report.py`)."""
     for _ in range(REPORT_REPAIR_ROUNDS):
         found = _report_problems(session)
         if not found:
@@ -136,10 +108,7 @@ def _conform_reports(project: str, session: Any, plan: str) -> None:
 
 
 def settled_qa_report(project: str, session: Any) -> dict[str, Any]:
-    """`qa/report.json`, complete. The agent writes it as it tests; when it ended the work without marking it complete (or
-    without writing it at all), the Studio completes it here: what the testing proved is read from the runners' own output on
-    disk (`qa_agent.evidence`), so one forgotten field is never a reason to fail a finished build. It was: every resume of a
-    build failed with "ended without a complete qa/report.json", seven times in three projects."""
+    """`qa/report.json`, complete. The agent writes it as it tests; when it ended the work without marking it complete (or."""
     saved = session.read_record("qa", "report.json", fallback=None)
     if isinstance(saved, dict) and saved.get("complete"):
         return saved
@@ -173,8 +142,7 @@ FIX_JOURNEYS = "fix the failing journeys"
 
 
 def _demo_accounts_text(session: Any) -> str:
-    """The accounts the build seeded (the prototype's own), as the chat gives them when the build is done: no page of the app shows
-    them, so this is where the customer finds how to sign in as each role. "" when the product has no sign-in."""
+    """The accounts the build seeded (the prototype's own), as the chat gives them when the build is done: no page of the app shows."""
     from prototype_agent import demo
 
     saved = session.read_record("prototype", "demo-accounts.json", fallback=None)
@@ -199,19 +167,14 @@ def _finish_run(project: str, session: Any, build_result: dict[str, Any], plan: 
     if not (session.workspace / "package.json").is_file() or not built_report:
         raise ValueError("builder finished without a runnable app and build/report.json")
     qa_report = settled_qa_report(project, session)
-    # The SRS emits one stable UJ id per business journey. Coverage is derived from Playwright's own result JSON, never
-    # from a generic count or an agent-written sentence - and journeys that fail are a result, not a reason to fail the
-    # build: they are listed, kept failed in the report, and run again only when the person asks (`FIX_JOURNEYS`). Failing
-    # the build made it loop: a fix, a whole new build, the whole suite again, the same failure (six times in one project).
+    # The SRS emits one stable UJ id per business journey.
     from qa_agent import build_evidence
     derived = build_evidence.derive(session.workspace, qa_report)
     journey_coverage = (((derived.get("report") or {}).get("e2e") or {})
                         .get("journeyCoverage") or {})
     journeys_failed = bool(journey_coverage.get("required")) and journey_coverage.get("status") != "passed"
     gaps = built_report.get("gaps") or []
-    # The report is agent-authored.  A prose ``summary`` remains valid
-    # evidence when its layer rows are structured, so normalize it rather
-    # than crashing after all verification completed.
+    # The report is agent-authored.
     summary = summary_counts(qa_report)
     failed = summary["fail"]
     store.update(project, spec_only=False, prototype_only=False,
@@ -246,8 +209,7 @@ def _finish_run(project: str, session: Any, build_result: dict[str, Any], plan: 
 
 
 def _check_decision(data: Any, may_ask: bool, mongodb: bool = False) -> dict[str, Any]:
-    """The model's turn before the plan: ready, or one question asked the way every flow asks one.
-    `mongodb`: the stack runs on MongoDB, whose connection the Studio provides - never a question to the customer."""
+    """The model's turn before the plan: ready, or one question asked the way every flow asks one."""
     kind = data.get("kind") if isinstance(data, dict) else None
     if kind == "ready":
         return {"kind": "ready"}
@@ -260,23 +222,18 @@ def _check_decision(data: Any, may_ask: bool, mongodb: bool = False) -> dict[str
 
 
 def _mongodb_ready(project: str, record: dict[str, Any]) -> None:
-    """A MongoDB stack's database, before the build writes anything: the connected cluster's (databases of this project's own),
-    or one made now when an Atlas account is signed in, so the seed and the tests run on a real database. Never a question, and
-    never a reason to fail: what cannot be made is said in the chat, and the build goes on."""
+    """A MongoDB stack's database, before the build writes anything: the connected cluster's (databases of this project's own),."""
     name = str(record.get("name") or project)
     found = mongo_connect.ensure_for_project(
         project, log=lambda line: bus.agent_msg(project, line, title="MongoDB", kind="narration"))
     if found["status"] in {"ready", "created"}:
-        # Said only when the cluster really answers with the saved connection (the same check every command makes): a string
-        # whose password Atlas no longer accepts is mended or told now, not minutes later when the first command fails on it.
+        # Said only when the cluster really answers with the saved connection (the same check every command makes).
         def say(line: str) -> None:
             bus.agent_msg(project, line, title="MongoDB", kind="narration")
 
         answers, why = mongo_connect.verify_or_repair(log=say)
         while not answers:
-            # The seed, the preview and every journey need the cluster: a build that went on without it failed hours later,
-            # on every journey. So the person is asked, once per look: try again (after resuming the cluster or fixing the
-            # connection in Settings), or stop the build now.
+            # The seed, the preview and every journey need the cluster: a build that went on without it failed hours later, on every journey.
             deploy_vars.tell_unreachable(project, why)
             reply = bus.ask_and_wait(
                 project, "question", f"The MongoDB cluster could not be reached: {why} Try again?",
@@ -312,12 +269,7 @@ def _qa_rows(rows: list[dict[str, str]]) -> str:
 
 
 def _decide(project: str, session: Any, stack: str, direction: str) -> list[dict[str, str]]:
-    """Before the build is planned, the model may ask the customer what it cannot settle itself.
-
-    Once, up front, in its own words: nothing here lists what to ask, only the prompt tells the model when to. The
-    build runs straight through afterwards. A turn that does not work is skipped - a question step never fails a build.
-    Returns everything decided with the customer so far, earlier builds' answers included, for the plan to build on.
-    """
+    """Before the build is planned, the model may ask the customer what it cannot settle itself."""
     from . import scaffold
 
     saved = session.read_record(*DECISIONS, fallback=None)
@@ -382,10 +334,7 @@ def _decided_block(answers: list[dict[str, str]]) -> str:
 
 
 def _build_in_phases(project: str, session: Any, stack: str, request: str, direction: str) -> dict[str, Any]:
-    """Plan the application, then build it one numbered phase at a time (`phases.py`), however many pages it has.
-
-    A build that was stopped carries on from the phase it reached, with the plan it already made. A prototype that lists no pages
-    is built the way it always was, in one go."""
+    """Plan the application, then build it one numbered phase at a time (`phases.py`), however many pages it has."""
     routes = build_phases.routes_of(session.workspace)
     if not routes:
         return session.run_task(request, plan_directory="plan", audit=False)
@@ -412,12 +361,7 @@ def _build_in_phases(project: str, session: Any, stack: str, request: str, direc
 
 
 def run(project: str, direction: str = "") -> dict[str, Any]:
-    """Build the application from everything the project already settled.
-
-    The model may ask the customer what it cannot settle itself, once, before it plans (`_decide`). After that the
-    build never stops to ask: it builds straight through, and whatever it could not settle is recorded as a gap in
-    `build/report.json`.
-    """
+    """Build the application from everything the project already settled."""
     from srs_agent import document as srs_document
 
     from . import scaffold
@@ -430,20 +374,16 @@ def run(project: str, direction: str = "") -> dict[str, Any]:
     session = session_for(project)
     session.begin("build", role=bus.DEVELOPER)
     try:
-        # What the build needs from this computer and the person's accounts, before anything is asked or planned: what is
-        # missing is listed in one card, and the build waits until it is connected (Yes checks again) or is stopped (No).
+        # What the build needs from this computer and the person's accounts, before anything is asked or planned.
         preflight.ensure(project, stack, cancelled=lambda: bool(session.cancelled))
         # The stack's guides are staged first: the model reads them to judge whether anything needs the customer.
         reference_staging.stage(session.workspace, GUIDES_DIR, scaffold.build_guide_files(stack))
         decided = _decide(project, session, stack, direction)
-        # A stack that uses Supabase (the Supabase-database ones, and the MongoDB ones that keep uploads in a bucket) gets
-        # this project's own Supabase project: kept if it is already linked, otherwise created now. A later build finds the
-        # record there and does nothing. A MongoDB-only stack has no Supabase and needs no Supabase account.
+        # A stack that uses Supabase (the Supabase-database ones, and the MongoDB ones that keep uploads in a bucket) gets this project's own Supabase project.
         if scaffold.uses_supabase(stack):
             supabase_connect.ensure_project(project, name=str(record.get("name") or project),
                                             log=lambda line: bus.agent_msg(project, line, title="Supabase"))
-        # A MongoDB stack gets its database the same way, so nothing about it is ever asked: the connected cluster's (databases
-        # of this project's own), or a cluster made now when an Atlas account is signed in.
+        # A MongoDB stack gets its database the same way, so nothing about it is ever asked.
         if scaffold.uses_mongodb(stack):
             _mongodb_ready(project, record)
         installed = scaffold.install(session.workspace, stack)
@@ -490,14 +430,12 @@ def run(project: str, direction: str = "") -> dict[str, Any]:
             build_result = _build_in_phases(project, session, stack, request, direction)
         if build_result.get("status") == "blocked":
             raise ValueError(build_result.get("text") or "the build was blocked")
-        # The agent wrote the journeys; the Studio runs the whole suite now, once (not again when the app is exactly what
-        # the last run tested, as when a stopped build is carried on with nothing left to do).
+        # The agent wrote the journeys; the Studio runs the whole suite now, once (not again when the app is exactly what the last run tested, as when a stopped build...
         with screen_keeper.Keeper(session.workspace):
             ran = e2e_run.run(project, session, reason="build")
         if session.cancelled:
             raise RunCancelled(project)
-        # A model that can look at pictures looks at the screenshots of that run, round by round, asking before each round
-        # after the first. Whatever keeps it from looking is said in the chat, and the screens are shown either way.
+        # A model that can look at pictures looks at the screenshots of that run, round by round, asking before each round after the first.
         if ran.get("status") in {"passed", "failed"}:
             e2e_review.run(project, session)
         if session.cancelled:

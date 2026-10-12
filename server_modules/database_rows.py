@@ -1,15 +1,4 @@
-"""What the database panel shows beyond its command monitors: a few rows of one table or collection, and the Atlas
-cluster behind the MongoDB connection.
-
-Rows are read the same way the monitors read everything else: a Supabase table through the Supabase command line
-tool (`db query --linked`, the account's token in its environment), a MongoDB collection through the project's own
-driver (`scripts/mongo-inspect.mjs`, the connection string in its environment). A table or collection is named by the
-person, so its name is checked before it goes anywhere: an identifier, quoted, never text spliced into a query.
-
-Whatever comes back is masked before it leaves: a field whose name says it holds a credential (a password hash, a
-token, a key) shows as `<masked>`, and any value that is one of the project's own credentials, or looks like one, is
-hidden the way command output is.
-"""
+"""What the database panel shows beyond its command monitors: a few rows of one table or collection, and the Atlas."""
 from __future__ import annotations
 
 import json
@@ -184,8 +173,7 @@ def atlas() -> dict[str, Any]:
         return answer
     try:
         cluster = mongo_connect._api("GET", f"/groups/{group}/clusters/{name}")  # noqa: SLF001
-        # Atlas answers in one of two shapes: `replicationSpecs[].regionConfigs[]`, or the older
-        # `providerSettings` (which shared M0/M2 clusters still come back in).
+        # Atlas answers in one of two shapes: `replicationSpecs[].regionConfigs[]`, or the older `providerSettings` (which shared M0/M2 clusters still come back in).
         region = ((cluster.get("replicationSpecs") or [{}])[0].get("regionConfigs") or [{}])[0]
         legacy = cluster.get("providerSettings") or {}
         answer["cluster"] = {

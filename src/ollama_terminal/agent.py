@@ -33,9 +33,7 @@ VERIFIED = "<PLAN_VERIFIED>"
 INCOMPLETE = "<PLAN_INCOMPLETE>"
 MAX_EXECUTION_ROUNDS = 8
 MAX_AUDIT_ROUNDS = 3
-# How many stretches of an over-full history are summarized at the same time. One after another,
-# a long project's history (dozens of stretches at half a minute each) kept the session silent for
-# a quarter of an hour.
+# How many stretches of an over-full history are summarized at the same time.
 COMPACT_WORKERS = 4
 _COMPRESS = ("Compress coding-agent history into durable memory. Keep exact file paths, user requirements, "
              "approvals, decisions, commands, test outcomes, errors, and unfinished plan items. Do not claim "
@@ -82,12 +80,9 @@ def model_context_length(client: Any, model: str) -> int | None:
         return None
 
 
-# What a picture costs a model, roughly. Its bytes are never counted as text: a screenshot would read as hundreds of
-# thousands of tokens and the history would be compacted away.
+# What a picture costs a model, roughly.
 PICTURE_TOKENS = 1500
-# The most a request that carries a picture may weigh in all (the conversation as JSON and the pictures as base64). Measured on
-# Ollama Cloud with a long project conversation: 2.5 MB with a picture was answered, 3.4 MB with the same picture was a
-# "500 Internal Server Error" on every try, while the same conversation without the picture (2.6 MB) was answered too.
+# The most a request that carries a picture may weigh in all (the conversation as JSON and the pictures as base64).
 MAX_REQUEST_BYTES = 2_400_000
 
 
@@ -95,12 +90,7 @@ PROMPT_TOO_LONG = re.compile(r"prompt is too long:?\s*(\d+)", re.I)
 
 
 def prompt_too_long(exc: BaseException) -> int:
-    """The model's own count of a request it refused for being longer than its window, else 0.
-
-    Ollama answers "The prompt is too long: 1643388, model maximum context length: 1048576". The estimate below
-    (four characters a token) can be far under the real count for text that tokenizes densely, such as mangled
-    characters a project's files carry, so the window can be passed without the history ever being compacted.
-    """
+    """The model's own count of a request it refused for being longer than its window, else 0."""
     found = PROMPT_TOO_LONG.search(str(exc))
     return int(found.group(1)) if found else 0
 
@@ -123,8 +113,7 @@ def _usage_count(response: Any, *names: str) -> int:
     return 0
 
 
-# Longest extension first: `ts|tsx` would match `page.tsx` as `page.ts`, which
-# is a path that does not exist.
+# Longest extension first: `ts|tsx` would match `page.tsx` as `page.ts`, which is a path that does not exist.
 _PATHS = re.compile(
     r"[\w./\\-]+\.(?:tsx|jsx|yaml|json|html|toml|yml|mmd|sql|txt|css|md|py|ts|js)\b")
 _COMMANDS = re.compile(r'"command"\s*:\s*"([^"]{1,200})"')
@@ -132,11 +121,7 @@ _REQUESTS = re.compile(r'"role"\s*:\s*"user"\s*,\s*"content"\s*:\s*"([^"]{1,400}
 
 
 def _mechanical_digest(chunk: str, limit: int = 3000) -> str:
-    """What a stretch of history contained, without asking the model.
-
-    Not a summary — a record. It keeps the things a later turn actually needs to
-    look up: which files were touched, what was run, and what was asked for.
-    """
+    """What a stretch of history contained, without asking the model."""
     def unique(values: list[str], cap: int) -> list[str]:
         seen: list[str] = []
         for value in values:
@@ -161,9 +146,7 @@ def _mechanical_digest(chunk: str, limit: int = 3000) -> str:
 
 
 def served_from_cloud(model: str) -> bool:
-    """Whether `model` runs on ollama.com (`name:cloud`, `name:tag-cloud`), even when it is reached through this computer's own
-    Ollama. Its replies are streamed: a long answer sent as one response is cut off by the service's edge (Cloudflare answers
-    "524", a timeout, after about a hundred seconds without a byte) - a stream keeps bytes flowing."""
+    """Whether `model` runs on ollama.com (`name:cloud`, `name:tag-cloud`), even when it is reached through this computer's own."""
     name = str(model or "").strip().lower()
     return name.endswith(":cloud") or name.endswith("-cloud")
 
@@ -183,11 +166,7 @@ class Agent:
         self.mode = "plan"
         self.max_steps = max_steps
         self.announce = announce
-        # Called with the exact turns about to be deleted from `self.messages`,
-        # before they are. Compressing old turns into `memory_summary` keeps the
-        # live conversation inside the active model's window; this is the one
-        # chance for a caller to keep the originals somewhere durable instead of
-        # letting them become unrecoverable the moment this method returns.
+        # Called with the exact turns about to be deleted from `self.messages`, before they are.
         self.on_summarize = on_summarize
         self.tool_call_count = 0
         self.parallel_write_limit = 1
@@ -197,15 +176,10 @@ class Agent:
         self.last_prompt_tokens = 0
         # How many real tokens one estimated token turned out to be, once the model has said (see prompt_too_long).
         self.token_scale = 1.0
-        # These come from the provider's completed responses.  They are kept
-        # separately from ``context_usage`` (which is an estimate of the
-        # conversation window) so the Studio can show an honest per-request
-        # meter without pretending that context size is generated output.
+        # These come from the provider's completed responses.
         self.prompt_tokens = 0
         self.completion_tokens = 0
-        # ``think`` is the provider's on/off flag.  The level holds the
-        # product-level choice too, so xhigh can ask for a deliberate final
-        # verification pass even on providers without a native effort knob.
+        # ``think`` is the provider's on/off flag.
         self.reasoning_level = "off"
         self.context_override = context
         self.context = context or model_context_length(client, model)
@@ -248,18 +222,10 @@ class Agent:
         return _approx_tokens(self.messages)
 
     def _chat_response(self, kwargs: dict[str, Any]) -> Any:
-        """Run one model request, retaining usage supplied by hosted streams.
-
-        Cloud's non-streaming response can omit `eval_count`, even though the
-        terminal chunk includes it.  Only cloud calls stream here; local calls
-        keep their existing single-response path.  The assembled object has
-        the ordinary response shape used by the tool loop below.
-        """
+        """Run one model request, retaining usage supplied by hosted streams."""
         if not (self.cloud or served_from_cloud(self.model)):
             return self.client.chat(**kwargs)
-        # A reply streamed from the cloud can be cut off part-way ("peer closed connection without sending complete message
-        # body"). The words are only being collected here, so nothing is lost but that attempt: the request is asked for again,
-        # the way the host's retrying client would have asked for a request that failed before its first word.
+        # A reply streamed from the cloud can be cut off part-way ("peer closed connection without sending complete message body").
         attempt = 0
         while True:
             try:
@@ -325,8 +291,7 @@ class Agent:
         estimate = int(_approx_tokens(self.messages) * getattr(self, "token_scale", 1.0))
         if not self.context or (max(estimate, self.last_prompt_tokens) < self.context * 0.88):
             return
-        # Keep the current user request. Prefer summarizing complete older turns;
-        # if one tool-heavy turn fills the window, summarize its oldest tool cycles.
+        # Keep the current user request.
         latest_user = max(i for i, m in enumerate(self.messages) if m["role"] == "user")
         if latest_user > 1:
             start, end = 1, latest_user
@@ -359,11 +324,7 @@ class Agent:
                 index = futures[future]
                 written = future.result()
                 if not written:
-                    # Raising here used to end the session, which is the one outcome
-                    # worse than a thinner memory: the conversation is over the
-                    # window either way, and the work in it is lost with it. A
-                    # mechanical digest keeps the load-bearing facts - the paths, the
-                    # commands, the requests - without needing the model to cooperate.
+                    # Raising here used to end the session, which is the one outcome worse than a thinner memory.
                     written = _mechanical_digest(chunks[index])
                     missed += 1
                 parts[index] = written
@@ -393,11 +354,7 @@ class Agent:
         return kwargs
 
     def _merge_memories(self, parts: list[str], chunk_chars: int, summary_chars: int) -> str:
-        """Memories, oldest first, merged into one: in groups that fit one request, until one is left.
-
-        Every part is at most `summary_chars`, far below `chunk_chars`, so each round at least
-        halves the list. A group the model will not merge keeps its parts, joined and trimmed.
-        """
+        """Memories, oldest first, merged into one: in groups that fit one request, until one is left."""
         level = [part.strip()[:summary_chars] for part in parts if part and part.strip()]
         while len(level) > 1:
             groups: list[list[str]] = []
@@ -430,12 +387,7 @@ class Agent:
         return level[0][:summary_chars] if level else ""
 
     def _summary_chunk(self, kwargs: dict[str, Any], limit: int, attempts: int = 3) -> str:
-        """One chunk summarized, allowing for a model that answers oddly.
-
-        A reasoning model can put its whole reply in `thinking` and leave
-        `content` empty, and any model can return nothing once. Neither is a
-        reason to lose the session.
-        """
+        """One chunk summarized, allowing for a model that answers oddly."""
         for _ in range(max(1, attempts)):
             try:
                 message = self.client.chat(**kwargs).message
@@ -459,10 +411,7 @@ class Agent:
             schemas = (TOOL_SCHEMAS if self.mode == "act" else
                        [schema for schema in TOOL_SCHEMAS if schema["function"]["name"]
                         not in {"write_file", "replace_text", "run_command"}])
-            # An MCP server can carry tools of unknown, possibly side-effecting
-            # nature (the protocol offers no reliable read/write signal) — held
-            # to the same act-mode-only gate as write_file/run_command rather
-            # than trusted by default during plan-mode exploration.
+            # An MCP server can carry tools of unknown, possibly side-effecting nature (the protocol offers no reliable read/write signal).
             if self.mcp is not None and self.mode == "act":
                 schemas = schemas + self.mcp.tool_schemas()
             kwargs: dict[str, Any] = {"model": self.model, "messages": self.messages,
@@ -477,8 +426,6 @@ class Agent:
                 else:
                     self.announce("[progress] Applying the inspected project context and checking for gaps.")
             # This is an explicit live state, not a made-up progress event.
-            # It stays visible while the provider is considering this model
-            # turn and is replaced by a concrete tool action when one starts.
             self.announce("[thinking] model is considering the request")
             try:
                 response = self._chat_response(kwargs)
@@ -509,13 +456,9 @@ class Agent:
             message = response.message
             calls = message.tool_calls or []
             self.messages.append(message.model_dump(exclude_none=True))
-            # A response is the only point at which Ollama publishes exact
-            # usage.  Tell the host immediately so it can refresh the live
-            # meter; never animate an estimated token number between replies.
+            # A response is the only point at which Ollama publishes exact usage.
             self.announce("[usage] provider response completed")
-            # Show the model's own useful narration while it works. Product
-            # plans remain internal because the studio already has its SRS
-            # approval surface for those documents.
+            # Show the model's own useful narration while it works.
             narration = (message.content or "").strip()
             terminal_text = narration or (getattr(message, "thinking", "") or "").strip()
             for signal in (COMPLETE, BLOCKED, VERIFIED, INCOMPLETE):
@@ -549,9 +492,7 @@ class Agent:
             while cursor < len(calls):
                 call = calls[cursor]
                 name = call.function.name
-                # Independent file creation is safe to overlap. Keep edits,
-                # shell commands and duplicate targets ordered because they
-                # often depend on the preceding result.
+                # Independent file creation is safe to overlap.
                 if self.mode == "act" and name == "write_file" and self.parallel_write_limit > 1:
                     batch = [call]
                     targets = {str((call.function.arguments or {}).get("path") or "")}
@@ -584,26 +525,19 @@ class Agent:
                 save_result(name, args, result)
                 cursor += 1
             self._show_pictures()
-            # A terminal marker accompanying tool calls means those calls were
-            # the final action. Returning here prevents another automatic
-            # continuation turn from reopening an already completed plan.
+            # A terminal marker accompanying tool calls means those calls were the final action.
             if self.last_terminal_signal:
                 return terminal_text
         return f"Tool batch reached {self.max_steps} steps; continuing automatically."
 
     def _show_pictures(self) -> None:
-        """Hand the model the pictures its tools took (screenshots). Ollama carries a picture on a user turn, and the tool
-        results must follow the assistant's tool calls directly, so they come as one message after all of them. Only the
-        newest pictures stay in the history: older ones are replaced by a note, so the bytes are not sent again and again."""
+        """Hand the model the pictures its tools took (screenshots). Ollama carries a picture on a user turn, and the tool."""
         take = getattr(self.tools, "take_images", None)
         pictures = take() if callable(take) else []
         if not pictures:
             return
         self._drop_old_pictures()
-        # The model service refuses a request that is too big to take pictures with, and says only "500 Internal Server Error":
-        # with a very long conversation (a project whose chat has grown to some megabytes) the picture is the last straw, and
-        # every try of the same request fails the same way. So a picture is attached only while the whole request stays under
-        # what was seen to work; past that the model is told it could not be shown, and goes on from the page's text and files.
+        # The model service refuses a request that is too big to take pictures with, and says only "500 Internal Server Error".
         room = MAX_REQUEST_BYTES - len(json.dumps(self.messages, ensure_ascii=False, default=str))
         fits: list[tuple[str, bytes]] = []
         for label, data in pictures:

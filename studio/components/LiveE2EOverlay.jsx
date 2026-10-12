@@ -3,10 +3,7 @@
 import { CheckCircle2, Loader2, MousePointer2, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/**
- * What the running test is doing, as a slim strip along the bottom of the preview and a thin progress
- * line along the top. The website itself stays what is on screen.
- */
+/** What the running test is doing, as a slim strip along the bottom of the preview and a thin progress line along the top. */
 export default function LiveE2EOverlay({ event }) {
   if (!event) return null
   const done = event.state === 'journey_done'

@@ -1,17 +1,4 @@
-"""Signing in to GitHub in the browser, instead of pasting a token.
-
-The same shape as the AWS Identity Center flow the deployment agent already
-drives (`deployment_agent/aws_sso.py`): ask GitHub for a short code, send the
-person to a page to approve it, then poll until they have. Nobody copies a
-token out of a settings page and nobody types one in here, which matters
-because a personal access token pasted into a field is a long-lived secret that
-has been through a clipboard.
-
-GitHub's device flow needs no client secret and no redirect URI, which is why
-it suits a program running on someone's own machine. It does need the client id
-of an OAuth app with "Device flow" enabled - a public value, and the one thing
-this cannot supply for itself.
-"""
+"""Signing in to GitHub in the browser, instead of pasting a token."""
 from __future__ import annotations
 
 import secrets
@@ -24,8 +11,7 @@ import httpx
 DEVICE_CODE_URL = "https://github.com/login/device/code"
 ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token"
 
-# What a deployment does with the account: create the repository it pushes to,
-# and let Actions run the workflow it writes. Nothing wider.
+# What a deployment does with the account: create the repository it pushes to, and let Actions run the workflow it writes.
 SCOPES = "repo workflow"
 
 # GitHub expires a device code after fifteen minutes; nothing is kept past that.
@@ -117,8 +103,7 @@ class GithubDeviceFlows:
 
         token = str(body.get("access_token") or "")
         if token:
-            # Handed over once. Keeping it here as well would mean a second
-            # copy of a live credential in memory for no reason.
+            # Handed over once.
             with self._lock:
                 self._flows.pop(flow.flow_id, None)
             return {"status": "ready", "token": token,
@@ -154,8 +139,7 @@ def _why(body: dict, status: int) -> str:
     if error == "device_flow_disabled":
         return ("That OAuth app does not have Device Flow enabled. Turn it on in "
                 "its settings on GitHub and try again.")
-    # GitHub answers an unknown client id with a bare "Not Found", which reads
-    # as though the page were missing rather than the id being wrong.
+    # GitHub answers an unknown client id with a bare "Not Found", which reads as though the page were missing rather than the id being wrong.
     if status == 404 or error in ("Not Found", "not_found"):
         return ("GitHub does not recognise that Client ID. Check it against the "
                 "OAuth app at github.com/settings/developers - it is the Client "

@@ -1,9 +1,4 @@
-"""The `/deploy/...` router.
-
-The studio's Deploy panel polls a run rather than holding a socket open for it,
-so everything here reads the run's own files back. A deployment that is still
-going and a deployment that finished an hour ago are answered the same way.
-"""
+"""The `/deploy/...` router."""
 from __future__ import annotations
 
 import json
@@ -102,10 +97,7 @@ def provider_status(body: dict) -> Any:
 
 @route("POST", r"/mongodb/status")
 def mongodb_status(body: dict) -> Any:
-    """Try a connection string for real, the same check a value question runs before it accepts one
-    (deploy_vars.accept). An empty `uri` tests the saved production value instead of a typed one, the
-    same shape `provider_status`'s `HostedCredential` card already uses for Netlify's and Azure's own
-    tokens - so this Row's "Test connection" button needs nothing special to work the same way."""
+    """Try a connection string for real, the same check a value question runs before it accepts one."""
     uri = str(body.get("uri") or "").strip()
     saved = bool(not uri and config.setting("deploy_mongodb_uri", ""))
     try:
@@ -156,10 +148,7 @@ def mongodb_account_forget(_body: dict) -> Any:
 
 @route("POST", r"/mongodb/provision")
 def mongodb_provision(body: dict) -> Any:
-    """Create (or reuse) the studio's one Atlas cluster and point deploy_mongodb_uri at it. Slow
-    (a few minutes) - the caller already runs this through the Deploy panel's job queue, same as
-    everything else here that takes real time. `create: true` makes the studio's own new cluster
-    even when one is already in use."""
+    """Create (or reuse) the studio's one Atlas cluster and point deploy_mongodb_uri at it. Slow."""
     return {"ok": True, **mongo_connect.ensure_cluster(create=body.get("create") is True)}
 
 

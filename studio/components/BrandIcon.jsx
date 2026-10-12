@@ -1,10 +1,6 @@
 'use client'
 
-/**
- * The real logos of the services AgentForge connects to, as inline SVG (paths from the Simple Icons set, CC0),
- * so they need no network and take the colour they are drawn in. GitHub's and Vercel's are black or white in
- * their own branding, so they follow the text colour and read on any theme; the others keep their brand colour.
- */
+/** The real logos of the services AgentForge connects to, as inline SVG (paths from the Simple Icons set, CC0), so they need no network and take the colour... */
 export const BRANDS = {
   github: {
     title: 'GitHub',

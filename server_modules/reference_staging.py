@@ -1,14 +1,4 @@
-"""Stage a reference document that lives outside the project workspace into it.
-
-The agent's file tools stop at the workspace's edge (`WorkspaceTools._path()`
-rejects anything outside `root`), but a theme page, a skill page or a build
-guide lives beside this application, in `prompts/` or an agent's own `assets/`
-tree. This copies such a page into the workspace so a real `read_file` tool
-call can reach it, and tracks whether the model actually read it — the same
-pattern `deploy_agent/deploy.py`'s `stage_skills()`/`_reads()` already used
-for deployment skill pages, generalized so every stage can share it instead
-of each inventing its own copy mechanism.
-"""
+"""Stage a reference document that lives outside the project workspace into it."""
 from __future__ import annotations
 
 import shutil
@@ -19,11 +9,7 @@ from . import bus
 
 
 def stage(workspace: Path, subdir: str, files: dict[str, str], fresh: bool = True) -> list[str]:
-    """Write name->content pairs into `workspace/subdir`, return their workspace-relative paths.
-
-    `fresh=True` clears the folder first, so an edited source page takes
-    effect on the next run rather than leaving a stale copy behind.
-    """
+    """Write name->content pairs into `workspace/subdir`, return their workspace-relative paths."""
     folder = workspace / subdir
     if fresh:
         shutil.rmtree(folder, ignore_errors=True)

@@ -24,8 +24,7 @@ export function reduceSession(session, event) {
   const next = { ...s, eventIds: event.event_id ? [...s.eventIds.slice(-1199), event.event_id] : s.eventIds }
   const at = event.at || Date.now()
   next.lastEventAt = Math.max(s.lastEventAt || 0, at)
-  // The server is the durable source of truth, but an open Studio must not
-  // drop an earlier turn simply because a long run is still arriving.
+  // The server is the durable source of truth, but an open Studio must not drop an earlier turn simply because a long run is still arriving.
   const log = (level, text) => { next.logs = [...s.logs, { level, text, at }] }
   const chat = entry => { next.chat = [...s.chat, { at, ...entry }] }
   switch (event.type) {
@@ -39,8 +38,7 @@ export function reduceSession(session, event) {
       next.runStartedAt = next.busy ? at : 0
       if (!next.busy) next.connection = null
       if (next.busy) {
-        // A new request must not inherit the previous request's generated
-        // total while it is waiting for the first provider usage report.
+        // A new request must not inherit the previous request's generated total while it is waiting for the first provider usage report.
         next.runStats = { ...(s.runStats || {}), at, turn_started_at: at,
           turn_tokens: 0, sent: 0, received: 0 }
       }
@@ -48,8 +46,7 @@ export function reduceSession(session, event) {
     case 'agent_state':
       next.agentState = event.state || ''; next.agentDetail = event.detail || ''; next.reasoning = Boolean(event.thinking); break
     case 'memory': next.runStats = event; break
-    // The model service stopped answering (or answers again): one notice at the end of the chat, with "Try again" while the
-    // run waits, and one line in the stream when it is back. It is about now, so a reload does not bring it back.
+    // The model service stopped answering (or answers again).
     case 'connection':
       if (event.state === 'ok') {
         if (s.connection) chat({ role: 'connection', state: 'back', failed: s.connection.failed || 0 })
@@ -101,11 +98,7 @@ export function reduceSession(session, event) {
     case 'stream_start': next.liveFile = event.file; next.liveBuf = ''; break
     case 'stream': next.liveBuf = (s.liveBuf + (event.token || '')).slice(-200000); break
     case 'stream_end': next.files = { ...s.files, [event.file]: event.content || '' }; next.liveFile = null; next.liveBuf = ''; break
-    // Each question goes where it is answered: a free-form question is a turn
-    // in the chat, a drawing is looked at in the preview, and everything else
-    // is a dialog. The same split as `route()` in lib/ws.js, which is what
-    // recovers one after a reload - when the two disagreed, a question shown
-    // live and a question recovered went to different places.
+    // Each question goes where it is answered: a free-form question is a turn in the chat, a drawing is looked at in the preview, and everything else is a dialog.
     case 'approval':
       // Several can wait at once (the agent writes some files in parallel): each is a card in the stream, answered on its own.
       if (event.kind === 'permission') next.permissions = [...(s.permissions || []).filter(card => card.id !== event.id), event]
@@ -141,8 +134,7 @@ export function reduceSession(session, event) {
       else if (event.state === 'done') next.e2eParallel = { ...current, active: false }
       break
     }
-    // A request typed in the chat, at the stage it has reached. The plan is one card in the stream that
-    // follows the request; a newer plan for the same request replaces the older one on screen.
+    // A request typed in the chat, at the stage it has reached.
     case 'change': {
       if (!event.plan) break
       const card = { role: 'change', changeId: event.change_id, revision: event.revision || 0, status: event.status,

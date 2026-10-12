@@ -1,13 +1,4 @@
-"""The report shape the Testing views read, checked against what a build actually wrote.
-
-`prompts/builder/report-template.json` is the one place that shape is written down. The
-builder is handed a copy of it to fill (`stage_template`), and the same file is what
-`problems()` checks the result against, so the prompt and the check cannot disagree.
-
-Only the shape is checked - keys present, a list of objects still a list of objects, a
-number still a number - never what a value claims. Whether a layer really passed is the
-runner's own output file to prove, not this module's.
-"""
+"""The report shape the Testing views read, checked against what a build actually wrote."""
 from __future__ import annotations
 
 import json
@@ -19,7 +10,7 @@ from .. import prompts, reference_staging
 TEMPLATE = "builder/report-template"
 STAGED_DIR = ".agentforge/build/report-template"
 STAGED_NAME = "report.template.json"
-# section -> (record folder, file name), as ProjectSession.read_record() takes them
+# section -> (record folder, file name), as ProjectSession.read_record() takes them.
 SECTIONS = {"build": ("build", "report.json"), "qa": ("qa", "report.json")}
 # A row that is wrong is usually wrong the same way in every row; a few say enough.
 _ROWS_REPORTED = 3
@@ -50,8 +41,7 @@ def _kind(value: Any) -> str:
 
 
 def _check(name: str, value: Any, example: Any, out: list[str]) -> None:
-    # null is an honest answer for a single value nothing measured (an unavailable layer's exit
-    # code); a list or an object the screen iterates over has no such stand-in.
+    # null is an honest answer for a single value nothing measured (an unavailable layer's exit code).
     if value is None and not isinstance(example, (list, dict)):
         return
     if _kind(value) != _kind(example):

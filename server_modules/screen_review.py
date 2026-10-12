@@ -1,8 +1,4 @@
-"""What the screenshot review of the end-to-end tests (`qa_agent/e2e_review.py`) is made of.
-
-A vision model is shown pictures of a screen and answers with what is visibly wrong with it; the problems that matter are
-written out for the agent to fix; what is found is told in the chat under the pictures.
-"""
+"""What the screenshot review of the end-to-end tests (`qa_agent/e2e_review.py`) is made of."""
 from __future__ import annotations
 
 import re
@@ -45,8 +41,7 @@ def clean(data: Any) -> dict[str, Any]:
 
 def can_review(model: str, need_browser: bool = False,
                cancelled: Callable[[], bool] | None = None) -> tuple[bool, str]:
-    """Whether `model` can be shown screenshots (and, when the review takes them itself, there is a browser to take them
-    with): (ok, why not). Ollama says whether a model reads images; the model picker marks the ones that do."""
+    """Whether `model` can be shown screenshots (and, when the review takes them itself, there is a browser to take them."""
     seen = vision.supports(model)
     if seen is None:
         return False, f"it could not be found out whether {model} can look at pictures"
@@ -93,11 +88,7 @@ def fix_request(findings: list[dict[str, Any]]) -> tuple[str, int]:
 
 
 def run_fix(project: str, session: Any, request: str, model: str, agent: str, title: str) -> str:
-    """The agent's pass over the problems found. Returns "" when it finished, else why it stopped.
-
-    A pass that stops partway (the model service stayed unreachable, say) has still changed files, so it is not a reason to
-    end the review: the screens whose files changed are looked at again either way, and what is wrong is reported as it is.
-    Only Stop ends the review."""
+    """The agent's pass over the problems found. Returns "" when it finished, else why it stopped."""
     from .session import RunCancelled
 
     try:
@@ -116,8 +107,7 @@ def plural(count: int, word: str) -> str:
     return f"{count} {word}{'' if count == 1 else 's'}"
 
 
-# The reviews go round by round: look, fix, look again. The first round runs by itself; every round after it is asked for,
-# Yes or No, in the chat - nothing is asked once nothing is left to fix. This is the most rounds one review can have.
+# The reviews go round by round: look, fix, look again.
 MAX_ROUNDS = 10
 _YES = {"y", "yes", "yeah", "yep", "ok", "okay", "sure", "go", "continue", "ow", "ou", "owu", "හා", "ඔව්", "ඔව"}
 
@@ -133,9 +123,7 @@ def said_yes(reply: str | None) -> bool:
 
 
 def next_round(project: str, session: Any, agent: str, done: int, remaining: int, where: str, title: str) -> bool:
-    """After round `done`, with `remaining` problems still on `where`: whether to run round `done + 1`. The run holds still
-    for the answer on a Yes/No card in the chat (typing it works too); "You decide" and No end the review, and so does
-    reaching `MAX_ROUNDS`. Stop ends the run."""
+    """After round `done`, with `remaining` problems still on `where`: whether to run round `done + 1`. The run holds still."""
     from .session import RunCancelled
 
     if remaining <= 0:

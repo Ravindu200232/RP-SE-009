@@ -1,15 +1,6 @@
 'use client'
 
-/**
- * The journeys running in parallel, and how far each one has got.
- *
- * Each lane used to reserve most of its card for a screenshot of its own
- * browser. There is one browser now and it streams into the preview, so that
- * space was a black rectangle that never filled in — and it pushed the step
- * the lane is actually on down to a line of small print.
- *
- * The step is the card now.
- */
+/** The journeys running in parallel, and how far each one has got. */
 
 import { useStore } from '@/lib/store'
 

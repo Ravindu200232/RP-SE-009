@@ -25,7 +25,7 @@ export function SrsRevisions({ srsId, onRevised, onRequestChange, onPickVersion,
       const vers = spec?.versions || []
       setVersions(vers)
 
-      // Reconstruct and preserve chat stream from saved versions so prompts are never lost
+      // Reconstruct and preserve chat stream from saved versions so prompts are never lost.
       if (vers.length > 1) {
         setThread(prev => {
           if (prev.length > 0) return prev
@@ -45,8 +45,7 @@ export function SrsRevisions({ srsId, onRevised, onRequestChange, onPickVersion,
         })
       }
     } catch {
-      // A project whose specification cannot be read still shows its composer;
-      // the list is the part that is missing, and it says so by being empty.
+      // A project whose specification cannot be read still shows its composer; the list is the part that is missing, and it says so by being empty.
     }
   }
 

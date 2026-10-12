@@ -1,10 +1,4 @@
-/**
- * Replace this component.
- *
- * It exists so the scaffold builds, renders and can be opened in a browser
- * before a single feature is written: an empty bundle and a broken one look
- * identical from the outside.
- */
+/** Replace this component. */
 export function App() {
   return (
     <main>

@@ -9,8 +9,7 @@ function UiQuality({ qa }) {
   const rows = []
   const recordedSummary = qa?.uiQualitySummary
   for (const flow of (qa?.report?.e2e || {}).flows || []) {
-    // Newer runs carry the checks beside the stages; older ones left them
-    // inline among the steps, so both are read.
+    // Newer runs carry the checks beside the stages; older ones left them inline among the steps, so both are read.
     for (const seen of flow.ui_quality || [])
       rows.push({ journey: flow.title, page: seen.page, note: seen.note })
     for (const stage of flow.stages || []) {
@@ -25,8 +24,7 @@ function UiQuality({ qa }) {
                 note: row.error ? `could not be opened — ${row.error}`
                                 : [row.note || 'not checked', row.mobileNote && row.mobileNote !== 'clean' ? `mobile: ${row.mobileNote}` : ''].filter(Boolean).join(' · ') })
   }
-  // One row per page: a page opened by four journeys was checked four times and
-  // is still one page. A finding anywhere outranks a clean reading elsewhere.
+  // One row per page: a page opened by four journeys was checked four times and is still one page.
   const byPage = new Map()
   for (const row of rows) {
     const held = byPage.get(row.page)
@@ -119,8 +117,7 @@ export default function Screenshots({ qa }) {
   const [selected, setSelected] = useState(null)
   const all = qa?.screenshots || []
   const url = shot => api.qaScreenshotUrl(qa.project, shot.path, shot.at)
-  // A frame is a record of a step; a shot is evidence somebody asked for. They
-  // are read differently, so they are shown differently.
+  // A frame is a record of a step; a shot is evidence somebody asked for.
   const frames = all.filter(shot => shot.frame)
   const shots = all.filter(shot => !shot.frame)
   if (!all.length) {

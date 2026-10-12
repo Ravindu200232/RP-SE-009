@@ -1,14 +1,4 @@
-// Playwright runs three QA layers against the running app: end-to-end journeys,
-// the visual (screenshot) check and the accessibility check.
-//
-//   npm run qa:e2e        # starts the built app on a free port, runs it, stops it
-//   BASE_URL=http://localhost:3000 npx playwright test --project=desktop
-//
-// QA sets BASE_URL to the live preview. PW_CHROMIUM_EXECUTABLE, when set, is a
-// Chromium already on this machine, so no second browser is downloaded.
-//
-// Do not pass `--reporter=...` on the command line: it replaces the reporters
-// below, and test-results/results.json (which the Testing view reads) is not written.
+// Playwright runs three QA layers against the running app: end-to-end journeys, the visual (screenshot) check and the accessibility check.
 import { defineConfig, devices } from '@playwright/test'
 
 const executablePath = process.env.PW_CHROMIUM_EXECUTABLE || undefined
@@ -18,16 +8,13 @@ export default defineConfig({
   outputDir: 'test-results/artifacts',
   // A journey signs in, fills forms and waits for the server; 45s timed out under load (126 times in one project).
   timeout: 60_000,
-  // Missing screenshot baselines are written, never overwritten. (Playwright still fails the
-  // test that wrote one; visual.spec.js records its first baseline itself so that run passes.)
+  // Missing screenshot baselines are written, never overwritten.
   updateSnapshots: 'missing',
   expect: {
     timeout: 7_000,
     toHaveScreenshot: { maxDiffPixelRatio: 0.02, animations: 'disabled' },
   },
-  // Journeys share one server and one seeded database: the tests of a file run in order, two files at a time, and a
-  // journey that stalls once (a slow first compile, a dropped connection) is tried once more. Playwright marks it flaky,
-  // and its last attempt is its result. Journeys that passed alone but failed together were the commonest false failure.
+  // Journeys share one server and one seeded database.
   fullyParallel: false,
   workers: 2,
   retries: 1,
@@ -41,8 +28,7 @@ export default defineConfig({
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
     screenshot: 'on',
     trace: 'retain-on-failure',
-    // AGENTFORGE_LIVE_SLOWMO=250 slows every browser action by that many ms, to watch a run in the
-    // Studio's preview at a human pace (the default is full speed).
+    // AGENTFORGE_LIVE_SLOWMO=250 slows every browser action by that many ms, to watch a run in the Studio's preview at a human pace (the default is full speed).
     launchOptions: {
       ...(executablePath ? { executablePath } : {}),
       ...(Number(process.env.AGENTFORGE_LIVE_SLOWMO) > 0 ? { slowMo: Number(process.env.AGENTFORGE_LIVE_SLOWMO) } : {}),

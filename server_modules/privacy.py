@@ -1,22 +1,4 @@
-"""Keep personal data out of what is sent to the model.
-
-Whatever the person types - the idea, an answer in the interview, a request in the chat, the reply to a question - goes through
-Microsoft Presidio first. Presidio's analyzer finds the personal data in the text (names, email addresses, phone numbers,
-card and bank numbers, national identity numbers, public IP addresses, ...) and its anonymizer replaces each one with a
-placeholder such as `<EMAIL_ADDRESS>` or `<PERSON_2>`, so the model, the project's logs and the chat history only ever see the
-placeholder. The chat says what was hidden (how many of which kind, never the values).
-
-Presidio finds names with a small spaCy English model (`en_core_web_sm`, set with `privacy_model`) and everything else with
-its pattern recognizers, which do not depend on the language the message is written in, so an email address or a phone number
-is found in a Sinhala or a Singlish message too. Two recognizers are added for Sri Lanka: its national identity number in both
-forms, and its phone numbers. Without the spaCy model Presidio runs on its pattern recognizers alone.
-
-If Presidio itself is not installed the message is not sent at all (`NotSent`) and the person is told how to fix that: a filter
-that quietly lets everything through is worse than none. Turning the filter off is the person's own choice (`privacy_filter`).
-
-What is not covered: a credential is not personal data in Presidio's sense - `secrets_guard.py` refuses those before this runs -
-and files the person attaches are read by the agent as they are.
-"""
+"""Keep personal data out of what is sent to the model."""
 from __future__ import annotations
 
 import ipaddress
@@ -27,8 +9,7 @@ from typing import Any
 
 from . import bus, config
 
-# What is hidden unless `privacy_entities` says otherwise: the things that identify a person. Places, organisations, dates and
-# web addresses are left alone: an app for a hotel in Colombo needs "Colombo", and none of them identify anyone alone.
+# What is hidden unless `privacy_entities` says otherwise: the things that identify a person.
 DEFAULT_ENTITIES = (
     "PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD", "IBAN_CODE", "IP_ADDRESS", "CRYPTO", "MEDICAL_LICENSE",
     "US_SSN", "US_ITIN", "US_PASSPORT", "US_BANK_NUMBER", "US_DRIVER_LICENSE", "UK_NHS", "LK_NIC",
@@ -207,10 +188,7 @@ def _chosen(text: str, rows: list[Any]) -> list[Any]:
 
 
 def scrub(text: str) -> Scrubbed:
-    """`text` with its personal data replaced, and what was replaced. Raises `NotSent` when Presidio cannot run.
-
-    The same value is the same placeholder through the text (`<PERSON_1>` ... `<PERSON_1>`); a kind with several different
-    values numbers them, one value is just `<PERSON>`."""
+    """`text` with its personal data replaced, and what was replaced. Raises `NotSent` when Presidio cannot run."""
     body = str(text or "")
     if not body.strip():
         return Scrubbed(body)
@@ -256,8 +234,7 @@ def tell(project: str, found: dict[str, int]) -> None:
 
 
 def screen(project: str, text: str) -> str:
-    """The text to use in place of what the person typed: the same text, personal data replaced. Said in the chat when
-    something was hidden. Raises `NotSent` when the filter is on and cannot run."""
+    """The text to use in place of what the person typed: the same text, personal data replaced. Said in the chat when."""
     if not enabled():
         return str(text or "")
     done = scrub(text)

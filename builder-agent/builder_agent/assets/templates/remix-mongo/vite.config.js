@@ -1,10 +1,7 @@
 import { vitePlugin as remix } from '@remix-run/dev';
 import { defineConfig } from 'vite';
 
-/**
- * Remix runs as a Vite plugin. There is no `remix.config.js` in v2 with Vite —
- * the framework's own options live here, and a file of that name is ignored.
- */
+/** Remix runs as a Vite plugin. */
 export default defineConfig({
   plugins: [
     remix({

@@ -5,11 +5,7 @@ export const metadata = {
   description: 'Replace this metadata with the application\u2019s own.',
 };
 
-/**
- * The one place `globals.css` is imported. A stylesheet imported from a page
- * instead loads only on that route, and the app looks unstyled everywhere
- * else.
- */
+/** The one place `globals.css` is imported. */
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

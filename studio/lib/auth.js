@@ -18,8 +18,7 @@ export const useAuthStore = create((set, get) => ({
     const token = getAuthToken()
     set({ token, loading: true })
     try {
-      // Even with no token kept here, the session cookie may still sign them
-      // in - that is what the frames, the pictures and the socket travel on.
+      // Even with no token kept here, the session cookie may still sign them in - that is what the frames, the pictures and the socket travel on.
       const res = await api.auth.me()
       const required = Boolean(res?.required)
       if (res?.ok && res?.user) {
@@ -89,8 +88,7 @@ export const useAuthStore = create((set, get) => ({
   clearError: () => set({ error: '', notice: '' }),
 }))
 
-// A session that ends on the server - it expired, or it was ended from
-// somewhere else - ends here too, at the sign-in page.
+// A session that ends on the server - it expired, or it was ended from somewhere else - ends here too, at the sign-in page.
 whenSignedOut(() => {
   if (!useAuthStore.getState().user && !getAuthToken()) return
   setAuthToken('')

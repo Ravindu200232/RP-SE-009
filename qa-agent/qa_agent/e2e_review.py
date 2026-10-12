@@ -1,22 +1,4 @@
-"""After the end-to-end tests finish, a model that can look at pictures reviews their screenshots, and what it finds is fixed.
-
-Playwright keeps a screenshot of the screen each test ended on, at desktop and at mobile width. Those pictures are shown to the
-model, test by test, journeys first: it says what is visibly wrong with the real application (an error shown to the person,
-cut-off or overlapping text, a broken layout, an image that did not load, a screen with no styling). The problems that matter
-are given to the agent to fix in the application's source, and told to run the journey suite again, so every journey's
-evidence is current. The tests whose screens had problems are then looked at once more, from their new screenshots, and what
-is still wrong is reported as it is. All of it is in the chat stream, with the pictures.
-
-The pictures are kept while the tests run (`screen_keeper.py`): Playwright empties its output folder at the start of every run,
-so without that a later run (the accessibility check, a re-run of one test) would take the journeys' screens away before they
-are looked at.
-
-A model that cannot look at pictures (Ollama says so: `server_modules/vision.py`, and the model picker marks the ones that can)
-does not review, but the screens are still shown in the chat, with a line saying they were not checked. A review that is turned
-off, and a run that left no screenshots, say so in the chat too, with what the test runs on disk show: the person is never
-left wondering why the screens were not looked at. None of this is an error, and nothing here ever fails the testing: it is a
-review, not a gate.
-"""
+"""After the end-to-end tests finish, a model that can look at pictures reviews their screenshots, and what it finds is fixed."""
 from __future__ import annotations
 
 import hashlib
@@ -38,8 +20,7 @@ REVIEW_SECONDS = 300            # the longest the model has to look at the pictu
 VIEWPORT_OF = {"desktop": "desktop", "mobile": "mobile"}
 _JOURNEY = re.compile(r"^\s*\[UJ-", re.I)
 _SKIP_SPECS = re.compile(r"a11y|axe|accessib", re.I)
-# An accessibility check written inside a journey file ("Admin Overview is accessible") ends on whatever page it checked,
-# often the sign-in page: its screen is no journey's to judge (twenty of them were taken for broken pages).
+# An accessibility check written inside a journey file ("Admin Overview is accessible") ends on whatever page it checked, often the sign-in page.
 _SKIP_TITLES = re.compile(r"\b(a11y|axe|accessib\w*|@a11y)\b", re.I)
 
 
@@ -48,11 +29,7 @@ def enabled() -> bool:
 
 
 def screens(workspace: Path) -> list[dict[str, Any]]:
-    """The newest screenshot of every end-to-end test, as one entry per test with a picture per browser:
-    {"file", "title", "status", "pictures": {"desktop": path, "mobile": path}}, user journeys first.
-
-    Playwright overwrites its results on every run and a re-run may cover only a few tests, so each test's newest run
-    speaks for it, whichever run that was."""
+    """The newest screenshot of every end-to-end test, as one entry per test with a picture per browser:."""
     latest: dict[tuple[str, str, str], dict[str, Any]] = {}
     for run in sorted(build_evidence._runs_found(workspace), key=lambda r: (str(r.get("at") or ""), r.get("rank", 0))):  # noqa: SLF001
         for test in run.get("tests") or []:
@@ -137,9 +114,7 @@ def _show(project: str, workspace: Path, groups: list[dict[str, Any]], why: str)
 
 
 def run(project: str, session: Any, fix: bool = True, model: str = "", force: bool = False) -> dict[str, Any]:
-    """Review the end-to-end screenshots with a vision model and fix what it finds (`fix`: false only looks and reports).
-    `model` is the one this run chose, else the project's; `force` runs it even when the setting turns it off, because it
-    was asked for. Always returns a result, never raises, and never ends without saying in the chat why it did not look."""
+    """Review the end-to-end screenshots with a vision model and fix what it finds (`fix`: false only looks and reports)."""
     if not enabled() and not force:
         bus.agent_msg(project, "The end-to-end screenshots were not looked at: the screenshot review is turned off "
                                "(the e2e_visual_review setting).", title="Screenshot review skipped", kind="narration",
@@ -205,8 +180,7 @@ def _review(project: str, session: Any, model: str, groups: list[dict[str, Any]]
     fix_stopped = ""
     count = 0
     rounds: list[dict[str, Any]] = []
-    # Round by round: fix what the screens still show, run only those tests again, look at their new screens. The first round
-    # runs by itself; each one after it is asked for.
+    # Round by round: fix what the screens still show, run only those tests again, look at their new screens.
     while fix:
         request, count_now = screen_review.fix_request(list(final.values()))
         bad = {(f["file"], f["title"]) for f in final.values()

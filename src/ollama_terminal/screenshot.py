@@ -1,14 +1,4 @@
-"""A picture of a page, taken silently with a browser that is already on the computer.
-
-Nothing is installed or driven. A page on disk, or a local preview URL, is shown to a headless Chromium with its own empty
-profile and a picture is asked for: no window opens and nothing the person is signed in to is touched. The browsers tried,
-best first: Playwright's headless shell (which the installer puts on the computer, and which is made for this), Edge or
-Chrome (Windows always has Edge), a Chromium on the PATH, and last the full Chromium Playwright also ships, because that
-build was seen never to finish in new headless mode here. Each is tried once on a tiny page, so one that hangs costs a few
-seconds, once, and is never used again.
-
-A page that wrote its own height into its title (`MEASURE`) is photographed whole, however tall; any other page, a viewport.
-"""
+"""A picture of a page, taken silently with a browser that is already on the computer."""
 from __future__ import annotations
 
 import os
@@ -150,8 +140,7 @@ def _stop_tree(process: subprocess.Popen) -> None:
 
 def _run(command: list[str], seconds: int = SECONDS,
          cancelled: Callable[[], bool] | None = None) -> subprocess.CompletedProcess:
-    """The command to its end, or - after `seconds` - stopped together with every process it started (a browser starts
-    several, and only the one this started is ever touched: never another Chrome or Edge the person has open)."""
+    """The command to its end, or - after `seconds` - stopped together with every process it started (a browser starts."""
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, text=True,
                                encoding="utf-8", errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                                start_new_session=os.name != "nt")
@@ -189,10 +178,7 @@ def _flags(how: str, profile: str, width: int, height: int) -> list[str]:
 
 def dump_dom(source: Path, suffix: str = "", budget_ms: int = 120_000, seconds: int = 240,
              browser: tuple[str, str] | None = None, cancelled: Callable[[], bool] | None = None) -> str:
-    """The page `source` (an HTML file on disk) after it has run for up to `budget_ms` of the browser's own clock, as HTML.
-
-    For a page that works something out and writes it into itself: the browser's clock runs ahead while the page waits, so a
-    minute of the page's timers takes a few seconds."""
+    """The page `source` (an HTML file on disk) after it has run for up to `budget_ms` of the browser's own clock, as HTML."""
     browser = browser or working_browser(cancelled=cancelled)
     if not browser:
         raise ValueError("no browser to open the page with (Edge, Chrome or Chromium)")
@@ -209,9 +195,7 @@ def dump_dom(source: Path, suffix: str = "", budget_ms: int = 120_000, seconds: 
 
 def shoot(source: Path | str, out: Path, viewport: str = "desktop", browser: tuple[str, str] | None = None,
           seconds: int = SECONDS, cancelled: Callable[[], bool] | None = None, suffix: str = "") -> Path:
-    """One picture of `source` (an HTML file on disk, or a local preview URL) at `viewport`, saved to `out`.
-
-    `suffix` (`?as=x#/route`) is put on the address of a file, for a page that shows what its address says."""
+    """One picture of `source` (an HTML file on disk, or a local preview URL) at `viewport`, saved to `out`."""
     if viewport not in VIEWPORTS:
         raise ValueError("viewport must be desktop or mobile")
     if cancelled and cancelled():
@@ -231,7 +215,7 @@ def shoot(source: Path | str, out: Path, viewport: str = "desktop", browser: tup
     try:
         tall = height
         if not is_url:
-            # First how tall the page is, then a window that tall. The measure is a title the page writes once it has loaded.
+            # First how tall the page is, then a window that tall.
             measured = run([path, *_flags(how, profile, width, height), "--dump-dom", url])
             found = re.search(re.escape(HEIGHT_MARK) + r"(\d+)", measured.stdout or "")
             tall = max(MIN_HEIGHT, min(int(found.group(1)) if found else height, MAX_HEIGHT[viewport]))

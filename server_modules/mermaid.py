@@ -1,11 +1,4 @@
-"""Rendering a diagram to SVG.
-
-The studio's diagram viewer injects an SVG string; a `.mmd` source alone shows a
-file path where a picture should be. Mermaid's own CLI is the renderer, found
-once and reused. When it is not installed the source is still written and the
-diagram is marked unrendered, which is a diagram you can copy rather than one
-that silently is not there.
-"""
+"""Rendering a diagram to SVG."""
 from __future__ import annotations
 
 import json
@@ -24,27 +17,18 @@ _lock = threading.Lock()
 _NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 _cli: list[str] | None | bool = False   # False = not looked for yet
 _cli_checked = 0.0
-# A renderer that was not found is looked for again after this long: Node can arrive (an install finishing, PATH
-# changing) while the studio runs, and "not found once" must not mean source-only diagrams until a restart.
+# A renderer that was not found is looked for again after this long.
 RECHECK_SECONDS = 60
 
-# Mermaid needs a browser; on a headless machine it needs to be told it may run
-# without a sandbox. Written next to the call rather than into the project.
+# Mermaid needs a browser; on a headless machine it needs to be told it may run without a sandbox.
 _PUPPETEER = {"args": ["--no-sandbox", "--disable-setuid-sandbox"]}
 _STUDIO_ROOT = Path(__file__).resolve().parents[1] / "studio"
 
-# Mermaid cannot reproduce every Visual Paradigm primitive (for example a
-# stick actor or a 3-D deployment node), but this shared rendering contract
-# keeps every supported approximation readable and recognisably technical:
-# white canvas, pale blue figures, dark connectors, familiar UML typography,
-# and enough space to inspect the notation.  Diagram-specific source still
-# supplies the UML/BPMN/DFD semantics.
+# Mermaid cannot reproduce every Visual Paradigm primitive (for example a stick actor or a 3-D deployment node), but this shared rendering contract keeps...
 _FONT = "Arial, Helvetica, sans-serif"
 _VISUAL_CONFIG = {
     "theme": "base",
-    # The same font twice on purpose: the top-level one is what text is measured in and what the SVG's CSS names,
-    # `themeVariables.fontFamily` is what the theme paints with. Set apart, labels were measured in one font and drawn
-    # in a wider one, which cut the last letter off every label.
+    # The same font twice on purpose: the top-level one is what text is measured in and what the SVG's CSS names, `themeVariables.fontFamily` is what the theme...
     "fontFamily": _FONT,
     "themeVariables": {
         "background": "#ffffff",
@@ -82,22 +66,13 @@ _VISUAL_CONFIG = {
     "elk": {"mergeEdges": False, "nodePlacementStrategy": "NETWORK_SIMPLEX"},
 }
 
-# Every kind that is a graph of boxes and labelled edges (a sequence diagram is not laid out by either engine). dagre
-# puts each label at the middle of its own curve, so where edges cross - several components requiring the same
-# interface, a data store read by many processes - the labels pile on top of each other; ELK routes edges around the
-# boxes and labels. Tried first; dagre is the fallback if it fails.
+# Every kind that is a graph of boxes and labelled edges (a sequence diagram is not laid out by either engine).
 _ELK_KINDS = frozenset({"component", "deployment", "dfd", "bpmn", "activity", "system_context", "use_case",
                         "state_machine", "class_object", "erd"})
 
 
 def _node_binaries() -> list[str]:
-    """Find Node without assuming the desktop app inherited a shell PATH.
-
-    The Studio packages Mermaid CLI with its front-end dependencies.  Desktop
-    launches do not necessarily inherit the developer's PATH, while Codex and
-    the packaged app can provide Node beside the Python runtime.  Prefer an
-    explicit override, then PATH, then that sibling runtime location.
-    """
+    """Find Node without assuming the desktop app inherited a shell PATH."""
     candidates: list[Path | str | None] = [
         os.environ.get("AGENTFORGE_NODE_BINARY"),
         shutil.which("node") or shutil.which("node.exe"),
@@ -120,8 +95,7 @@ def _node_binaries() -> list[str]:
 
 
 def _playwright_browsers() -> list[Path]:
-    """Chromium as Playwright installed it (the desktop app installs one under its tools, PLAYWRIGHT_BROWSERS_PATH):
-    the browser every computer the installer set up has, Chrome or Edge or not."""
+    """Chromium as Playwright installed it (the desktop app installs one under its tools, PLAYWRIGHT_BROWSERS_PATH):."""
     roots = [os.environ.get("PLAYWRIGHT_BROWSERS_PATH", ""),
              str(Path(os.environ.get("LOCALAPPDATA", "")) / "ms-playwright") if os.environ.get("LOCALAPPDATA") else "",
              str(Path.home() / "Library" / "Caches" / "ms-playwright"), str(Path.home() / ".cache" / "ms-playwright")]
@@ -200,7 +174,6 @@ _INIT_DIRECTIVE = re.compile(
 _FRONTMATTER = re.compile(r"\A\s*---[ \t]*\r?\n(?P<body>.*?)\r?\n---[ \t]*\r?\n", re.DOTALL)
 _STEREOTYPE = re.compile(r"<<[ \t]*([^<>\r\n]+?)[ \t]*>>")
 # What a model's own `%%{init}%%` line may not change: the fonts (see `_FONT`) and how the diagram is laid out.
-# Colours are kept - the ER diagram's orange headers and the DFD's yellow blocks come from there, on purpose.
 _NOT_THE_MODELS = frozenset({"fontFamily", "fontSize", "themeCSS", "layout", "look", "htmlLabels", "securityLevel"})
 
 
@@ -226,16 +199,7 @@ def _own_theme(hit: re.Match) -> str:
 
 
 def prepare(source: str) -> str:
-    """The source as the renderer is given it.
-
-    - A font or layout the model wrote into the source (`%%{init: …}%%`, a `config:` front matter) is not honoured: the
-      shared `_VISUAL_CONFIG` decides those for every diagram. Left in, the model's `fontFamily` made Mermaid name one
-      font that does not exist ("Helvetica, Arial, sans-serif" as a single quoted name), so labels were measured in
-      one font and painted in another and every one was cut off. Its colours stay.
-    - In a flowchart, `<<component>>` becomes «component»: flowchart labels are HTML, which swallows `<<…>>` as a tag
-      and drew a bare "<>". Class, state and other diagrams keep their `<<enumeration>>`/`<<choice>>` syntax.
-    The saved `.mmd` is not changed; this only shapes what is drawn.
-    """
+    """The source as the renderer is given it."""
     text = str(source or "")
     front = _FRONTMATTER.match(text)
     if front and re.search(r"^[ \t]*config[ \t]*:", front.group("body"), re.MULTILINE):
@@ -254,16 +218,7 @@ def _config(layout: str = "") -> dict:
 
 
 def render(source: str, out_path: Path, timeout: int = 180, *, kind: str = "") -> tuple[bool, str]:
-    """Draw one Mermaid source to `out_path`.
-
-    Returns whether an SVG landed and, when it did not, what Mermaid said about
-    it. That message is the only reliable parser there is — a hand-written
-    syntax check passes `Member --> (Login)`, which Mermaid rejects — so it goes
-    back to the model as the repair instruction.
-
-    A kind in `_ELK_KINDS` is laid out with ELK first; if that fails for any reason but the source itself being
-    rejected, it is drawn again with the default layout, so the better layout never costs a diagram.
-    """
+    """Draw one Mermaid source to `out_path`."""
     cli = _find_cli()
     if not cli:
         return False, "no mermaid renderer is installed"
@@ -317,17 +272,12 @@ _UC_DASHED = re.compile(r'^\s*(\w+)\s*-\.->\s*\|\s*"?([^|"]+?)"?\s*\|\s*(\w+)')
 _UC_LABELED = re.compile(r'^\s*(\w+)\s*-->\s*\|\s*"?([^|"]+?)"?\s*\|\s*(\w+)')
 
 
-# One stick figure (head to feet, y-32..y+48) and a two-line name below it, with
-# clear space before the next actor in the same column.
+# One stick figure (head to feet, y-32..y+48) and a two-line name below it, with clear space before the next actor in the same column.
 _UC_ACTOR_GAP = 150
 
 
 def _spread(wanted: list[float], low: float, high: float, gap: float) -> list[float]:
-    """Positions as near `wanted` as they can be, at least `gap` apart, within low..high.
-
-    Neighbours that would be too close move apart around the middle of where they
-    wanted to be, so a pair is centred on its shared use cases rather than one
-    actor keeping its spot and the other being pushed off."""
+    """Positions as near `wanted` as they can be, at least `gap` apart, within low..high."""
     order = sorted(range(len(wanted)), key=lambda i: wanted[i])
     blocks: list[tuple[float, list[int]]] = []          # (first position, members in order)
     for index in order:
@@ -393,9 +343,7 @@ def _render_use_case_svg(source: str, out_path: Path) -> bool:
         if m and (m.group(1) in actors or m.group(2) in actors):
             assoc.append((m.group(1), m.group(2)))
 
-    # A primary/human actor sits on the left, like the reference's Customer and
-    # Cellular Phone; an actor that reads as an external system sits on the
-    # right, like the reference's External Phone Company.
+    # A primary/human actor sits on the left, like the reference's Customer and Cellular Phone.
     external_hint = re.compile(r"\b(external|company|provider|gateway|service|system|api|bureau|agency|network)\b",
                                re.IGNORECASE)
     left_actors = [a for a in actors if not external_hint.search(actors[a])]
@@ -405,9 +353,7 @@ def _render_use_case_svg(source: str, out_path: Path) -> bool:
         mid = max(1, len(names) // 2)
         left_actors, right_actors = names[:mid], names[mid:]
 
-    # Dense stakeholder maps remain readable as a two-column use-case grid,
-    # matching the visual hierarchy of the supplied UML reference instead of
-    # becoming one very tall stack of ovals.
+    # Dense stakeholder maps remain readable as a two-column use-case grid, matching the visual hierarchy of the supplied UML reference instead of becoming one...
     uc_columns = 2 if len(use_cases) > 7 else 1
     uc_rows = (len(use_cases) + uc_columns - 1) // uc_columns
     rows = max(uc_rows, len(left_actors), len(right_actors), 1)
@@ -442,8 +388,7 @@ def _render_use_case_svg(source: str, out_path: Path) -> bool:
 
     actor_pos: dict[str, tuple[float, float]] = {}
     for x, column in ((left_x, left_actors), (right_x, right_actors)):
-        # Each actor sits level with the use cases it joins, but two that join the
-        # same ones would land on one spot: spread them a full figure apart.
+        # Each actor sits level with the use cases it joins, but two that join the same ones would land on one spot: spread them a full figure apart.
         wanted = []
         for i, node in enumerate(column):
             linked = [uc_pos[b][1] for a, b in assoc if a == node and b in uc_pos]
@@ -516,13 +461,7 @@ def _render_use_case_svg(source: str, out_path: Path) -> bool:
 
 
 def render_diagram(kind: str, source: str, out_path: Path, timeout: int = 180) -> tuple[bool, str]:
-    """Render the LLM-produced Mermaid source with its installed renderer.
-
-    Mermaid CLI remains the source renderer.  The use-case adapter reads only
-    the produced Mermaid relationships to emit the UML primitives that Mermaid
-    itself does not implement (stick actors, ovals and generalization).  It is
-    deliberately a presentation adapter, never a content generator or gate.
-    """
+    """Render the LLM-produced Mermaid source with its installed renderer."""
     if kind == "use_case":
         try:
             if _render_use_case_svg(source, out_path):
@@ -568,8 +507,7 @@ def _readable_error(text: str) -> str:
     return " | ".join((keep or lines)[:6])[:600] or "the renderer failed without a message"
 
 
-# What Mermaid itself says about a source it cannot parse. Anything else (a browser that would not start, a file the
-# renderer could not read) is the renderer's own trouble, which no rewrite of the source can fix.
+# What Mermaid itself says about a source it cannot parse.
 _SYNTAX = re.compile(r"parse error|lexical error|syntax error in|expecting |no diagram type detected|"
                      r"unknowndiagramerror|unsupported diagram|got '", re.IGNORECASE)
 
@@ -582,11 +520,6 @@ def is_syntax_error(message: str) -> bool:
 _FENCE = re.compile(r"```(?:mermaid)?\s*(.+?)```", re.DOTALL)
 
 # Mermaid deliberately accepts a broad textual subset of class-diagram syntax.
-# The generator, however, promises recognizable UML rather than merely a
-# parseable graph.  These checks make the Visual Paradigm / UML conventions
-# actionable before an SVG is accepted.  They cannot infer product facts (that
-# remains the SRS traceability review), but they catch notation drift such as a
-# missing visibility symbol or the vague multiplicity "many".
 _CLASS_BLOCK = re.compile(r"^\s*class\s+[^\s{]+(?:\s*\[[^\]]+\])?\s*\{(?P<body>.*?)^\s*\}",
                           re.MULTILINE | re.DOTALL)
 _CLASS_MEMBER = re.compile(r"^\s*([+\-#~])\s*[^\s:].*", re.MULTILINE)
@@ -599,13 +532,7 @@ _RELATION = re.compile(
     re.MULTILINE)
 _MULTIPLICITY = re.compile(r"^(?:0\.\.1|1|0\.\.\*|1\.\.\*|\*|[2-9]\d*|(?:0|1)\.\.[2-9]\d*)$")
 def _diagram_notation_problems(kind: str, text: str) -> list[str]:
-    """Small, deterministic guards for the defining notation of every kind.
-
-    Mermaid verifies grammar.  These checks verify the semantic *shape* that
-    grammar alone cannot see (for example, a sequence source can parse without
-    a return arrow, and a context diagram can parse without a system boundary).
-    They intentionally never invent project content or require optional parts.
-    """
+    """Small, deterministic guards for the defining notation of every kind."""
     found: list[str] = []
 
     if re.search(r"^\s*(?:click|action)\b", text, re.IGNORECASE | re.MULTILINE):
@@ -628,11 +555,7 @@ def _diagram_notation_problems(kind: str, text: str) -> list[str]:
     elif kind == "bpmn":
         if not re.search(r"\bsubgraph\b", text, re.IGNORECASE):
             found.append("a BPMN diagram needs a named pool/lane `subgraph`")
-        # BPMN defines an event by its circle, not by the English words
-        # "Start" and "End".  Mermaid approximates the start event with a
-        # double circle and the end event with a triple circle; accept any
-        # evidence-based label in those shapes rather than rejecting a
-        # customer-domain label such as "Order received".
+        # BPMN defines an event by its circle, not by the English words "Start" and "End".
         has_start = bool(re.search(r"(?<!\()\(\(\s*(?!\()[^)]+\)\)(?!\))", text))
         has_end = bool(re.search(r"(?<!\()\(\(\(\s*[^)]+\)\)\)(?!\))", text))
         if not has_start or not has_end:
@@ -702,15 +625,13 @@ def _class_object_problems(text: str) -> list[str]:
     for block in blocks:
         body = block.group("body")
         header = block.group(0).split("{", 1)[0]
-        # An object compartment holds concrete slot values rather than class
-        # attributes/operations, so UML visibility is not meaningful there.
+        # An object compartment holds concrete slot values rather than class attributes/operations, so UML visibility is not meaningful there.
         if re.search(r"<<object>>", body, re.IGNORECASE):
             continue
         if "[" in header and ":" in header:
             problems.append("an object-instance label `instance : Class` must include the `<<object>>` stereotype")
         if re.search(r"<<enumeration>>", body, re.IGNORECASE):
-            # Enumeration literals are not classifier attributes or operations;
-            # UML writes their names plainly below the enumeration stereotype.
+            # Enumeration literals are not classifier attributes or operations; UML writes their names plainly below the enumeration stereotype.
             for line in body.splitlines():
                 stripped = line.strip()
                 if not stripped or _CLASS_STEREOTYPE.match(stripped):
@@ -736,7 +657,6 @@ def _class_object_problems(text: str) -> list[str]:
                 break
 
     # Mermaid also permits Class : member declarations outside a compartment.
-    # Keep the same visibility rule there.
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith(("class ", "%%")) or ":" not in stripped:
@@ -779,8 +699,7 @@ OPENERS = {
 }
 
 
-# A line that is only a diagram declaration. Matching the whole line (not "starts with graph") is what keeps a sentence
-# such as "graph of the booking flow" from being taken for the start of a diagram.
+# A line that is only a diagram declaration.
 _OPENER_LINE = re.compile(
     r"^[ \t]*(?:(?:flowchart|graph)(?:[ \t]+(?:TB|TD|BT|RL|LR))?|sequenceDiagram|classDiagram(?:-v2)?"
     r"|stateDiagram(?:-v2)?|erDiagram)[ \t]*;?[ \t]*\r?$", re.IGNORECASE | re.MULTILINE)
@@ -796,12 +715,7 @@ def _declaration(text: str) -> str:
 
 
 def clean(source: str) -> str:
-    """The Mermaid source out of whatever the model wrapped it in.
-
-    A fence is taken off, and so is any prose written before the diagram ("Here is the diagram:"): the source starts
-    at its declaration. A reply with no declaration at all is returned as it is - `has_diagram` is what says it is not
-    a diagram - so `NOT_APPLICABLE: …` still comes through.
-    """
+    """The Mermaid source out of whatever the model wrapped it in."""
     raw = str(source or "").strip()
     fenced = _FENCE.search(raw)
     if fenced:
@@ -824,11 +738,7 @@ def declaration_for(kind: str) -> str:
 
 
 def has_diagram(kind: str, source: str) -> bool:
-    """Whether this is Mermaid source of the kind's family at all, rather than words a model wrote instead of it.
-
-    Only the declaration is checked - never the notation - so a diagram that is drawn differently from the standard is
-    still a diagram. Prose, a half-finished thought or the model's reasoning is not.
-    """
+    """Whether this is Mermaid source of the kind's family at all, rather than words a model wrote instead of it."""
     declaration = _declaration(clean(source))
     if not declaration:
         return False

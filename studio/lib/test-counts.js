@@ -9,12 +9,7 @@ export function deriveVitestCounts(v) {
   return { passed, failed, skipped, total, executed, files: suites.length }
 }
 
-/** The one current unit-suite status used by every Studio surface.
- *
- * Vitest's assertion rows are authoritative because summary fields can be
- * stale after targeted repair runs.  Older reports without testResults fall
- * back to their numeric summary instead of being shown as an empty suite.
- */
+/** The one current unit-suite status used by every Studio surface. */
 export function unitTestStatus(v) {
   if (!v) return null
   if (Array.isArray(v.fileResults)) {

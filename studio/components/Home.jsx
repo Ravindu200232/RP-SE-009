@@ -57,17 +57,13 @@ export default function Home({
   const [workspacePath, setWorkspacePath] = useState('')
   const [pickingWorkspace, setPickingWorkspace] = useState(false)
   const [workspaceError, setWorkspaceError] = useState('')
-  // Providers this build should start with. Held here because the app they
-  // belong to does not exist yet, and the sheet is here rather than in
-  // BuildSetup because that row opens no dialog of its own.
+  // Providers this build should start with.
   const [plugins, setPlugins] = useState([])
   const [pluginsOpen, setPluginsOpen] = useState(false)
   const [languageOptions, setLanguageOptions] = useState(SRS_LANGUAGES)
   const box = useRef(null)
 
-  // The account connections a build of the chosen stack needs (`stacks.js` `needs`). Start waits
-  // for them, the way the Deploy panel waits for its accounts. null = still being checked. They are
-  // made in Settings › Integrations, so they are read again when Settings closes and on focus.
+  // The account connections a build of the chosen stack needs (`stacks.js` `needs`).
   const [connections, setConnections] = useState({ supabase: null, mongodb: null })
   useEffect(() => {
     let live = true
@@ -89,9 +85,7 @@ export default function Home({
   const designModel = models.design || models.agent || builderModel
 
   useEffect(() => { setLanguageOptions(displaySrsLanguages()) }, [])
-  // The interview is a project stage, not a temporary chat. Make its project
-  // active early and restore the durable stream that continues through SRS,
-  // wireframe, prototype, build, QA and deploy.
+  // The interview is a project stage, not a temporary chat.
   useEffect(() => {
     if (!srsId) return
     const current = useStore.getState()
@@ -162,8 +156,7 @@ export default function Home({
     )
   }, [languageOptions, langSearch])
 
-  // One implementation, shared with Settings, so a model chosen in either
-  // place reaches the same set of agents.
+  // One implementation, shared with Settings, so a model chosen in either place reaches the same set of agents.
   const chooseModel = model => useStore.getState().applyModel(model)
 
   function chooseThinking(value) {
@@ -190,9 +183,7 @@ export default function Home({
     s.setBusy(true)
 
     let token = ''
-    // Files already uploaded during the SRS interview live in this project's
-    // workspace. Do not re-stage them under a throwaway token when the build
-    // starts; the first agent turn has already received their real locations.
+    // Files already uploaded during the SRS interview live in this project's workspace.
     if (attach.items.length && !srs) {
       const wanted = attachToken()
       s.setProgress(attach.items.length === 1
@@ -234,8 +225,7 @@ export default function Home({
       uploads: uploads && Object.keys(uploads).length ? uploads : undefined,
       prototype_only: Boolean(prototypeOnly),
       agent: prototypeOnly ? 'designer' : 'developer',
-      // There is no project yet to tick these against, so they travel with the
-      // request and are written onto the workspace the moment it is made.
+      // There is no project yet to tick these against, so they travel with the request and are written onto the workspace the moment it is made.
       plugins: plugins.length ? plugins : undefined,
     })
   }
@@ -315,8 +305,7 @@ export default function Home({
         <DesignCustomize key={srsId} projectId={srsId}
           onBack={() => s.setSrs({ srsPhase: 'review' })}
           onContinue={async ({ direction, designSpec }) => {
-            // The customizer's concise visual summary is persisted with the
-            // Design Spec and becomes part of the prototype agent's prompt.
+            // The customizer's concise visual summary is persisted with the Design Spec and becomes part of the prototype agent's prompt.
             const design = await api.draftDesignSpec(srsId, designSpec, direction)
             await api.approveDesignSpec(srsId, design.version)
             // Keep the operation ID across transport retries and reloads.

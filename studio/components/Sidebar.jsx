@@ -35,8 +35,7 @@ export default function Sidebar({
   const busy = useStore(z => z.busy)
   const persist = useStore(z => z.persist)
 
-  // Desktop starts as the compact Codex/ChatGPT-style icon rail.  The brand
-  // button expands it when somebody needs the full project list and labels.
+  // Desktop starts as the compact Codex/ChatGPT-style icon rail.
   const [collapsed, setCollapsed] = useState(true)
   const folderRef = useRef(null)
 

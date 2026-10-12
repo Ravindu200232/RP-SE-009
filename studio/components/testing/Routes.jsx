@@ -2,13 +2,7 @@
 
 import { Badge, Empty, Table, TR, TH, TD } from '../ui'
 
-/**
- * Every API handler that has a test, and any route the probe found broken.
- *
- * Built from the manifest and the runtime record rather than guessed from the
- * file tree: a route that exists on disk and 500s is the interesting case, and
- * the file tree cannot tell you that.
- */
+/** Every API handler that has a test, and any route the probe found broken. */
 export default function Routes({ qa }) {
   if (qa?.contracts?.length) return (
     <div>

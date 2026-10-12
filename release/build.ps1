@@ -1,22 +1,8 @@
 # Build an AgentForge desktop release: the app, its online installer, and the manifest the installer reads.
-#
-#   ./release/build.ps1                     build everything into release/out
-#   ./release/build.ps1 -Publish            ...and upload it as a GitHub release (needs `gh auth login`)
-#
-# release/out gets:
-#   AgentForge-<version>-win-x64.zip        the app: Electron, the studio UI, the backend, and its own Python
-#   AgentForgeSetup.exe                     the one-click installer people download
-#   manifest.json                           what the installer installs, with every file's sha256
-#   manifest.local.json                     the same, from the files on this computer (to test the installer offline)
-#
-# The command line tools a blank Windows computer is missing (Node.js, Git, gh, AWS, Azure and MongoDB Atlas CLIs, the
-# Vercel, Netlify and Supabase CLIs, Playwright's browser) are not in the zip: the installer fetches each from its official
-# source, pinned here to the version current when the release was built.
 param(
     [string]$Repo = '',
     [switch]$Publish,
-    # One part at a time (each is quick enough to run on its own, and the next picks up what it left in
-    # release/stage and release/out): ui, stage, python, package, zip, manifest. Default: all of them.
+    # One part at a time (each is quick enough to run on its own, and the next picks up what it left in release/stage and release/out).
     [string[]]$Phase = @('all')
 )
 
@@ -49,8 +35,7 @@ function Get-Cached($url, $name) {
     $file = Join-Path $cache $name
     if (-not (Test-Path $file)) {
         Write-Host "   downloading $url"
-        # Windows' own curl streams to disk and resumes; Windows PowerShell's Invoke-WebRequest holds the whole file
-        # in memory first and stalls on large ones (the Azure CLI zip).
+        # Windows' own curl streams to disk and resumes.
         $curl = Join-Path $env:WINDIR 'System32\curl.exe'
         if (Test-Path $curl) {
             & $curl --fail --location --silent --show-error --retry 4 --continue-at - --user-agent 'AgentForge-release' --output "$file.part" $url
@@ -65,9 +50,7 @@ function Get-Cached($url, $name) {
 
 function Get-Sha256($file) { (Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant() }
 
-# Windows PowerShell's `Set-Content -Encoding UTF8` starts a file with a byte-order mark, and Node refuses a
-# package.json that has one: every diagram render failed on installed copies. Text other programs read is written
-# without it.
+# Windows PowerShell's `Set-Content -Encoding UTF8` starts a file with a byte-order mark, and Node refuses a package.json that has one.
 function Write-Text($path, $text) { [IO.File]::WriteAllText($path, ($text -join "`n"), (New-Object Text.UTF8Encoding $false)) }
 
 function Get-ZipStrip($file) {
@@ -240,9 +223,7 @@ namespace AgentForge.Setup { static class Config {
     public const string ManifestUrl = "https://github.com/$Repo/releases/latest/download/manifest.json";
 } }
 "@
-# Who made the file, what it is and which version: the Details tab of its Properties, and what Windows shows beside an
-# unknown program. Without these a compiled exe says nothing about itself, and antivirus heuristics and SmartScreen
-# treat a file like that with more suspicion than one that does. (Only a code-signing signature makes Windows trust it.)
+# Who made the file, what it is and which version: the Details tab of its Properties, and what Windows shows beside an unknown program.
 $year = (Get-Date).Year
 Write-Text (Join-Path $installer 'AssemblyInfo.generated.cs') @"
 using System.Reflection;

@@ -1,9 +1,4 @@
-"""What the studio needs to know about a project between runs.
-
-The workspace on disk is the truth about what a project contains; this file only
-records the things a directory listing cannot say — when it was created, which
-stage it reached, what the customer originally asked for.
-"""
+"""What the studio needs to know about a project between runs."""
 from __future__ import annotations
 
 import json
@@ -16,7 +11,7 @@ from . import config
 
 _lock = threading.RLock()
 
-# The order the studio moves through. `stage` is always one of these.
+# The order the studio moves through.
 STAGES = ("interview", "plan", "srs", "design", "prototype", "build", "test", "deploy", "done")
 
 
@@ -79,12 +74,7 @@ def require(project_id: str) -> dict:
 
 
 def build_available(record: dict | None) -> bool:
-    """Whether the project has reached a point where a full build can start.
-
-    Older prototype-only projects predate the persisted build_available flag.
-    A successful prototype run marks them `prototyped`, which is sufficient
-    evidence to safely enable the build action on reload as well.
-    """
+    """Whether the project has reached a point where a full build can start."""
     if not record:
         return False
     return bool(record.get("build_available") or (

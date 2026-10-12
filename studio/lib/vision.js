@@ -3,11 +3,7 @@ import { api } from './api'
 
 const NONE = { vision: new Set(), known: new Set(), pending: 0 }
 
-/**
- * Which models can look at pictures, from what Ollama says of each (`/models/capabilities`). The server asks about the models in
- * the background, so this asks again, a few times, while it still has answers to wait for: the "vision" marks fill in as they
- * arrive. `active` is false until the picker is open, so nothing is asked before it is needed.
- */
+/** Which models can look at pictures, from what Ollama says of each (`/models/capabilities`). */
 export function useVisionModels(active = true) {
   const [state, setState] = useState(NONE)
   useEffect(() => {

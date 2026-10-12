@@ -29,8 +29,7 @@ const PROVIDER_ABOUT = {
 
 export default function SettingsModal({ onClose, onSaved, onImport, onZip, onOpenInNewTab, onLogout, initialTab }) {
   const user = useAuthStore(s => s.user)
-  // The open project, so the Plugins tab can offer to tick them for it rather
-  // than only hold the credentials.
+  // The open project, so the Plugins tab can offer to tick them for it rather than only hold the credentials.
   const project = useStore(s => s.project)
 
   // The old single "Integrations" page is now one page per service: land on the first of them.
@@ -109,7 +108,6 @@ export default function SettingsModal({ onClose, onSaved, onImport, onZip, onOpe
 
   const cloudOn = tone === 'ok'
   // AgentForge's own database is the whole machine's, so it is its admin's.
-  // Everyone's deployment accounts are their own — one Settings page per service.
   const isAdmin = Boolean(meta?.admin)
 
   const displayName = user?.name || user?.username || 'User'
@@ -408,8 +406,7 @@ export default function SettingsModal({ onClose, onSaved, onImport, onZip, onOpe
   )
 }
 
-/** The signed-in AgentForge account's requests (one per AI call): the limit the admin gave, what is used and what is left,
- * going down live as the AI works (`account_usage` events). Nothing is shown when AgentForge accounts are off. */
+/** The signed-in AgentForge account's requests (one per AI call). */
 function EngineChoice({ value, onChange, host, onHost }) {
   return <div className="rounded-2xl border border-line bg-panel px-4 py-4 space-y-3">
     <h3 className="text-[13px] font-semibold text-ink">AI connection</h3>

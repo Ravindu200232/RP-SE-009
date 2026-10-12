@@ -1,48 +1,4 @@
-"""Connecting Supabase, and giving a project its own real Supabase project inside it.
-
-The Supabase CLI has no browser or device-code sign-in the way `gh`/`vercel`/`netlify`/`az` do
-(`cli_signin.py`) - tried live: `supabase login` refuses outright unless it is run in a real
-interactive terminal ("Cannot use automatic login flow inside non-TTY environments"), which a
-subprocess this server launches never is, and it has no device-code fallback the way GitHub's does.
-Its only documented non-interactive path is a pasted personal access token, which is not the
-one-click browser sign-in the rest of the Studio gives every other provider.
-
-What Supabase does have is a real OAuth2 API for third-party integrations
-(api.supabase.com/v1/oauth/authorize, .../v1/oauth/token, PKCE supported, a `localhost` redirect
-explicitly allowed) - confirmed against Supabase's own docs. Unlike GitHub's device flow, its token
-endpoint needs a **client secret** as well as a client id, and a secret cannot ship inside an app
-everyone installs. So nobody who installs AgentForge registers anything: the publisher registers ONE
-OAuth app, and the secret stays in the engine Worker (`engine-proxy/`, the same server that holds the
-AI key and that `config.built_in_engine()` already points every copy at). `OAUTH.start()` asks that
-broker for the authorize link, and the code exchange and every refresh go through it too; the person
-only clicks "Sign in with Supabase" and approves in the browser, the way "Sign in with Google" works.
-
-A copy with no broker (a development checkout with no `engine.json`, or a broker not yet set up)
-keeps the older path: the person registers an OAuth app in their own Supabase organisation
-(Organization settings -> OAuth Apps -> Publish OAuth app), with `REDIRECT_URI` below as its exact
-callback URL, and pastes the Client ID and Secret into Settings. Which path issued the saved tokens
-is remembered (`supabase_oauth_via`), because a refresh token only works with the app that issued it.
-
-Either way the browser ends up on the Studio's own already-running API server, at one fixed URL
-(`httpd.py`'s `/supabase-oauth/callback` route) - no separate listener to open or a port of its own
-to collide with. `OAUTH.start()` opens the browser and hands back a flow id (used as the OAuth
-`state`, so the callback route can find it again); the callback route only records what arrived and
-answers the browser with a page to close; `OAUTH.poll()` (from the studio, in the background) is
-what actually exchanges the code for tokens once they've arrived, refreshing them silently from then
-on - one Supabase account for the whole studio, the same as `netlify_token` or `github_token`.
-
-What still needs its own project is the database itself: an account token is not a project's URL
-and keys (see the `_no_signin` note this replaced, on the old `supabase` image-upload plugin in
-`provider_catalog/plugins.json`) - getting those needs `projects create` against an organisation,
-then `projects api-keys` for the ref it made, both run through the CLI with the signed-in account's
-access token in its environment. `ensure_project()` does exactly that, once, the first time a
-Supabase-stack project actually builds (see `builder_agent/build.py`); every command after that
-reads the same record back through `env_for()`.
-
-One AgentForge project gets one real Supabase project. Its URL and keys are kept here, encrypted,
-keyed by the AgentForge project - not a studio-wide setting like the account connection above,
-because (unlike an account you sign in to once) a database is one project's own.
-"""
+"""Connecting Supabase, and giving a project its own real Supabase project inside it."""
 from __future__ import annotations
 
 import base64
@@ -74,8 +30,7 @@ ACCESS_TOKEN_SETTING = "supabase_oauth_access_token"
 REFRESH_TOKEN_SETTING = "supabase_oauth_refresh_token"
 EXPIRES_AT_SETTING = "supabase_oauth_expires_at"
 ORG_SETTING = "supabase_org"
-# Which OAuth app issued the saved tokens: "broker" (the publisher's, through the engine Worker) or "own"
-# (one this person registered; also what tokens saved before the broker existed are).
+# Which OAuth app issued the saved tokens: "broker" (the publisher's, through the engine Worker) or "own" (one this person registered; also what tokens saved...
 VIA_SETTING = "supabase_oauth_via"
 VIA_BROKER, VIA_OWN = "broker", "own"
 # The other accounts signed in, kept aside (id -> its tokens); "credentials" in the name keeps them out of GET /settings.
@@ -85,22 +40,11 @@ ACTIVE_ID_SETTING = "supabase_account_id"
 AUTHORIZE_URL = "https://api.supabase.com/v1/oauth/authorize"
 TOKEN_URL = "https://api.supabase.com/v1/oauth/token"
 CALLBACK_PATH = "/supabase-oauth/callback"
-# Fixed, because an OAuth app's callback URL is matched exactly - this is what goes in Supabase's
-# own "Authorization callback URLs" field when publishing the app: this studio's own API server
-# (API_PORT/API_PREFIX, config.py), not a port of its own and not a project's local Supabase stack
-# (which already owns 54321-54323).
-#
-# "localhost", not "127.0.0.1": tried live - Supabase's authorize endpoint answers
-# {"message":"redirect_uri must use HTTPS"} for a loopback *IP*, even though the dashboard's own
-# callback-URL field accepts one ("All URLs must use HTTPS, except for localhost"). Supabase's own
-# published example uses `http://localhost:54321/...`, confirming the HTTP exception is keyed to
-# the literal hostname, not any loopback address - and httpd.serve() binds 127.0.0.1, which
-# "localhost" resolves to on the same machine either way.
+# Fixed, because an OAuth app's callback URL is matched exactly.
 REDIRECT_URI = f"http://localhost:{config.API_PORT}{config.API_PREFIX}{CALLBACK_PATH}"
 FLOW_TTL_SECONDS = 600
 
-# Not a considered choice - just somewhere to start a project before the deploy questions (see
-# stack-*-supabase/SKILL.md) ask where it should really run.
+# Not a considered choice - just somewhere to start a project before the deploy questions (see stack-*-supabase/SKILL.md) ask where it should really run.
 DEFAULT_REGION = "us-east-1"
 
 
@@ -115,10 +59,7 @@ def _broker() -> dict[str, str]:
 
 
 def token_status() -> dict:
-    """What the studio may show: whether an account is connected and which, never the tokens.
-
-    `app_registered` is whether signing in can start at all: a broker supplies the OAuth app, so the person
-    registers nothing; without one it is whether they registered their own."""
+    """What the studio may show: whether an account is connected and which, never the tokens."""
     connected = _signed_in()
     broker = bool(_broker())
     return {"app_registered": broker or credentials_saved(), "connected": connected,
@@ -133,12 +74,7 @@ def forget_account() -> None:
 
 
 # --- more than one account ----------------------------------------------------------------------
-#
-# One Supabase account is the active one: its tokens are the flat settings above, which is what every build and
-# deployment reads. Any others the person has signed in as are kept aside in settings.json, as the active ones are
-# (the key name carries "credentials", so GET /settings never returns them), and switching swaps one with the
-# active one. An account is told apart by its organisation: a Supabase sign-in is a grant on an organisation, so
-# signing in again with another organisation (of the same login or of another) is how a second account is added.
+# One Supabase account is the active one: its tokens are the flat settings above, which is what every build and deployment reads.
 
 def _signed_in() -> bool:
     return bool(config.setting(ACCESS_TOKEN_SETTING) or config.setting(REFRESH_TOKEN_SETTING))
@@ -234,8 +170,7 @@ def _broker_post(path: str, payload: dict) -> httpx.Response:
 
 
 def _token_request(form: dict, via: str) -> httpx.Response:
-    """Trade a code or a refresh token for tokens, as the OAuth app that `via` names. Through the broker the
-    client secret is added by the Worker; on the person's own app it is added here."""
+    """Trade a code or a refresh token for tokens, as the OAuth app that `via` names. Through the broker the."""
     if via == VIA_BROKER:
         return _broker_post("/oauth/supabase/token", form)
     client_id, client_secret = str(config.setting(CLIENT_ID_SETTING) or ""), str(config.setting(CLIENT_SECRET_SETTING) or "")
@@ -247,8 +182,7 @@ def _token_request(form: dict, via: str) -> httpx.Response:
 
 
 def _keep_tokens(body: dict, via: str | None = None) -> dict:
-    """Keep the tokens just issued as the active account's. A sign-in (`via` given) that lands on a different
-    organisation than the one active keeps the one it replaces signed in, aside; a refresh only renews."""
+    """Keep the tokens just issued as the active account's. A sign-in (`via` given) that lands on a different."""
     previous = None
     if via and _signed_in():
         previous = {"id": _current_id(), **_active_row()}
@@ -305,8 +239,7 @@ def _refresh_if_needed() -> str:
             return str(body["access_token"])
     except (httpx.HTTPError, ValueError):
         pass
-    # Stale and could not be refreshed (revoked, network down): handed to the CLI as-is, so the
-    # failure is a clear 401 from Supabase's own API rather than a silent, wrongly-scoped success.
+    # Stale and could not be refreshed (revoked, network down).
     return access
 
 
@@ -332,10 +265,7 @@ class _Flow:
 
 
 class OAuthConnects:
-    """One sign-in at a time: a browser tab, a callback the studio's own server catches, and the
-    token exchange. The flow id doubles as the OAuth `state` - it only has to be opaque and
-    round-tripped unchanged, which is exactly what `state` is for, so a second value would be
-    redundant."""
+    """One sign-in at a time: a browser tab, a callback the studio's own server catches, and the."""
 
     def __init__(self) -> None:
         self._flows: dict[str, _Flow] = {}
@@ -348,8 +278,7 @@ class OAuthConnects:
 
     @staticmethod
     def _broker_link(flow_id: str, challenge: str) -> str:
-        """The authorize link from the broker: it knows the OAuth app's client id and the one callback URL that
-        app was registered with, and signs the state so only it will accept the browser coming back."""
+        """The authorize link from the broker: it knows the OAuth app's client id and the one callback URL that."""
         try:
             answer = _broker_post("/oauth/supabase/start",
                                   {"flow_id": flow_id, "challenge": challenge, "return_to": REDIRECT_URI})
@@ -375,8 +304,7 @@ class OAuthConnects:
         flow_id = "sbo_" + secrets.token_urlsafe(24)
         via, link = VIA_OWN, ""
         if _broker():
-            # The publisher's OAuth app: nothing for the person to register. If the broker is not set up (or not
-            # reachable) a person's own saved app still works; with none, say why.
+            # The publisher's OAuth app: nothing for the person to register.
             try:
                 via, link = VIA_BROKER, self._broker_link(flow_id, challenge)
             except ValueError:
@@ -397,10 +325,7 @@ class OAuthConnects:
         return {"flow_id": flow_id, "verification_uri": link}
 
     def receive_callback(self, state: str, code: str, error: str) -> bool:
-        """Called by httpd.py's `/supabase-oauth/callback` route, on the browser's own request.
-        Only records what arrived - the exchange happens from `poll()`, so a network hiccup here
-        doesn't lose a callback the browser will not send twice. Returns whether `state` matched a
-        flow this studio actually started (the route uses this to choose its response page)."""
+        """Called by httpd.py's `/supabase-oauth/callback` route, on the browser's own request."""
         with self._lock:
             flow = self._flows.get(str(state or ""))
             if not flow:
@@ -493,11 +418,7 @@ def status(project: str) -> dict:
 
 
 def env_for(project: str) -> dict[str, str]:
-    """What a build, test or deploy command is given: every alias a framework's template expects.
-
-    Handing out all of them regardless of stack is harmless - an unused one is simply never read -
-    and saves this module from knowing which of the five stacks is asking.
-    """
+    """What a build, test or deploy command is given: every alias a framework's template expects."""
     row = record(project)
     if not row:
         return {}
@@ -509,9 +430,7 @@ def env_for(project: str) -> dict[str, str]:
         "VITE_SUPABASE_URL": url, "VITE_SUPABASE_ANON_KEY": anon,
     }
     if ref and password:
-        # The direct Postgres connection (`supabase db push`, and this project's own QA-run
-        # database connection used by migrations or commands) - not something a client ever reads,
-        # so it carries no NEXT_PUBLIC_/VITE_ alias.
+        # The direct Postgres connection (`supabase db push`, and this project's own QA-run database connection used by migrations or commands).
         env["SUPABASE_DB_URL"] = f"postgresql://postgres:{password}@db.{ref}.supabase.co:5432/postgres"
     return env
 
@@ -551,9 +470,7 @@ def _run_json(args: list[str], timeout: int = 40) -> Any:
 
 
 def _db_password() -> str:
-    # Supabase requires one to create a project; this app talks to Postgres through the REST/Auth/
-    # Storage APIs and the service-role key, not a raw connection string, so nobody ever types this -
-    # it is generated, kept in the same encrypted record as the keys, and used again for `db push`.
+    # Supabase requires one to create a project; this app talks to Postgres through the REST/Auth/ Storage APIs and the service-role key, not a raw connection...
     alphabet = string.ascii_letters + string.digits
     return "".join(secrets.choice(alphabet) for _ in range(24))
 
@@ -570,8 +487,7 @@ def _keys_from(rows: Any) -> tuple[str, str]:
 
 
 def account_facts() -> dict:
-    """What the connected Supabase account already has, for the build to ask about: its organisations
-    (each one's plan when Supabase says it) and its projects. Never keys. Empty when nothing can be read."""
+    """What the connected Supabase account already has, for the build to ask about: its organisations."""
     if not token_status()["connected"]:
         return {"connected": False}
     out: dict[str, Any] = {"connected": True, "organizations": [], "projects": []}
@@ -610,13 +526,7 @@ def linked_projects() -> dict[str, str]:
 
 
 def make_room(ref: str, action: str, log=None) -> None:
-    """Pause or delete one of the account's projects so a new one fits in its organisation.
-
-    Only ever the project the customer named and chose this for (builder setup checks they were asked about that
-    very project). Pausing keeps everything and is undone from the Supabase dashboard; deleting is permanent. Waits
-    until Supabase has let the project go, because the organisation's slot is free only then; a project already
-    paused or gone is left as it is, so a build that tries again does not do it twice.
-    """
+    """Pause or delete one of the account's projects so a new one fits in its organisation."""
     if action not in ("pause", "delete"):
         raise ValueError('make_room takes "pause" or "delete"')
     say = log or (lambda _line: None)
@@ -657,13 +567,7 @@ def make_room(ref: str, action: str, log=None) -> None:
 
 def ensure_project(project: str, name: str = "", log=None, region: str = "", org_id: str = "",
                    fresh: bool = False) -> dict:
-    """The project's own Supabase project: the existing one, or a freshly created one.
-
-    Blocking (project creation takes a minute or two): called from the build pipeline, which
-    already runs in its own background thread and already streams progress, rather than from a
-    request a browser is waiting on - `log`, when given, is called with short progress lines the
-    same way `bus.log` is, so the build's own activity feed can show them.
-    """
+    """The project's own Supabase project: the existing one, or a freshly created one."""
     project = str(project or "")
     if not project:
         raise ValueError("no project given")

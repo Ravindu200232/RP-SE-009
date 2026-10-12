@@ -1,21 +1,9 @@
 import mongoose from 'mongoose';
 
-/**
- * One connection, cached across module re-evaluation.
- *
- * Remix re-evaluates modules on every hot reload in development, and a plain module-level `let`
- * would open a new connection each time until the pool is exhausted: the symptom is timeouts that
- * look like slow queries. The cache lives on globalThis because that is the one thing a reload
- * does not reset.
- *
- * Server code only: import this from a `loader`, an `action` or a `*.server.js` module, never from
- * code a browser runs. The browser never talks to the database.
- */
+/** One connection, cached across module re-evaluation. */
 const cache = globalThis.__mongoose ?? (globalThis.__mongoose = { conn: null, promise: null });
 
-// Wait 10s for the cluster rather than the driver's 30s, so a paused or unreachable cluster says so while a page or a
-// health check still waits; and keep the pool small, because each serverless instance holds one of its own and a free
-// Atlas cluster has a few hundred connections in all.
+// Wait 10s for the cluster rather than the driver's 30s, so a paused or unreachable cluster says so while a page or a health check still waits.
 const OPTIONS = { bufferCommands: false, serverSelectionTimeoutMS: 10_000, maxPoolSize: 10 };
 
 function connectionString(uri) {
@@ -31,10 +19,7 @@ function connectionString(uri) {
 
 export async function connectDb(uri = process.env.MONGODB_URI) {
   if (cache.conn) return cache.conn;
-  // A caller that already connected (the test helper opens the project's own `_test`
-  // database) owns that connection. Calling `mongoose.connect` again with another URI
-  // fails ("Can't call openUri() on an active connection with different connection
-  // strings"), and reusing it is what keeps tests off the application's database.
+  // A caller that already connected (the test helper opens the project's own `_test` database) owns that connection.
   if (mongoose.connection.readyState === 1) {
     cache.conn = mongoose.connection;
     return cache.conn;

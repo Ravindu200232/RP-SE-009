@@ -1,11 +1,4 @@
-"""The browser a prototype journey is clicked through in: Puppeteer, driven from here one command at a time.
-
-`server_modules/scripts/prototype-driver.mjs` is a thin remote for a headless browser that is already on the computer (the
-one `ollama_terminal.screenshot` found and tried): open the prototype, list what can be clicked or filled, click it, fill it,
-take a picture. The prototype is one bundled page that shows the screen its address hash names, so a click that opens another
-screen only changes the hash. All the thinking stays in Python. While it runs, what the browser shows (a picture, the pointer) is handed to
-`relay`, which is how the Studio's preview shows the walk live, the way it shows a build's end-to-end tests.
-"""
+"""The browser a prototype journey is clicked through in: Puppeteer, driven from here one command at a time."""
 from __future__ import annotations
 
 import json

@@ -1,19 +1,4 @@
-"""The prototype: a new high-fidelity React app, made by reading the approved wireframes.
-
-The wireframes stay exactly as they were approved, so the customer can still look at them. When this stage starts it sets up a new app in
-`.agentforge/prototype/app` (the skill's first step), and the project's agent reads Anthropic's web-artifacts-builder skill, the wireframes,
-`app.md` and the approved design, plans the prototype, and writes it with its own file tools. Code here only sets the app up, says which
-screens and which design there are, bundles the finished app into the one page the studio shows, and leaves what the build reads:
-`routes.json` and, when the product has sign-in, `demo-accounts.json`. How the pages look and behave is the agent's.
-
-When the app is bundled it is looked at: every screen is photographed and a model that can look at pictures says what is visibly wrong
-(`visual_review.py`), and every journey of the specification is clicked through in a real browser, shown live (`journey_walk.py`).
-What they find is given back to the agent to fix, and the app is bundled and looked at again.
-
-    <workspace>/.agentforge/prototype/app/              the prototype: `src/pages/<page>.tsx` for every screen, and `bundle.html`
-    <workspace>/.agentforge/prototype/routes.json       every screen and the page file it is drawn in
-    <workspace>/.agentforge/prototype/demo-accounts.json  the fictitious sign-in accounts, which the build seeds
-"""
+"""The prototype: a new high-fidelity React app, made by reading the approved wireframes."""
 from __future__ import annotations
 
 import hashlib
@@ -31,7 +16,7 @@ from . import design as design_stage
 PROTOTYPE_DIR = "prototype"
 ROUTES = (PROTOTYPE_DIR, "routes.json")
 KIND = "prototype"
-# What starting the prototype asks for: the first line of `prompts/prototype/generate.md`. The studio sends the same words.
+# What starting the prototype asks for: the first line of `prompts/prototype/generate.md`.
 APPROVAL_PROMPT = "Generate a high-fidelity, animated prototype."
 
 
@@ -78,8 +63,7 @@ def routes(project: str) -> list[dict[str, Any]]:
 def exists(project: str) -> bool:
     session = session_for(project)
     checkpoint = _read_record(session, PROTOTYPE_DIR, "generation.json", fallback=None) or {}
-    # While the agent works, the app is not build-ready: only the finished, bundled prototype is. Projects created before
-    # checkpoints remain compatible.
+    # While the agent works, the app is not build-ready: only the finished, bundled prototype is.
     if checkpoint and not checkpoint.get("complete"):
         return False
     return bool(routes(project))
@@ -122,10 +106,7 @@ def _clean_login(session: Any, app: Path, sign_in: str) -> None:
 
 
 def _draw_with_agent(project: str, spec: dict[str, Any], direction: str) -> list[dict]:
-    """Set up a new app, then let the project's agent read the wireframes, plan, and write the prototype into it.
-
-    Only what is the same for every prototype is code: the new app, the skill, the route map and the demo accounts. The pages are the
-    agent's, written with its own file tools, so every read and every file appears in the chat stream as it happens."""
+    """Set up a new app, then let the project's agent read the wireframes, plan, and write the prototype into it."""
     from srs_agent import document as srs_document
     from srs_agent import handoff as handoff_files
     from srs_agent import wireframe as wireframe_stage
@@ -181,8 +162,7 @@ def _draw_with_agent(project: str, spec: dict[str, Any], direction: str) -> list
 
     checkpoint_path = root / "generation.json"
     checkpoint = _read_record(session, PROTOTYPE_DIR, "generation.json", fallback=None) or {}
-    # Resume is invoked without the original button prompt. Keep the exact direction that owned the interrupted checkpoint so the
-    # fingerprint does not change merely because the customer pressed Continue.
+    # Resume is invoked without the original button prompt.
     effective_direction = direction.strip()
     if not effective_direction and checkpoint and not checkpoint.get("complete"):
         effective_direction = str(checkpoint.get("direction") or "").strip()
@@ -198,7 +178,7 @@ def _draw_with_agent(project: str, spec: dict[str, Any], direction: str) -> list
     resuming = (checkpoint.get("fingerprint") == fingerprint and not checkpoint.get("complete")
                 and (app / "index.html").is_file())
     if not resuming:
-        # A changed design, route map or wireframe owns a new app. A matching interrupted run keeps the pages it wrote.
+        # A changed design, route map or wireframe owns a new app.
         web_app.remove_app(app)
         (root / "routes.json").unlink(missing_ok=True)
     web_app.create_app(app, str((doc.get("app_summary") or {}).get("app_name") or project), pages,
@@ -267,9 +247,7 @@ def _generate(project: str, direction: str, *, from_wireframes: bool = False) ->
         if not srs_document.screens(project):
             raise ValueError("approve the SRS before generating the prototype")
     try:
-        # A partially written or newly regenerated prototype must never enable a production build. Completion below is the only
-        # place that turns this on. An explicit direction owns a fresh checkpoint even if Stop arrives before the worker reaches
-        # ProjectSession.begin().
+        # A partially written or newly regenerated prototype must never enable a production build.
         store.update(project, build_available=False, status="prototype-generating")
         if direction.strip() and isinstance(getattr(session, "record", None), Path):
             pending = session.record / PROTOTYPE_DIR / "generation.json"
@@ -367,8 +345,7 @@ def _rebundler(project: str, session: Any):
 
 
 def _look_at(project: str, session: Any, drawn: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Look at the finished prototype: its screens by their pictures, then its journeys clicked through live. Both skip themselves,
-    saying why, when the model cannot see pictures or there is no browser; neither ever fails the prototype."""
+    """Look at the finished prototype: its screens by their pictures, then its journeys clicked through live. Both skip themselves,."""
     accounts = (_read_record(session, PROTOTYPE_DIR, "demo-accounts.json", fallback=None) or {}).get("accounts") or []
     rebuild = _rebundler(project, session)
     visual_review.run(project, session, drawn, accounts, rebuild=rebuild)
@@ -398,8 +375,7 @@ def review(project: str, fix: bool = True, model: str = "") -> dict[str, Any]:
 
 
 def journeys(project: str, fix: bool = True, model: str = "") -> dict[str, Any]:
-    """Click through the journeys of the prototype that is already made, in a real browser, shown live, with a picture at every step,
-    and fix what cannot be done or looks wrong (`fix`: false only walks and reports)."""
+    """Click through the journeys of the prototype that is already made, in a real browser, shown live, with a picture at every step,."""
     if not exists(project):
         raise ValueError("there is no prototype to click through yet")
     session = session_for(project)

@@ -24,8 +24,7 @@ export function Button({ variant = 'ghost', size = 'md', className, ...rest }) {
           subtle: 'border border-line bg-panel text-ink hover:bg-raised shadow-sm',
           // A filled, borderless secondary button: the quiet one beside a primary action.
           soft: 'border border-transparent bg-ink/[.07] text-ink hover:bg-ink/[.12]',
-          // The main action of a form: a dark fill, no outline. (`solid` is turned into a white outlined box by
-          // globals.css, which is right elsewhere and wrong for a form with no borders.)
+          // The main action of a form: a dark fill, no outline.
           primary: 'border border-transparent bg-ink text-bg hover:bg-ink/85',
         }[variant],
         className)}

@@ -1,8 +1,4 @@
-/**
- * Terminal output as coloured pieces: the SGR codes dev servers print (`\x1b[32m`, bold, 256 and true colour) become
- * styles, every other control sequence (cursor moves, line clears) is dropped, and a carriage return inside a line
- * keeps only what was written after it, the way a progress line overwrites itself.
- */
+/** Terminal output as coloured pieces: the SGR codes dev servers print (`\x1b[32m`, bold, 256 and true colour) become styles, every other control sequence... */
 
 const BASIC = ['#4b5263', '#ff6b6b', '#5fd38d', '#f5c451', '#6cb6ff', '#c792ea', '#56d4dd', '#d8dee9']
 const BRIGHT = ['#7f8796', '#ff8f8f', '#8ce99a', '#ffe066', '#91c8ff', '#e0b0ff', '#99e9f2', '#ffffff']

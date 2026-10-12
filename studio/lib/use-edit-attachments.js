@@ -62,13 +62,7 @@ const KIND_SAID = {
   text: 'a file',
 }
 
-/**
- * The text appended to the instruction.
- *
- * Every attached file is written into the project before this runs, so the
- * agent can open it with the same tools it uses on the rest of the code.
- * The prompt carries its path and, for small text files, a readable excerpt.
- */
+/** The text appended to the instruction. */
 function blockFor(items) {
   const usable = (items || []).filter(i => i.state === 'done' && i.path)
   if (!usable.length) return ''

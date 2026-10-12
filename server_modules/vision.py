@@ -1,14 +1,4 @@
-"""Which models can look at a picture.
-
-Ollama says so itself: `POST /api/show` answers with the model's `capabilities` (for example "completion", "tools",
-"thinking", "vision"), for a model on this computer and for ollama.com's own, through the built-in engine as well. That is
-asked once per model and remembered (a week, and on disk across restarts); the model picker shows it as a "vision" mark, and
-the prototype's visual review uses it to decide whether the model chosen can be shown screenshots at all.
-
-An older Ollama that answers without `capabilities` is read by what else it says (the families and model info of a vision
-model name an image encoder). A model that cannot be asked - the server is down, the key is missing - is unknown, never
-"no": nothing is remembered about it, and it is asked again a little later.
-"""
+"""Which models can look at a picture."""
 from __future__ import annotations
 
 import json
@@ -138,10 +128,7 @@ def _executor() -> ThreadPoolExecutor:
 
 
 def capabilities(models: list[str]) -> dict[str, Any]:
-    """What is known now about each of `models` ({"vision": bool}), starting to ask about the rest in the background.
-
-    The studio asks again while `pending` is not zero, so the picker fills in as the answers arrive instead of
-    waiting on every model at once."""
+    """What is known now about each of `models` ({"vision": bool}), starting to ask about the rest in the background."""
     _load()
     ids = [name for name in dict.fromkeys(str(item or "").strip() for item in models) if name]
     known: dict[str, dict[str, bool]] = {}

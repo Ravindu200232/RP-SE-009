@@ -1,9 +1,4 @@
-"""The design contract.
-
-One theme, one set of tokens, one direction — decided before a screen is drawn
-and binding on everything after it. The theme catalogue is the prompt pack's
-`design/themes/` directory, so adding a theme is adding a folder.
-"""
+"""The design contract."""
 from __future__ import annotations
 
 import json
@@ -68,8 +63,7 @@ def approved_customization(project: str) -> dict[str, Any]:
     path, markdown = selected_design_md(chosen.get("spec"))
     workspace_path = ""
     if markdown:
-        # The theme doc lives in this app's own prompts/, outside the project
-        # workspace a read tool is rooted at — stage a copy inside it.
+        # The theme doc lives in this app's own prompts/, outside the project workspace a read tool is rooted at — stage a copy inside it.
         workspace_path, = reference_staging.stage(session.workspace, "design", {"theme.md": markdown})
     return {"design_md_path": path, "design_md": markdown,
             "design_md_workspace_path": workspace_path,
@@ -85,8 +79,7 @@ def draft(project: str, direction: str = "", spec: dict[str, Any] | None = None)
     data = state(session)
 
     if isinstance(spec, dict) and spec.get("tokens"):
-        # The customizer already assembled a spec; keep it and let the
-        # conversation know, rather than asking the model to invent a second one.
+        # The customizer already assembled a spec; keep it and let the conversation know, rather than asking the model to invent a second one.
         chosen = spec
         session.ask_text(
             "The customer settled the design themselves in the customizer:\n\n"

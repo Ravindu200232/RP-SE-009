@@ -1,10 +1,4 @@
-"""The SRS document schema — the strict validation target.
-
-Ported from RP-SE-009 `srs-agent/srs_agent/app/schemas/srs.py`. Every model is
-`extra="allow"`, so a specification may carry more than this describes; what it
-may not do is carry less, or carry it in the wrong shape. The studio's own views
-read these exact field names.
-"""
+"""The SRS document schema — the strict validation target."""
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -115,8 +109,7 @@ class BusinessWorkflow(_Loose):
     workflow_name: str
     who: Optional[str] = None
     steps: list[str] = Field(default_factory=list)
-    # The route of the page each step happens on, one per step. Checked and completed after the
-    # document is written (`journeys.journey_problems` / `fill_step_routes`), never a reason to reject it.
+    # The route of the page each step happens on, one per step.
     step_routes: list[str] = Field(default_factory=list)
 
 

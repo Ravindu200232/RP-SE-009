@@ -1,8 +1,4 @@
 // Reports each test and each test.step as it happens, so the studio can show the run live.
-//
-// When the Studio started the run (AGENTFORGE_LIVE_URL is set) the rows go to it, for the
-// first worker only (the one whose browser is streamed, see live-view.js). Otherwise each row
-// is one JSON line on stdout that starts with "@@pw ", standing apart from anything else.
 import { isLive, post } from './live-view.js'
 
 const emit = row => process.stdout.write(`@@pw ${JSON.stringify(row)}\n`)

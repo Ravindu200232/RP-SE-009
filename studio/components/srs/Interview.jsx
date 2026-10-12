@@ -101,7 +101,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
   function submitAnswer() {
     if (phase === 'sending' || !q) return
 
-    // Extract human-readable labels for all selected options
+    // Extract human-readable labels for all selected options.
     const selectedLabels = picked.map(val => {
       const opt = options.find(o =>
         String(o.value ?? o.label) === String(val) ||
@@ -114,13 +114,13 @@ export default function Interview({ projectId, onDone, onCancel }) {
     const selectedText = selectedLabels.join(', ')
     const customText = text.trim()
 
-    // Must have at least one chosen option, custom typed text, or attachment
+    // Must have at least one chosen option, custom typed text, or attachment.
     if (!selectedText && !customText && !attach.items.length) {
       composer.current?.focus()
       return
     }
 
-    // Combine both: option label(s) + custom typed text
+    // Combine both: option label(s) + custom typed text.
     const parts = []
     if (selectedText) parts.push(selectedText)
     if (customText) parts.push(customText)
@@ -136,7 +136,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
       custom: customText,
     }
 
-    // Instantly show in the chat stream UI optimistically
+    // Instantly show in the chat stream UI optimistically.
     setPending({
       question: q.question,
       answer: combined || customText || selectedText,
@@ -263,7 +263,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
                         if (multi) {
                           return setPicked(p => p.map(String).includes(valStr) ? p.filter(x => String(x) !== valStr) : [...p, valStr])
                         }
-                        // Single-select: toggle pick so the user can unpick or pick a different one
+                        // Single-select: toggle pick so the user can unpick or pick a different one.
                         setPicked(p => p.map(String).includes(valStr) ? [] : [valStr])
                       }}
                       className={cn('rounded-full px-4 py-2 text-[12px] font-medium transition-all shadow-sm disabled:opacity-45 text-left',

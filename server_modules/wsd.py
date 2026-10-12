@@ -1,10 +1,4 @@
-"""The live feed.
-
-A minimal RFC 6455 server on the standard library, because the one thing this
-socket has to do — push the event bus at every open browser — does not justify a
-dependency. The studio proxies `/__agentforge/ws` here, so the path is whatever
-Next.js forwarded and is not inspected.
-"""
+"""The live feed."""
 from __future__ import annotations
 
 import base64
@@ -78,12 +72,7 @@ SEND_QUEUE_BYTES = 64 * 1024 * 1024
 
 
 class Client:
-    """One open browser (or the studio's proxy in front of it).
-
-    What is sent to it is queued and written by a thread of its own. A tab that stopped reading (a hidden or frozen one, a
-    proxy that is backed up) used to leave `sendall` waiting for ever inside whatever thread emitted the event, and every
-    build and every run that emitted after it waited behind that one: the whole backend went quiet. Now the emitting thread
-    only queues, and a browser that falls too far behind is dropped."""
+    """One open browser (or the studio's proxy in front of it)."""
 
     def __init__(self, conn: socket.socket, address: Any, limit: int = 0):
         self.conn = conn
@@ -286,8 +275,7 @@ class FeedServer:
                 client.close()
             self.clients.clear()
         if self.socket:
-            # Close alone leaves a listening socket bound on Linux and macOS while the accept loop still holds
-            # it, so a restarted feed could not take its port back; shutdown wakes that loop and frees the port.
+            # Close alone leaves a listening socket bound on Linux and macOS while the accept loop still holds it, so a restarted feed could not take its port back.
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
             except OSError:

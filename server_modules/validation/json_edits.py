@@ -1,18 +1,4 @@
-"""Small, exact edits to a JSON document, so a repair changes only what is wrong.
-
-A model fixing one finding used to return the whole document again: slow, and every
-untouched part was one more chance to lose something that was right. Instead it returns
-edits, applied here:
-
-    {"op": "set",    "path": "functional_requirements[id=FR-012].requirement", "value": "The system shall ..."}
-    {"op": "add",    "path": "requirement_traceability_matrix", "value": {"requirement_id": "FR-031", ...}}
-    {"op": "remove", "path": "protected_pages[route=/old]"}
-
-A path is dot-separated keys. A list item is picked by one of its own fields (`[id=FR-012]`,
-`[route=/admin]`, `[table_name=orders]`) or, when it has none, by position (`[3]`). `add`
-appends to the list the path names. Every problem is reported with the edit it came from, so
-the model can correct exactly that edit.
-"""
+"""Small, exact edits to a JSON document, so a repair changes only what is wrong."""
 from __future__ import annotations
 
 import copy

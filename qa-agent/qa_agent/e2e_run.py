@@ -1,19 +1,4 @@
-"""The end-to-end suite, run once by the Studio itself.
-
-The agent writes the journey tests and runs one spec file at a time while it writes or fixes them; the whole suite is the
-Studio's to run, here, once per build - never again by itself. It ran again and again before: inside the build's last
-phase (where the agent's ten-minute command limit killed it half-way, leaving a partial `results.json`), after every
-screenshot-review fix, and once more in the Testing stage straight after a build that had just run it. Now:
-
-- a build runs it once, after its phases, when the app's source is not what the last full run already tested (`current`);
-- a Testing run reuses that run while the source is unchanged, unless the person asks for the journeys to run again;
-- a fix the person asked for runs only the journeys it fixed (`grep`), and so does a screenshot-review round they said yes to.
-
-The run is `node scripts/with-server.mjs -- npx playwright test`, so it gets its own server, port and isolated database
-exactly as the agent's runs did, with the same environment the agent's commands get (`session.command_environment`).
-The runner script is the Studio's: the template's copy is put in the project before the run, so a fix to it (Atlas's
-database-name limit, a user that may not drop a database) reaches projects built before it.
-"""
+"""The end-to-end suite, run once by the Studio itself."""
 from __future__ import annotations
 
 import hashlib
@@ -40,8 +25,7 @@ TEMPLATE_RUNNER = (config.ROOT / "builder-agent" / "builder_agent" / "assets" / 
 RUN_SECONDS = 45 * 60             # the whole suite, desktop and mobile; the agent's own commands stop at ten minutes
 BUILD_SECONDS = 15 * 60
 HEARTBEAT_SECONDS = 30
-# The visual and accessibility checks are runs of their own (`qa:visual`, `qa:a11y`), not journeys. A journey that stalls
-# once is tried once more (Playwright records it as flaky, and its last attempt decides), and two workers share the server.
+# The visual and accessibility checks are runs of their own (`qa:visual`, `qa:a11y`), not journeys.
 PLAYWRIGHT_ARGS = ["--grep-invert", "@visual|@a11y", "--retries=1", "--workers=2"]
 # What is not the app's source: what a build, a test run, a deployment or the Studio writes.
 _SKIP_DIRS = {"node_modules", ".next", ".git", "test-results", "playwright-report", ".agentforge", ".lighthouseci", ".zap",
@@ -97,8 +81,7 @@ def runnable(workspace: Path) -> bool:
 
 
 def ensure_runner(project: str, workspace: Path) -> None:
-    """Put the Studio's own `with-server.mjs` in the project when its copy is missing or older. The one replaced is kept beside
-    the run's record, in case the agent had changed it for a reason."""
+    """Put the Studio's own `with-server.mjs` in the project when its copy is missing or older. The one replaced is kept beside."""
     if not TEMPLATE_RUNNER.is_file():
         return
     target = workspace / RUNNER
@@ -209,8 +192,7 @@ def _npm() -> list[str]:
 
 
 def _build_if_needed(project: str, session: Any, env: dict[str, str], now: str) -> dict[str, Any] | None:
-    """`npm run build` when the app's source changed since the build the last run tested. None when nothing needed it,
-    else the build's result (a failed build means no test run: there is nothing current to test)."""
+    """`npm run build` when the app's source changed since the build the last run tested. None when nothing needed it,."""
     workspace = session.workspace
     saved = record(workspace)
     built = any((workspace / part).exists() for part in (".next/BUILD_ID", "build/server/index.js", "client/dist/index.html", "dist"))
@@ -232,18 +214,14 @@ def _build_if_needed(project: str, session: Any, env: dict[str, str], now: str) 
 
 
 def run(project: str, session: Any, grep: list[str] | None = None, reason: str = "build", force: bool = False) -> dict[str, Any]:
-    """Run the end-to-end journeys: all of them, or only the tests `grep` names (journey ids or titles).
-
-    A full run is skipped when the last one already tested this source (`force` runs it anyway: the person asked).
-    Returns {"status": "passed" | "failed" | "skipped" | "build_failed" | "error", ...}; never raises but for Stop."""
+    """Run the end-to-end journeys: all of them, or only the tests `grep` names (journey ids or titles)."""
     workspace = session.workspace
     if not runnable(workspace):
         return {"status": "skipped", "reason": "the project has no end-to-end tests to run"}
     pattern = grep_for(grep or [])
     if grep is not None and not pattern:
         return {"status": "skipped", "reason": "no tests named"}
-    # The runner is put in place before the source is fingerprinted: replacing it afterwards made the very run that replaced
-    # it look out of date, and the next call built and ran everything again.
+    # The runner is put in place before the source is fingerprinted.
     ensure_runner(project, workspace)
     now = fingerprint(workspace)
     if not pattern and not force and current(workspace):

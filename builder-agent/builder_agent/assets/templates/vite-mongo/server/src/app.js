@@ -4,18 +4,14 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-// server/src -> server -> repo root -> client
+// server/src -> server -> repo root -> client.
 const clientDist = path.resolve(here, '../../client/dist');
 
 export function createApp() {
   const app = express();
   // `X-Powered-By: Express` tells a scanner which framework to attack.
   app.disable('x-powered-by');
-  // This server is the only public door, so it is where response headers are set. A ZAP
-  // baseline reports each as missing. The policy allows the built client's inline bootstrap;
-  // add a third-party origin to script-src / connect-src when an integration needs one.
-  // Nobody may frame the app unless FRAME_ANCESTORS names who. Keep it strict: the AgentForge
-  // Studio's preview process lifts the rule for its own iframe, so the app never has to weaken it.
+  // This server is the only public door, so it is where response headers are set.
   const frameAncestors = process.env.FRAME_ANCESTORS?.trim() || "'none'";
   app.use((req, res, next) => {
     res.set({
@@ -33,19 +29,15 @@ export function createApp() {
   });
   app.use(express.json());
 
-  // Readiness is about this process, not the database behind it: a 200 here
-  // must not be read as "MongoDB is reachable".
+  // Readiness is about this process, not the database behind it: a 200 here must not be read as "MongoDB is reachable".
   app.get('/ready', (req, res) => res.json({ ok: true, clientBuilt: existsSync(clientDist) }));
 
-  // Replace this with the application's own routes under /api. Keep every
-  // route that reads or writes data behind /api, never served from the
-  // static client branch below.
+  // Replace this with the application's own routes under /api.
   app.get('/api/health', (req, res) => res.json({ ok: true }));
 
   if (existsSync(clientDist)) {
     app.use(express.static(clientDist));
-    // The SPA fallback comes last and must not swallow /api: a missing API
-    // route has to stay a 404, not silently return index.html with status 200.
+    // The SPA fallback comes last and must not swallow /api: a missing API route has to stay a 404, not silently return index.html with status 200.
     app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
   } else {
     app.get('/', (req, res) => res.status(503).type('text/plain')
