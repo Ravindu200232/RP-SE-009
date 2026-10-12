@@ -6,9 +6,10 @@ from pathlib import Path
 
 
 _DEMO_UI = re.compile(
-    r"demo\s+(?:accounts?|logins?|credentials?|passwords?)|"
+    r"demo\s+(?:accounts?|logins?|credentials?|passwords?|emails?)|"
     r"<DemoAccounts\b|\bDEMO_ACCOUNTS\s*\.\s*map\s*\(|"
-    r"(?:useState\s*\(|\bvalue\s*=\s*|\bdefaultValue\s*=\s*)\s*[({]?\s*['\"][^'\"]+@example\.com",
+    r"(?:useState\s*\(|\b(?:value|defaultValue|placeholder)\s*=\s*)\s*[({]?\s*['\"]"
+    r"(?!you@|name@)[^'\"]+@example\.com|Demo!2026",
     re.IGNORECASE,
 )
 
