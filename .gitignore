@@ -68,12 +68,12 @@ Thumbs.db
 .idea/
 
 # Local test scratch that is not part of the shipped application
-/tests/
-test_*.py
+# /tests/
+# test_*.py
 # ...but the repository's own suite under /test/ ships with the app.
 # Without this the rule above silently swallows every new test file.
-!/test/**/test_*.py
-/locode.iconset/
+# !/test/**/test_*.py
+# /locode.iconset/
 
 # A local scratch test, not part of the suite.
-test/unit/services/test_run_recovery.py
+# test/unit/services/test_run_recovery.py
