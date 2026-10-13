@@ -30,6 +30,7 @@ export default function Overview({ qa, live }) {
   const ran = qa?.stages || []
 
   const perf = qa?.performance?.scores || {}
+  const runtime = qa?.runtimeStatus
   const sec = r?.security?.findings || []
   const unresolved = r?.suite?.unresolved || []
   const e2e = e2eStageSummary(r?.e2e)

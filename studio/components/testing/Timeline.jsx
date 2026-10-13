@@ -42,7 +42,7 @@ export default function Timeline({ qa }) {
           <div key={i} title={`${r.passed}/${r.cases} — ${r.at}`}
                className="flex h-full max-w-[46px] flex-1 flex-col items-center
                           justify-end">
-            <div className={cn('w-full rounded-t-[3px]',
+            <div className={cn('w-full rounded-none',
                                r.rate < floor ? 'bg-bad' : 'bg-ok')}
                  style={{ height: `${r.rate}%`, minHeight: 2 }} />
             <span className="mt-1 font-mono text-[9px] text-muted2">{r.rate}%</span>

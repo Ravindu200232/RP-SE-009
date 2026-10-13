@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Download, Loader2, RefreshCw } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
-import { Badge, Button, Empty } from '../ui'
+import { Button, Empty, Tip } from '../ui'
 import { cn } from '@/lib/utils'
 import Overview from './Overview'
 import Evidence from './Evidence'
@@ -15,6 +15,8 @@ import Routes from './Routes'
 import BugReports from './BugReports'
 import Security from './Security'
 import Performance from './Performance'
+import Accessibility from './Accessibility'
+import AutoRepair from './AutoRepair'
 import Coder from './Coder'
 import Screenshots from './Screenshots'
 import E2ELiveLanes from './E2ELiveLanes'
@@ -85,6 +87,11 @@ export default function TestingResult() {
 
   useEffect(() => { load()  }, [project])
   useEffect(() => {
+    if (!live.running || !project) return
+    const timer = setInterval(() => { refreshQaReport(project).catch(() => {}) }, 2500)
+    return () => clearInterval(timer)
+  }, [live.running, project])
+  useEffect(() => {
     if (!live.running && project) load()
 
   }, [live.running])
@@ -94,7 +101,6 @@ export default function TestingResult() {
     wasBuilding.current = building
   }, [building])
 
-  const counts = useMemo(() => badges(qa), [qa])
   const View = (VIEWS.find(v => v.id === sub) || VIEWS[0]).C
 
   if (!project) return <Empty>Open a project to see its test results.</Empty>

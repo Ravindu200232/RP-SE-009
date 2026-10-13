@@ -1,7 +1,6 @@
 'use client'
 
-import { Empty, Table, TR, TH, TD } from '../ui'
-import { cn } from '@/lib/utils'
+import { Badge, Empty, Table, TR, TH, TD } from '../ui'
 
 export default function Performance({ qa }) {
   const p = qa?.performance
