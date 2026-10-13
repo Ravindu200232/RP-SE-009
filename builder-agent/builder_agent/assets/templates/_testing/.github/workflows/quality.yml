@@ -1,0 +1,76 @@
+# The QA layers in CI: unit, Playwright (end-to-end, visual, accessibility),
+# Lighthouse CI, npm audit and an OWASP ZAP baseline scan. This runs on the
+# CI runner; nothing here needs Docker on a developer's machine.
+name: quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      # Unit tests (test/helpers/db.js) talk to a plain Postgres on the same port and credentials
+      # `supabase start`'s local stack uses, so they never touch this project's real Supabase
+      # project. A bare Postgres container is enough for them - they don't need Auth or Storage.
+      postgres:
+        image: postgres:15
+        ports: ['54322:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Every stack's `npm start` listens on 3001 (Next.js) or 5173 (Remix, Vite).
+      PORT: '3001'
+      BASE_URL: http://localhost:3001
+      CI: 'true'
+      # This project's real Supabase project. Set these as repository secrets (Settings ->
+      # Secrets and variables -> Actions) with the same values AgentForge's build setup connected -
+      # never commit them. The build and E2E/security steps below need them to start the app for
+      # real; the unit-test step does not (it uses the local Postgres service above instead).
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run seed --if-present
+      - name: Start the app
+        run: npm start > app.log 2>&1 &
+      - run: npx wait-on --timeout 120000 $BASE_URL
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=desktop --update-snapshots=missing
+      - run: npx lhci collect && npx lhci assert
+      - run: npm audit --audit-level=high
+      - name: OWASP ZAP baseline
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ env.BASE_URL }}
+          rules_file_name: .zap/rules.tsv
+          fail_action: true
+          allow_issue_writing: false
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-reports
+          path: |
+            playwright-report
+            test-results
+            .lighthouseci
