@@ -4,16 +4,46 @@ import { ExternalLink, GitBranch, Rocket } from 'lucide-react'
 import { STATE_TEXT, TARGETS } from '@/lib/deploy-constants'
 import { SectionLabel, Tag } from '../ui'
 
-export default function DeployResult({ data }) {
-  const last = data?.have?.last ? data.last : null
-  if (!last) return null
+/**
+ * The last finished deployment, in short: what it was, where it is, whether it held up, and (when it stopped part of the way)
+ * the way to carry on. Everything else about it is in the navigation, read live from the provider's own command line tool.
+ */
+export default function DeployResult({ data, onResumed }) {
+  const project = useStore(s => s.project)
+  const [resuming, setResuming] = useState(false)
+  const [problem, setProblem] = useState('')
+  // The stopped run this card was resumed from: hidden from the moment it carries on, so its old error is gone and the
+  // pipeline shows instead. If the resumed run stops again it finishes at another time, and the card comes back for it.
+  const [resumedFrom, setResumedFrom] = useState(null)
+  const last = data?.last
+  if (!last || !TERMINAL.has(last.state)) return null
+  if (resumedFrom && resumedFrom === `${last.run_id}|${last.finished_at}`) return null
+
+  // A run that was stopped part of the way goes on from where it stopped, on the plan that was approved.
+  async function resume() {
+    setResuming(true)
+    setProblem('')
+    try {
+      const state = useStore.getState()
+      const result = await api.changeDecide(project, data.retry.change, {
+        decision: 'retry', model: state.models.builder || state.models.agent,
+      })
+      if (result && result.ok === false) setProblem(result.detail || 'That deployment cannot be resumed.')
+      else {
+        setResumedFrom(`${last.run_id}|${last.finished_at}`)
+        await onResumed?.()
+      }
+    } catch (e) {
+      setProblem(e.message || 'Could not resume it.')
+    }
+    setResuming(false)
+  }
 
   const [label, tone] = STATE_TEXT[last.state] || [last.state, 'mute']
-  const repo = last.repo_state || {}
-
-  const url = repo.application_url || ''
-  const slug = typeof repo.repository === 'string' ? repo.repository : ''
-  const score = last.readiness?.score
+  const repo = last.repository || {}
+  const checks = Array.isArray(last.checks) ? last.checks : []
+  const passed = checks.filter(check => check.result === 'pass').length
+  const rechecks = (Array.isArray(last.evidence) ? last.evidence : []).filter(row => row.kind === 'studio re-check')
 
   return (
     <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] p-5 shadow-[0_0_2px_0_rgba(145,158,171,0.2),0_12px_24px_-4px_rgba(0,0,0,0.16)]">
@@ -31,36 +61,27 @@ export default function DeployResult({ data }) {
         </Row>
         {url && (
           <Row label="Live at">
-            <a href={url} target="_blank" rel="noreferrer"
-               className="inline-flex items-center gap-1 text-accent hover:underline">
-              <Rocket className="size-3" /> {url}
-              <ExternalLink className="size-2.5" />
+            <a href={last.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
+              <Rocket className="size-3" /> {last.url} <ExternalLink className="size-2.5" />
             </a>
           </Row>
         )}
-        {slug && (
+        {repo.url && (
           <Row label="Repository">
-            <a href={`https://github.com/${slug}`} target="_blank" rel="noreferrer"
-               className="inline-flex items-center gap-1 text-accent hover:underline">
-              <GitBranch className="size-3" /> {slug}
-              {repo.branch ? ` · ${repo.branch}` : ''}
-              <ExternalLink className="size-2.5" />
+            <a href={repo.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
+              <GitBranch className="size-3" /> {repo.url} <ExternalLink className="size-2.5" />
             </a>
           </Row>
         )}
-        {typeof score === 'number' && (
-          <Row label="Readiness">{score}/100</Row>
-        )}
-        {last.link?.adopted_at && (
-          <Row label="Recorded">
-            {new Date(last.link.adopted_at).toLocaleString()}
+        {(checks.length > 0 || rechecks.length > 0) && (
+          <Row label="Checks">
+            <span className="inline-flex items-center gap-1">
+              <ShieldCheck className="size-3 text-muted2" />
+              {checks.length ? `${passed} of ${checks.length} live checks passed` : 'checked by the studio'}
+              {rechecks.length ? ` · ${rechecks.length} re-checked by the studio itself` : ''}
+            </span>
           </Row>
         )}
-        <Row label="Run">
-          <span className="font-mono text-[10.5px] text-muted2">
-            {String(last.run_id).slice(0, 12)}
-          </span>
-        </Row>
       </dl>
 
       {last.error && (

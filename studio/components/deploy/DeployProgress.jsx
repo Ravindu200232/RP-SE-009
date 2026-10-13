@@ -7,7 +7,10 @@ import { cn } from '@/lib/utils'
 
 export default function DeployProgress({ run }) {
   if (!run) return null
-  const stages = PIPELINE[run.target] || PIPELINE.vercel
+  // The stages are the steps of the plan the customer approved; a run from before plans existed falls back to the fixed list.
+  const planned = Array.isArray(run.plan?.steps)
+    ? run.plan.steps.map(step => ({ id: step.id, title: step.title, detail: step.detail || step.stage || '' })) : []
+  const stages = planned.length ? planned : (PIPELINE[run.target] || PIPELINE.vercel)
   const { rows, pct } = progressOf(run.events, stages)
   const [label, tone] = STATE_TEXT[run.state] || [run.state || 'Working', 'run']
 

@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, ExternalLink, Loader2, X } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Button, Input, SectionLabel } from '../ui'
+import { Button, Input as BaseInput } from '../ui'
+import AccountList from '../AccountList'
+import BrandIcon from '../BrandIcon'
+import CliSignIn from '../CliSignIn'
+import SupabaseConnect from '../SupabaseConnect'
 import { cn } from '@/lib/utils'
 
 
@@ -15,17 +19,21 @@ const AWS_REGIONS = ['ap-south-1', 'us-east-1', 'us-east-2', 'us-west-2',
                      'ap-southeast-1', 'ap-southeast-2', 'ap-northeast-1']
 const AWS_CONSOLE_PROFILE = 'agentforge-console'
 
-export default function DeployAccounts({ deploy, onSaved }) {
-  const [open, setOpen] = useState(false)
+/**
+ * One service's page in Settings: its logo, whether it is connected, and its own form. Each service is listed
+ * on its own in the Settings sidebar (`provider` is its id there), so a person sees one account at a time.
+ */
+export default function DeployAccount({ provider, deploy, onSaved }) {
   const [probe, setProbe] = useState(null)
   const [note, setNote] = useState('')
+  const needsProbe = provider === 'github' || provider === 'aws'
 
   useEffect(() => {
-    if (!open || probe) return
+    if (probe || !needsProbe) return
     api.deployRead('/onboarding/status')
       .then(setProbe)
       .catch(e => setNote(`could not read the deployment agent — ${e.message}`))
-  }, [open, probe])
+  }, [probe, needsProbe])
 
   const save = async (patch) => {
     await api.saveSettings(patch)
@@ -69,6 +77,13 @@ export default function DeployAccounts({ deploy, onSaved }) {
           <Mongo deploy={deploy} onSave={save} />
         </div>
       )}
+      {provider === 'supabase' && (
+        <Row title="Supabase" ok={Boolean(deploy?.supabase_org)} unknown={false}
+             detail={deploy?.supabase_org ? `signed in as ${deploy.supabase_org}` : 'every Supabase-stack project gets its own real project'}>
+          <Soft><SupabaseConnect onDone={onSaved} /></Soft>
+        </Row>
+      )}
+      {provider === 'mongodb' && <Mongodb deploy={deploy} onSave={save} />}
     </section>
   )
 }
@@ -86,6 +101,8 @@ function summarise(d) {
   return bits.join(' · ')
 }
 
+  const loadAccount = () => api.deploy('/mongodb/account/status').then(setAccount).catch(() => {})
+  useEffect(() => { loadAccount() }, [])
 
 function Github({ deploy, onSave, probe, onRecheck }) {
   const [token, setToken] = useState('')
@@ -143,6 +160,90 @@ function Github({ deploy, onSave, probe, onRecheck }) {
     } catch (e) { setErr(e.message) }
     setBusy(false)
   }
+
+  async function save() {
+    setBusy('save'); setError('')
+    try {
+      const uri = value.trim()
+      await onSave({ deploy_mongodb_uri: uri })
+      setValue('')
+      if (uri && uri !== '-') await test('')
+    } catch (failure) { setError(failure.message) } finally { setBusy('') }
+  }
+
+  async function repair() {
+    setBusy('repair'); setError('')
+    try {
+      await api.deploy('/mongodb/repair', {})
+      await loadAccount()
+      await onSave({})
+      await test('')
+    } catch (failure) { setError(failure.message) } finally { setBusy('') }
+  }
+
+  async function connectAccount() {
+    setAccountBusy('connect'); setAccountError('')
+    try {
+      await api.deploy('/mongodb/account/save', { client_id: clientId.trim(), client_secret: clientSecret.trim() })
+      setClientId(''); setClientSecret('')
+      await loadAccount()
+    } catch (failure) { setAccountError(failure.message) } finally { setAccountBusy('') }
+  }
+
+  async function disconnectAccount() {
+    setAccountBusy('disconnect'); setAccountError('')
+    try { await api.deploy('/mongodb/account/forget', {}); await loadAccount() }
+    catch (failure) { setAccountError(failure.message) } finally { setAccountBusy('') }
+  }
+
+  // Use, or sign out of, one of the accounts signed in through the Atlas CLI. Each has the cluster made for it, so
+  // the connection string the deployments read changes with the account in use.
+  async function changeAccount(kind, id) {
+    setAccountBusy(`${kind}:${id}`); setAccountError('')
+    try {
+      setPicker(null)   // the list belongs to the account that was in use
+      setAccount(await api.deploy(`/mongodb/account/${kind}`, { id }))
+      await onSave({})
+      setStatus(null)
+    } catch (failure) { setAccountError(failure.message) } finally { setAccountBusy('') }
+  }
+
+  // Make a new free cluster. Only when asked: the ones the account already has are chosen from the list.
+  async function provision() {
+    setAccountBusy('provision'); setAccountError('')
+    try {
+      await api.deploy('/mongodb/provision', { create: true })
+      setPicker(null)
+      await loadAccount()
+      await onSave({})   // the server already wrote deploy_mongodb_uri; this just refreshes the saved/hint props
+      await test('')
+    } catch (failure) { setAccountError(failure.message) } finally { setAccountBusy('') }
+  }
+
+  // The clusters the account already has, to choose one from.
+  async function openPicker() {
+    setPicker({ loading: true, rows: [], missing: false, error: '' })
+    try {
+      const found = await api.deploy('/mongodb/clusters')
+      setPicker({ loading: false, rows: found.clusters || [], missing: Boolean(found.missing), error: '' })
+    } catch (failure) { setPicker({ loading: false, rows: [], missing: false, error: failure.message }) }
+  }
+
+  async function useCluster(row) {
+    setAccountBusy(`use:${row.group_id}:${row.name}`); setAccountError('')
+    try {
+      await api.deploy('/mongodb/cluster/use', { group_id: row.group_id, name: row.name })
+      setPicker(null)
+      await loadAccount()
+      await onSave({})
+      await test('')
+    } catch (failure) { setAccountError(failure.message) } finally { setAccountBusy('') }
+  }
+
+  const connected = Boolean(status?.connected)
+  const detail = status
+    ? (connected ? 'connected — ready for a MongoDB-stack deployment' : status.message || 'connection refused')
+    : saved ? 'connection string saved' : 'every MongoDB-stack deployment uses this, never a local database'
 
   return (
     <Row title="GitHub" ok={ok} unknown={false}
@@ -366,21 +467,17 @@ function Aws({ deploy, onSave, probe, onRecheck }) {
           </Button>
         </div>
 
+        <Advanced title="IAM Identity Center (advanced)">
         <Field label="Identity Center start URL">
           <Input value={startUrl} onChange={e => setStartUrl(e.target.value)}
                  placeholder="https://d-xxxxxxxxxx.awsapps.com/start" />
         </Field>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Field label="Sign-in region">
-            <Select value={ssoRegion} onChange={setSsoRegion} options={SSO_REGIONS} />
-          </Field>
-          <Field label="Deploy into">
-            <Select value={region} onChange={setRegion} options={AWS_REGIONS} />
-          </Field>
-        </div>
+        <Field label="Sign-in region">
+          <Select value={ssoRegion} onChange={setSsoRegion} options={SSO_REGIONS} />
+        </Field>
 
         {!flow && (
-          <Button size="sm" variant="outline"
+          <Button size="sm" variant="soft"
                   disabled={!startUrl.trim() || Boolean(busy)} onClick={begin}>
             {busy === 'starting' && <Loader2 className="size-3 animate-spin" />}
             {connected ? 'Connect a different account' : 'Sign in to AWS'}
@@ -425,7 +522,7 @@ function Aws({ deploy, onSave, probe, onRecheck }) {
                         options={roles} />
               </Field>
             )}
-            <Button size="sm" variant="solid"
+            <Button size="sm" variant="primary"
                     disabled={!account || !role || Boolean(busy)} onClick={use}>
               {busy === 'selecting' && <Loader2 className="size-3 animate-spin" />}
               Use this account
@@ -433,7 +530,9 @@ function Aws({ deploy, onSave, probe, onRecheck }) {
           </div>
         )}
 
-        <div className="border-t border-line pt-2">
+        </Advanced>
+
+        <Soft>
           <Field label="Or use an AWS CLI profile you already have"
                  hint="Made by `aws configure sso`, or any profile that works.
                        Nothing secret is copied — only the name.">
@@ -450,7 +549,7 @@ function Aws({ deploy, onSave, probe, onRecheck }) {
                      placeholder="deployment-agent" />
             )}
           </Field>
-          <Button size="sm" variant="outline" className="mt-2"
+          <Button size="sm" variant="soft" className="mt-2"
                   disabled={!profile.trim() || Boolean(busy)}
                   onClick={async () => {
                     setBusy('profile'); setErr('')
@@ -464,7 +563,7 @@ function Aws({ deploy, onSave, probe, onRecheck }) {
             {busy === 'profile' && <Loader2 className="size-3 animate-spin" />}
             Use this profile
           </Button>
-        </div>
+        </Soft>
 
         {notice && <p className="text-[10.5px] text-muted">{notice}</p>}
         {String(identity?.arn || '').endsWith(':root') && (
@@ -622,7 +721,7 @@ function Vercel({ deploy, onSave }) {
                    : 'paste a Vercel token'} />
         </Field>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" disabled={!token.trim() || Boolean(busy)}
+          <Button size="sm" variant="soft" disabled={!token.trim() || Boolean(busy)}
                   onClick={saveToken}>
             {busy === 'save' && <Loader2 className="size-3 animate-spin" />} Save token
           </Button>
@@ -717,28 +816,34 @@ function HostedCredential({ title, provider, setting, saved, label, hint, href, 
 function Mongo({ deploy, onSave }) {
   const [uri, setUri] = useState('')
   const [busy, setBusy] = useState('')
-  const [result, setResult] = useState(null)
-  const [err, setErr] = useState('')
+  const [status, setStatus] = useState(null)
+  const [error, setError] = useState('')
 
-  async function test() {
-    setBusy('test')
-    setErr('')
-    setResult(null)
-    try {
+  // What is already saved, checked once, so the row opens telling the truth.
+  useEffect(() => {
+    let live = true
+    if (!saved) { setStatus(null); return undefined }
+    api.deploy(`/aws/${provider}/status`, { token: '' })
+      .then(answer => { if (live) setStatus(answer) })
+      .catch(() => {})
+    return () => { live = false }
+  }, [provider, saved])
 
-      setResult(await api.deploy('/mongodb/check', { uri: uri.trim() }))
-    } catch (e) { setErr(e.message) }
-    setBusy('')
+  async function check(token) {
+    setBusy('check'); setError(''); setStatus(null)
+    try { setStatus(await api.deploy(`/aws/${provider}/status`, { token })) }
+    catch (failure) { setError(failure.message) }
+    finally { setBusy('') }
   }
 
   async function save() {
-    setBusy('save')
-    setErr('')
+    setBusy('save'); setError('')
     try {
-      await onSave({ deploy_mongodb_uri: uri.trim() })
-      setUri('')
-    } catch (e) { setErr(e.message) }
-    setBusy('')
+      await onSave({ [setting]: value.trim() })
+      const token = value.trim()
+      setValue('')
+      if (token !== '-') await check(token)
+    } catch (failure) { setError(failure.message) } finally { setBusy('') }
   }
 
   return (
@@ -772,11 +877,19 @@ function Mongo({ deploy, onSave }) {
         )}
         {err && <p className="text-[10.5px] text-deep">{err}</p>}
       </div>
-    </Row>
-  )
+      {status && !connected && (
+        <p className="text-[10.5px] text-bad">{status.message || status.error}</p>
+      )}
+      {status?.connected && status.verified === false && (
+        <p className="text-[10.5px] text-muted">{status.message}</p>
+      )}
+      {error && <p className="text-[10.5px] text-bad">{error}</p>}
+    </Soft>
+    </div>
+  </Row>
 }
 
-
+/** A service's header (logo, name, whether it is connected) and then its form. No borders: soft fills only. */
 function Row({ title, ok, unknown, detail, actions, children }) {
   return (
     <div className={cn('rounded-xl border border-[rgba(145,158,171,0.16)] border-l-[3px] bg-[#1C252E] p-3 shadow-sm transition-all',
@@ -790,11 +903,28 @@ function Row({ title, ok, unknown, detail, actions, children }) {
         <span className="text-[12.5px] font-bold text-white">{title}</span>
         <span className="min-w-0 flex-1 truncate text-[11px] text-[#919EAB]">{detail}</span>
         {actions}
-      </div>
+      </header>
       {children}
     </div>
   )
 }
+
+/** The fields here are filled, not outlined. */
+const Input = ({ className, ...rest }) => <BaseInput className={cn('border-transparent bg-bg/60 shadow-none', className)} {...rest} />
+
+/** A collapsed section for the less usual ways in. */
+const Advanced = ({ title, children }) => (
+  <details className="group rounded-2xl bg-panel px-4 py-3 shadow-sm">
+    <summary className="flex cursor-pointer select-none list-none items-center justify-between text-[11.5px] font-semibold text-muted transition-colors hover:text-ink [&::-webkit-details-marker]:hidden">
+      {title}
+      <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+    </summary>
+    <div className="mt-3 space-y-3">{children}</div>
+  </details>
+)
+
+/** A quiet section inside a form (a flow in progress, the advanced options). */
+const Soft = ({ className, children }) => <div className={cn('rounded-2xl bg-panel p-4 shadow-sm', className)}>{children}</div>
 
 const Field = ({ label, hint, children }) => (
   <label className="block">

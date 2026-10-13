@@ -1,16 +1,16 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Activity, Camera, Check, FolderGit2, GitBranch, Globe,
-         Loader2, RefreshCw, Rocket, ScrollText, Server, Settings2, Shield,
-         Trash2, Workflow, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AlertTriangle, Boxes, Check, Cloud, Database, FileCode2, GitBranch, Globe2, HardDrive, KeyRound, Layers, Link2, Loader2, Lock, Network, Package, Plug, Rocket, Server, Settings2, Shield, ShieldCheck, Upload, Users, Workflow, X } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { api } from '@/lib/api'
 import { TARGETS, TERMINAL } from '@/lib/deploy-constants'
 import { useMonitor } from '@/lib/use-monitor'
 import { Button, Empty, SectionLabel, SubTab, SubTabs } from '../ui'
 import { cn } from '@/lib/utils'
+import CommandPage from './cli/CommandPage'
 import DeployProgress from './DeployProgress'
+import DeployPlanStage from './DeployPlanStage'
 import DeployResult from './DeployResult'
 import DeployInterview from './DeployInterview'
 import { Infrastructure, Logs, Overview, StatusBar, ago } from './MonitorViews'
@@ -30,13 +30,14 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   const setQa = useStore(s => s.setQaReport)
 
   const [data, setData] = useState(null)
-  const [probe, setProbe] = useState(null)
+  const [cli, setCli] = useState(null)
   const [target, setTarget] = useState('vercel')
   const [answers, setAnswers] = useState({})
   const [override, setOverride] = useState(false)
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
   const [view, setView] = useState('deploy')
+  const [monitors, setMonitors] = useState({ loaded: false, items: [] })
   const alive = useRef(true)
   const currentProject = useRef(project)
   currentProject.current = project
@@ -44,18 +45,20 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   currentAccountsRevision.current = accountsRevision
 
   const mine = data?.project === project ? data : null
+  // The plan card in the chat, shown here too so the plan can be read and approved from either place.
+  const chat = useStore(s => s.chat)
+  const planCard = useMemo(() => {
+    const id = mine?.change?.id
+    return id ? [...chat].reverse().find(row => row.role === 'change' && row.changeId === id) || null : null
+  }, [chat, mine?.change?.id])
   const live = mine?.live
+  const last = mine?.last
   const running = Boolean(live && !TERMINAL.has(live.state) && !live.error)
 
-  const runId = live?.run_id || mine?.last?.run_id || ''
-  const monitor = useMonitor(runId, {
-    target: live?.target || mine?.last?.target || 'vercel',
-    state: live?.state || mine?.last?.state || '',
-    active: true,
-    frozen: mine?.last?.monitor,
-  })
-
-  const run = useRunData(runId)
+  // Publish it so the chat beside this panel can show the same run.
+  const runId = live?.run_id || last?.run_id || ''
+  const setDeployRunId = useStore(s => s.setDeployRunId)
+  useEffect(() => { setDeployRunId(runId) }, [runId, setDeployRunId])
 
   // Publish it so the chat beside this panel can show the same run.
   const setDeployRunId = useStore(s => s.setDeployRunId)
@@ -102,23 +105,41 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   }, [project, qa, setQa])
 
   useEffect(() => {
-    if (view === 'deploy') return
-    if (!viewsFor(monitor.snap).some(v => v.id === view)) setView('deploy')
-  }, [view, monitor.snap])
-
-  useEffect(() => {
     if (!running) return
     const t = setInterval(refresh, 1400)
     return () => clearInterval(t)
   }, [running, refresh])
 
-  const reloadRun = run.reload
+  // What this deployment's own command line tools can show, offered from what its record holds (it grows as the run records more).
+  const monitorsKey = `${project}|${last?.run_id || ''}|${last?.state || ''}|${last?.host ? 1 : 0}`
   useEffect(() => {
-    if (!running) return
-    const t = setInterval(reloadRun, 2500)
-    return () => clearInterval(t)
-  }, [running, reloadRun])
+    if (!project || !last?.target) { setMonitors({ loaded: true, items: [] }); return }
+    let ok = true
+    api.cliMonitorList(project)
+      .then(r => { if (ok) setMonitors({ loaded: true, items: r?.items || [] }) })
+      .catch(() => { if (ok) setMonitors({ loaded: true, items: [] }) })
+    return () => { ok = false }
+  }, [monitorsKey])            // eslint-disable-line react-hooks/exhaustive-deps
+  const current = monitors.items.find(item => item.id === view)
+  useEffect(() => {
+    if (view !== 'deploy' && monitors.loaded && !current) setView('deploy')
+  }, [view, monitors.loaded, current])
 
+  // Which command line tools are installed and who each is signed in as: every deployment goes through the target's own tool.
+  // Read again whenever an account changes in Settings (`accountsRevision`) and whenever this window or tab is shown
+  // again (a sign-in finished in the browser, or a tool signed in from a terminal): asked fresh each time, so the list never
+  // says "not connected" about an account that was connected a moment ago. A quiet refresh keeps the last answer on screen.
+  const [shownAgain, setShownAgain] = useState(0)
+  const lastLook = useRef(0)
+  useEffect(() => {
+    const again = () => {
+      if (document.visibilityState === 'hidden' || Date.now() - lastLook.current < 4000) return
+      setShownAgain(n => n + 1)
+    }
+    window.addEventListener('focus', again)
+    document.addEventListener('visibilitychange', again)
+    return () => { window.removeEventListener('focus', again); document.removeEventListener('visibilitychange', again) }
+  }, [])
   useEffect(() => {
     let ok = true
     setProbe(null)
@@ -266,7 +287,34 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
         </div>
       )}
 
-      {running || live ? <DeployProgress run={live} /> : null}
+              <SectionLabel className="mt-6"
+                            right={onSettings && (
+                              <Button variant="outline" size="sm" className="rounded-xl border-line bg-panel/60 text-ink hover:bg-raised" onClick={onSettings}>
+                                <Settings2 className="size-3" /> Settings
+                              </Button>
+                            )}>
+                Accounts
+              </SectionLabel>
+              <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                {needs.map(n => (
+                  <li key={n.id} className={cn('flex items-start gap-2.5 rounded-xl border px-3.5 py-3',
+                    n.unknown || (!n.ok && n.optional) ? 'border-line bg-panel/30'
+                      : n.ok ? 'border-ok/20 bg-ok/10' : 'border-bad/20 bg-bad/10')}>
+                    <span className="mt-[2px] grid size-3.5 shrink-0 place-items-center">
+                      {n.unknown
+                        ? <Loader2 className="size-3 animate-spin text-muted" />
+                        : n.ok ? <Check className="size-3.5 text-ink" />
+                               : <X className={cn('size-3.5', n.optional ? 'text-muted' : 'text-bad')} />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="text-[12px] font-semibold text-ink">{n.label}</span>
+                      <span className={cn('ml-2 text-[11px]', n.unknown || n.ok || n.optional ? 'text-muted' : 'text-bad')}>
+                        {n.hint}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
 
       {!running && (
         <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] p-6 shadow-[0_0_2px_0_rgba(145,158,171,0.2),0_12px_24px_-4px_rgba(0,0,0,0.16)] backdrop-blur-xl">
