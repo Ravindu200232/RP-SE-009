@@ -3,8 +3,13 @@ import { useStore, KEYS } from './store'
 import { api, API, HTTP_FALLBACK, getAuthToken } from './api'
 import { refreshQaReport } from './qa-results'
 
-
-const STEP_ALIAS = { plan: 'build', generate: 'build' }
+// What each outgoing message is, in the terms the overlay presents.
+const WORK_KIND = {
+  agent_build: 'build',
+  agent_update: 'edit', agent_resume: 'build',
+  feature: 'feature',
+  element_edit: 'select',
+}
 
 // What each outgoing message is, in the terms the overlay presents.
 const WORK_KIND = {
@@ -121,6 +126,8 @@ async function recoverPendingDecision() {
 
 export function connect() {
   if (typeof window === 'undefined') return
+  const bridge = desktop()
+  if (bridge) return connectDesktop(bridge)
   const s = useStore.getState()
 
   // Close whatever is already open FIRST.
@@ -138,7 +145,7 @@ export function connect() {
 
   try {
     sock = new WebSocket(wsUrl())
-  } catch (e) {
+  } catch {
     s.setStatus('disconnected', 'no socket')
     return
   }
@@ -221,6 +228,10 @@ export function send(obj) {
   if (obj && obj.prompt !== undefined) {
     lastEdit = obj
     useStore.setState({ question: null })
+  }
+  if (desktop()) {
+    desktop().send(obj)
+    return
   }
   if (sock && sock.readyState === 1) {
     sock.send(JSON.stringify(obj))

@@ -3,3 +3,8 @@ dist
 .env
 .env.*
 !.env.example
+
+# QA output
+test-results/
+playwright-report/
+.lighthouseci/

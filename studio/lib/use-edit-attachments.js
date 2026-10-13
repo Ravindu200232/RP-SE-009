@@ -7,14 +7,20 @@ import { api } from './api'
 
 let seq = 0
 
-export function useEditAttachments() {
+export function useEditAttachments(project) {
   const [items, setItems] = useState([])
-  const busy = useRef(false)
+  const current = useRef([])
+  const pending = useRef(new Map())
+
+  const update = useCallback(change => {
+    current.current = change(current.current)
+    setItems(current.current)
+  }, [])
 
   const add = useCallback(files => {
     const fresh = Array.from(files || []).map(file => ({
       key: `ea-${++seq}`, file, name: file.name || 'upload',
-      state: 'waiting', read: '', url: '', kind: '', note: '',
+      state: 'reading', read: '', kind: '', note: '', path: '',
     }))
     if (fresh.length) setItems(list => [...list, ...fresh])
   }, [])
@@ -55,6 +61,17 @@ export function useEditAttachments() {
     } finally {
       busy.current = false
     }
+  }, [project, update])
+
+  const remove = useCallback(key => update(list => list.filter(i => i.key !== key)), [update])
+  const reset = useCallback(() => update(() => []), [update])
+
+  /** Wait for selected uploads, then put their saved paths in the agent request. */
+  const collect = useCallback(async () => {
+    await Promise.all([...pending.current.values()])
+    const failed = current.current.find(item => item.state === 'failed')
+    if (failed) throw new Error(`${failed.name}: ${failed.note || 'Upload failed'}`)
+    return blockFor(current.current)
   }, [])
 
   return { items, add, remove, reset, collect,
@@ -85,10 +102,9 @@ function blockFor(items) {
 
   const parts = usable.map(i => {
     if (i.kind === 'image') {
-      return `### ${i.name} — a picture, already saved at ${i.url}\n`
-        + `If they asked for this picture to appear, use exactly that path in `
-        + `an <img>; it exists on disk, so do not invent another and do not `
-        + `leave a placeholder. What it shows:\n${i.read || '(could not be read)'}`
+      return `### ${i.name} — a picture saved in this project at \`${i.path}\`\n`
+        + 'This is a binary image, not a text file. If it belongs in the application, '
+        + 'copy it into the app stack’s public assets and use that served path in the UI.'
     }
     const what = KIND_SAID[i.kind] || 'a file'
     const head = [`### ${i.name} — ${what}`]

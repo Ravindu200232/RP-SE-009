@@ -53,8 +53,24 @@ export function usePlugins(project, pending, onPending) {
     }
   }, [chosen, enabled, project, onPending])
 
+  const credentialsSaved = useCallback(async saved => {
+    setState(s => ({ ...s, saved }))
+    // Updating credentials for any enabled provider refreshes the one handoff
+    // that contains every selected plugin.
+    if (project && chosen.length) {
+      try {
+        const answer = await api.setProjectPlugins(project, chosen)
+        setEnabled(answer.enabled || chosen)
+      } catch (e) {
+        // The credential is already stored safely. A handoff refresh problem
+        // should not misleadingly report that save as a failure.
+        useStore.getState().addLog('WARN', `Plugin saved, but its project handoff could not refresh — ${e.message}`)
+      }
+    }
+  }, [project, chosen])
+
   return { ...state, savedById, enabled: chosen, tick, reload: load,
-           onSaved: saved => setState(s => ({ ...s, saved })) }
+           onSaved: credentialsSaved }
 }
 
 /** Provider icon with graceful avatar fallback to prevent broken images. */
@@ -68,7 +84,7 @@ function PluginIcon({ plugin }) {
     return (
       <span
         aria-label={plugin.name || ''}
-        className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent/15 text-[12px] font-bold text-accent shadow-xs"
+        className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent text-[12px] font-bold text-ink shadow-xs"
       >
         {letter}
       </span>
@@ -89,7 +105,7 @@ function PluginIcon({ plugin }) {
 }
 
 /** One provider: its icon, what it is for, and what it still needs. */
-function Card({ plugin, saved, ticking, on, onTick, onSaved }) {
+function Card({ plugin, saved, ticking, on, onTick, onSaved, project }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState(saved?.mode || plugin.modes[0].choice)
   const [values, setValues] = useState({})
@@ -104,7 +120,7 @@ function Card({ plugin, saved, ticking, on, onTick, onSaved }) {
   async function save() {
     setBusy('save'); setError('')
     try {
-      onSaved(await api.savePlugin(plugin.id, mode, values))
+      await onSaved(await api.savePlugin(plugin.id, mode, values, project))
       setValues({})
       setOpen(false)
     } catch (e) { setError(e.message) } finally { setBusy('') }
@@ -127,7 +143,7 @@ function Card({ plugin, saved, ticking, on, onTick, onSaved }) {
                   title={on ? `Stop using ${plugin.name} in this app`
                             : `Use ${plugin.name} in this app`}
                   className={cn('grid size-5 shrink-0 place-items-center rounded-md border transition-all',
-                    on ? 'border-accent bg-accent text-white'
+                    on ? 'border-accent bg-accent text-ink'
                        : 'border-line2 bg-panel hover:border-accent')}>
             {on && <Check className="size-3" />}
           </button>
@@ -155,7 +171,7 @@ function Card({ plugin, saved, ticking, on, onTick, onSaved }) {
                         aria-pressed={mode === m.choice}
                         className={cn('rounded-xl border px-2.5 py-1.5 text-[11px] font-semibold transition-all',
                           mode === m.choice
-                            ? 'border-accent bg-accent/15 text-accent'
+                            ? 'border-accent bg-accent text-ink'
                             : 'border-line2 bg-panel text-muted hover:text-ink')}>
                   {m.label}
                 </button>
@@ -227,7 +243,7 @@ function Card({ plugin, saved, ticking, on, onTick, onSaved }) {
               </button>
             )}
             <button onClick={save} disabled={Boolean(busy) || !Object.values(values).some(v => String(v || '').trim())}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-press disabled:opacity-40">
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-[11px] font-semibold text-ink transition-colors hover:bg-press disabled:opacity-40">
               {busy === 'save' ? <Loader2 className="size-3 animate-spin" />
                                : <Check className="size-3" />}
               {configured ? 'Update' : 'Save'}
@@ -264,6 +280,16 @@ export default function PluginAccounts({ project = '', pending, onPending, class
   const order = groups.length ? groups : [...new Set(plugins.map(p => p.group))]
   return (
     <div className={cn('space-y-5', className)}>
+      {ticking && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel/70 px-3 py-2">
+          <p className="text-[10.5px] leading-relaxed text-muted">
+            Select as many plugins as this app needs.
+          </p>
+          <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-ink">
+            {enabled.length} selected
+          </span>
+        </div>
+      )}
       {project ? (
         <p className="text-[11.5px] leading-relaxed text-muted">
           Tick the ones <b className="font-semibold text-ink">{project}</b> should use. Their
@@ -288,7 +314,7 @@ export default function PluginAccounts({ project = '', pending, onPending, class
               {rows.map(plugin => (
                 <Card key={plugin.id} plugin={plugin} saved={savedById[plugin.id]}
                       ticking={ticking} on={enabled.includes(plugin.id)}
-                      onTick={tick} onSaved={onSaved} />
+                      onTick={tick} onSaved={onSaved} project={project} />
               ))}
             </div>
           </section>

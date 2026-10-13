@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { freePort } from './port-guard.mjs';
 
 /**
  * Start every service and the gateway in production, as one process tree.
@@ -35,11 +36,16 @@ if (!gateway) {
 // Internal ports, one per service, away from the public one. The gateway reads
 // CORE_URL first and CORE_PORT second, so setting the port leaves an explicit
 // URL in the environment free to win.
-const FIRST_INTERNAL = Number(process.env.INTERNAL_PORT_BASE ?? 4102);
+const FIRST_INTERNAL = Number(process.env.INTERNAL_PORT_BASE ?? 4001);
 const addresses = {};
 services.forEach((name, index) => {
   addresses[name] = FIRST_INTERNAL + index;
 });
+
+await Promise.all([
+  freePort(Number(process.env.PORT ?? 4000)),
+  ...Object.values(addresses).map(freePort),
+]);
 
 const children = [];
 let stopping = false;

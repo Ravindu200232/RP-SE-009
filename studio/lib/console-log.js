@@ -32,6 +32,7 @@ let observer = null
 export function observeConsole(callback) { observer = callback }
 export function recordConsole(kind, text, project, role) { push(kind, text, owner(project, role)) }
 
+export function recordConsole(kind, text, project, role) { push(kind, text, owner(project, role)) }
 
 function push(kind, text, scope = owner()) {
   if (scope.epoch !== useStore.getState().accountEpoch) return

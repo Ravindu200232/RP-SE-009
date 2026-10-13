@@ -231,7 +231,7 @@ export default function Home({
     })
   }
 
-  async function planFirst() {
+  async function planFirst(workspace = '') {
     const idea = prompt.trim()
     const files = attach.items.length
     if (!idea && !files) return box.current?.focus()

@@ -161,11 +161,9 @@ export default function SettingsModal({ onClose, onSaved }) {
     api.settings()
       .then(d => {
         if (!alive) return
-        setHost(d.ollama_host || '')
-        setCtx(d.local_num_ctx || '')
         setMeta(d)
-        setNote(d.cloud_enabled ? 'cloud enabled' : 'cloud off — local only')
-        setTone(d.cloud_enabled ? 'ok' : 'muted')
+        setNote('ready')
+        setTone('ok')
       })
       .catch(() => { if (alive) { setNote('server offline'); setTone('bad') } })
     return () => { alive = false }
@@ -180,11 +178,11 @@ export default function SettingsModal({ onClose, onSaved }) {
     if (mongo.trim()) body.mongodb_uri = mongo.trim() === '-' ? '' : mongo.trim()
     try {
       const d = await api.saveSettings(body)
-      setNote(!d.cloud_enabled ? 'cloud off — local only'
-        : d.cloud_reachable ? 'cloud key verified' : 'key saved but not accepted')
-      setTone(!d.cloud_enabled ? 'muted' : d.cloud_reachable ? 'ok' : 'bad')
+      setMeta(d)
+      setMongo('')
+      setNote('saved')
+      setTone('ok')
       onSaved?.()
-      if (d.cloud_reachable) setTimeout(onClose, 800)
     } catch (e) {
       setNote('save failed — ' + e.message)
       setTone('bad')

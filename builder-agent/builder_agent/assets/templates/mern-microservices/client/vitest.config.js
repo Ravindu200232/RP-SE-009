@@ -8,6 +8,8 @@ export default defineConfig({
     // Enable test globals so setup files can extend expect.
     globals: true,
     setupFiles: ['test/setup.js'],
-    include: ['test/**/*.test.jsx'],
+    // `test/helpers.js` stubs `fetch` for a test; the real one comes back after each test.
+    unstubGlobals: true,
+    include: ['test/**/*.test.{js,jsx}'],
   },
 });

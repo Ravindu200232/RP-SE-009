@@ -1,13 +1,28 @@
 # Python caches and local virtual environments
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
-venv/
-.pytest_cache/
-.coverage
-htmlcov/
 
-# Environment files and secrets
+# Node and Studio build output
+node_modules/
+studio/node_modules/
+studio/.next/
+studio/.next*/
+studio/test-results/
+studio/playwright-report/
+.pnpm-store/
+.deps/
+# Python packages a local QA run installed beside the code (thousands of files, never the project's own)
+.qa-python-deps/
+
+# Local AgentForge state and generated customer projects
+.agentforge-server/
+workspaces/
+production-ready/
+supabase/.temp/
+
+# Local environment and runtime logs
 .env
 .env.*
 !.env.example

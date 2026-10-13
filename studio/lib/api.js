@@ -91,9 +91,12 @@ export const api = {
   // A project belongs to whoever built it, from the moment it is created;
   // there is nothing for the studio to assign.
   projects: () => req('/projects'),
+  chooseWorkspace: () => post('/workspace/pick', {}),
   models: () => req('/models'),
-  mongo: () => req('/mongo'),
+  // Which models can look at pictures: { capabilities: { id: { vision } }, pending } (filled in as Ollama answers).
+  modelCapabilities: () => req('/models/capabilities'),
   settings: () => req('/settings'),
+  account: () => req('/account'),
   saveSettings: (s) => post('/settings', s),
   imageCheck: () => req('/image-check'),
   // Draws one design theme's own page. Kept afterwards, so the second
@@ -190,7 +193,8 @@ export const api = {
   attach: (file, body) => Promise.resolve(tooBig(file)).then(big => {
     if (big) throw big
     return fileToBase64(file).then(data_base64 =>
-      post('/attach', { ...body, filename: file.name, data_base64 }))
+      post('/attach', { ...body, filename: file.name, mode: uploadMode(file),
+                        content_type: file.type || '', data_base64 }))
   }),
 
   // Hold one file for a build that has no project yet. Over HTTP on purpose:
@@ -247,7 +251,6 @@ export const api = {
       }, opts))
   }),
 
-  deployStatus: () => req('/deploy-status'),
   deployResults: (project) => req(`/deploy-results/${encodeURIComponent(project)}`),
   deployStart: (body) => post('/deploy-start', body),
 
@@ -289,10 +292,11 @@ async function deployJob(method, path, body, { onWait, signal } = {}) {
   const started = await post('/deploy/jobs', { path, method, body })
   const id = started.job_id
   for (let i = 0; ; i++) {
-    if (signal?.aborted) throw new Error('cancelled')
+    if (signal?.aborted) throw new JobCancelledError()
     await new Promise(r => setTimeout(r, i < 10 ? 300 : 900))
     const job = await req(`/deploy/jobs/${id}`)
     if (job.status === 'running') { onWait?.(job.elapsed); continue }
+    if (job.status === 'cancelled') throw new JobCancelledError()
     if (job.status === 'error') throw new Error(job.error || 'the deployment agent failed')
     if (job.http_status >= 400) {
       const detail = job.result?.error ?? job.result?.detail
@@ -414,10 +418,11 @@ async function localJob(path, body, { onWait, signal } = {}) {
   const started = await post('/jobs', { path, method: 'POST', body })
   const id = started.job_id
   for (let i = 0; ; i++) {
-    if (signal?.aborted) throw new Error('cancelled')
+    if (signal?.aborted) throw new JobCancelledError()
     await new Promise(r => setTimeout(r, i < 10 ? 300 : 900))
     const job = await req(`/jobs/${id}`)
     if (job.status === 'running') { onWait?.(job.elapsed); continue }
+    if (job.status === 'cancelled') throw new JobCancelledError()
     if (job.status === 'unknown') throw new Error(job.error || 'the job expired')
     if (job.status === 'error') throw new Error(job.error || 'the request failed')
     if (job.http_status >= 400) {

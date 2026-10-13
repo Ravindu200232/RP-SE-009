@@ -3,13 +3,13 @@ import { advance, emptyProgress } from './progress-model'
 export const ROLES = ['designer', 'developer']
 
 export function emptySession() {
-  return { logs: [], chat: [], runStats: null, agentState: '', reasoning: false, busy: false,
+  return { logs: [], chat: [], runStats: null, agentState: '', agentDetail: '', reasoning: false, busy: false,
     steps: {}, phases: [], files: {}, fileHistory: {}, readFiles: {}, activeFile: null, liveFile: null, liveBuf: '',
-    progress: emptyProgress(), selection: [], approval: null, ask: null, drawing: null,
+    progress: emptyProgress(), selection: [], approval: null, ask: null, drawing: null, permissions: [],
     browserFrame: null, browserConsole: [], question: null, undo: null, previewRoute: '/', draft: '',
     tests: { running: false, attempt: 0, rows: [], fixing: [], pass: 0, fail: 0, warn: 0 },
-    e2eLive: null, qaReport: null, e2eParallel: { active: false, lanes: [] },
-    prototypeStamp: 0, lastEventAt: 0, eventIds: [], runId: '', workKind: '', workflowStatus: 'idle' }
+    e2eLive: null, qaReport: null, e2eParallel: { active: false, lanes: [] }, connection: null,
+    prototypeStamp: 0, lastEventAt: 0, eventIds: [], runId: '', runStartedAt: 0, workKind: '', workflowStatus: 'idle' }
 }
 
 export const SESSION_FIELDS = Object.keys(emptySession())
@@ -24,22 +24,57 @@ export function reduceSession(session, event) {
   const next = { ...s, eventIds: event.event_id ? [...s.eventIds.slice(-1199), event.event_id] : s.eventIds }
   const at = event.at || Date.now()
   next.lastEventAt = Math.max(s.lastEventAt || 0, at)
-  const log = (level, text) => { next.logs = [...s.logs.slice(-799), { level, text, at }] }
-  const chat = entry => { next.chat = [...s.chat.slice(-299), { at, ...entry }] }
+  // The server is the durable source of truth, but an open Studio must not
+  // drop an earlier turn simply because a long run is still arriving.
+  const log = (level, text) => { next.logs = [...s.logs, { level, text, at }] }
+  const chat = entry => { next.chat = [...s.chat, { at, ...entry }] }
   switch (event.type) {
     case 'log': log(event.level, event.text); break
     case 'user_msg': chat({ role: 'user', text: event.text }); break
-    case 'agent_msg': chat({ role: 'assistant', text: event.text, title: event.title, kind: event.kind, design: event.design }); break
+    case 'agent_msg': chat({ role: 'assistant', text: event.text, title: event.title, kind: event.kind, design: event.design, images: event.images, actions: event.actions }); break
     case 'run_state':
       next.runId = event.run_id || s.runId
       next.busy = ['running', 'queued'].includes(event.status)
       next.workflowStatus = event.status
+      next.runStartedAt = next.busy ? at : 0
+      if (!next.busy) next.connection = null
+      if (next.busy) {
+        // A new request must not inherit the previous request's generated
+        // total while it is waiting for the first provider usage report.
+        next.runStats = { ...(s.runStats || {}), at, turn_started_at: at,
+          turn_tokens: 0, sent: 0, received: 0 }
+      }
       break
-    case 'agent_state': next.agentState = event.state || ''; next.reasoning = Boolean(event.thinking); break
+    case 'agent_state':
+      next.agentState = event.state || ''; next.agentDetail = event.detail || ''; next.reasoning = Boolean(event.thinking); break
     case 'memory': next.runStats = event; break
+    // The model service stopped answering (or answers again): one notice at the end of the chat, with "Try again" while the
+    // run waits, and one line in the stream when it is back. It is about now, so a reload does not bring it back.
+    case 'connection':
+      if (event.state === 'ok') {
+        if (s.connection) chat({ role: 'connection', state: 'back', failed: s.connection.failed || 0 })
+        next.connection = null
+      } else {
+        next.connection = { state: event.state === 'waiting' ? 'waiting' : 'retrying', failed: Number(event.failed) || s.connection?.failed || 0,
+          of: Number(event.of) || 0, pause: Number(event.pause) || 0, detail: event.detail || '',
+          hold: Boolean(event.hold), at, since: s.connection?.since || at }
+      }
+      break
     case 'step': next.steps = { ...s.steps, [event.step]: event.status }; break
     case 'progress': next.progress = advance(s.progress, event.step, event.pct, at); break
-    case 'phase': next.phases = [...s.phases.filter(p => p.phase !== event.phase), event]; break
+    case 'phase': {
+      const phaseKey = `${event.kind || 'run'}:${event.key || event.title || event.phase}`
+      next.phases = [...s.phases.filter(p =>
+        `${p.kind || 'run'}:${p.key || p.title || p.phase}` !== phaseKey), event]
+      const previous = s.chat.findIndex(row => row.role === 'stage' && row.phaseKey === phaseKey &&
+        row.runId === s.runId)
+      const stage = { role: 'stage', phaseKey, runId: s.runId,
+        title: event.title || event.key || 'Stage', status: event.status || 'active',
+        detail: event.detail || '', number: event.phase, group: event.kind || 'run' }
+      if (previous < 0) chat(stage)
+      else next.chat = s.chat.map((row, index) => index === previous ? { ...row, ...stage } : row)
+      break
+    }
     case 'file': {
       if (event.agent === 'designer') next.prototypeStamp = at
       if (event.content !== undefined) {
@@ -72,11 +107,16 @@ export function reduceSession(session, event) {
     // recovers one after a reload - when the two disagreed, a question shown
     // live and a question recovered went to different places.
     case 'approval':
-      if (event.kind === 'question') next.ask = event
+      // Several can wait at once (the agent writes some files in parallel): each is a card in the stream, answered on its own.
+      if (event.kind === 'permission') next.permissions = [...(s.permissions || []).filter(card => card.id !== event.id), event]
+      else if (event.kind === 'question') next.ask = event
       else if (event.kind === 'prototype') next.drawing = event
       else next.approval = event
       break
-    case 'approval_resolved': next.approval = null; next.ask = null; next.drawing = null; break
+    case 'approval_resolved':
+      if ((s.permissions || []).some(card => card.id === event.id)) { next.permissions = s.permissions.filter(card => card.id !== event.id); break }
+      next.approval = null; next.ask = null; next.drawing = null
+      break
     case 'browser_frame': next.browserFrame = event.frame ? event : null; break
     case 'undo_point': next.undo = event; break
     case 'ask': next.question = event; break
@@ -84,8 +124,11 @@ export function reduceSession(session, event) {
     case 'test_run': next.tests = { ...s.tests, running: true, attempt: event.attempt }; break
     case 'test_result': {
       const rows = [...s.tests.rows.slice(-999), { ...event, at }]
-      next.tests = { ...s.tests, rows, pass: rows.filter(r => r.status === 'pass').length,
-        fail: rows.filter(r => r.status === 'fail').length, warn: rows.filter(r => r.status === 'warn').length }
+      next.tests = { ...s.tests, rows, pass: rows.filter(r => ['pass', 'passed'].includes(r.status)).length,
+        fail: rows.filter(r => ['fail', 'failed'].includes(r.status)).length,
+        warn: rows.filter(r => r.status === 'warn').length }
+      chat({ role: 'test_result', title: event.msg || 'Test result',
+        detail: event.detail || '', status: event.status })
       break
     }
     case 'test_fixing': next.tests = { ...s.tests, fixing: [...s.tests.fixing, event] }; break
@@ -98,6 +141,21 @@ export function reduceSession(session, event) {
       else if (event.state === 'done') next.e2eParallel = { ...current, active: false }
       break
     }
+    // A request typed in the chat, at the stage it has reached. The plan is one card in the stream that
+    // follows the request; a newer plan for the same request replaces the older one on screen.
+    case 'change': {
+      if (!event.plan) break
+      const card = { role: 'change', changeId: event.change_id, revision: event.revision || 0, status: event.status,
+        plan: event.plan, request: event.request, summary: event.summary, error: event.error, version: event.version,
+        flow: event.flow || '', target: event.target || '' }
+      const rows = s.chat.map(row => row.role === 'change' && row.changeId === event.change_id
+        && row.revision < card.revision && ['proposed', 'approved'].includes(row.status)
+        ? { ...row, status: 'superseded' } : row)
+      const at1 = rows.findIndex(row => row.role === 'change' && row.changeId === event.change_id && row.revision === card.revision)
+      next.chat = at1 < 0 ? [...rows, { at, ...card }]
+        : rows.map((row, index) => index === at1 ? { ...row, ...card } : row)
+      break
+    }
     case 'prototype': next.prototypeStamp = at; break
     case 'e2e_event': {
       const current = s.e2eParallel
@@ -107,15 +165,26 @@ export function reduceSession(session, event) {
       next.e2eParallel = { ...current, lanes, active: current.active || event.state !== 'journey_done',
         workers: Math.max(current.workers || 0, lane) }
       next.e2eLive = { ...event, at }
+      // A journey on screen is a test running, whether or not a stage announced it.
+      next.tests = { ...s.tests, running: true, startedAt: s.tests.startedAt || at }
       break
     }
+    // The run whose browser was on screen is over: give the preview back.
+    case 'e2e_done': case 'test_done':
+      next.tests = { ...s.tests, running: false }
+      next.e2eLive = null; next.browserFrame = null
+      next.e2eParallel = { ...s.e2eParallel, active: false }
+      break
     case 'done': case 'error': case 'cancelled':
       next.busy = false; next.agentState = ''; next.liveFile = null; next.liveBuf = ''
-      next.browserFrame = null; next.approval = null; next.ask = null
+      next.browserFrame = null; next.e2eLive = null; next.drawing = null
+      next.approval = null; next.ask = null; next.permissions = []; next.connection = null
       next.tests = { ...s.tests, running: false }
       next.e2eParallel = { ...s.e2eParallel, active: false }; next.reasoning = false
       next.workflowStatus = event.type === 'done' ? 'completed' : event.type === 'cancelled' ? 'paused' : 'failed'
-      if (event.type !== 'done') chat({ role: 'assistant', tone: 'bad', title: event.type === 'cancelled' ? 'Paused' : 'Run failed',
+      if (event.type === 'cancelled') chat({ role: 'assistant', tone: 'info', title: 'Paused',
+        text: event.text || 'Your progress is saved. Continue when ready.' })
+      else if (event.type === 'error') chat({ role: 'assistant', tone: 'bad', title: 'Run failed',
         text: event.text || 'Your files and conversation are saved. Continue when ready.' })
       break
     default: break

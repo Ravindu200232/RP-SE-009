@@ -14,7 +14,7 @@ if (!mongoUri) {
     }
   }
 }
-mongoUri = mongoUri || 'mongodb://127.0.0.1:27017/sketch_mern';
+mongoUri = mongoUri || 'mongodb://127.0.0.1:27017/__APP_DB__';
 
 const DEMO_PASSWORD = 'Password1!';
 const hashedPassword = bcrypt.hashSync(DEMO_PASSWORD, 10);

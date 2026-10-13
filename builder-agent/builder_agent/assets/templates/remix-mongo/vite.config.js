@@ -18,9 +18,9 @@ export default defineConfig({
     }),
   ],
   server: {
-    // The studio allocates the port and passes it on the command line; this is
-    // only what `npm run dev` does on its own.
+    // Studio supplies an isolated port for every project preview.
     host: '127.0.0.1',
-    port: 3200,
+    port: Number(process.env.PORT ?? 0),
+    strictPort: true,
   },
 });

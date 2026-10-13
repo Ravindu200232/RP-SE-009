@@ -34,13 +34,13 @@ export default function EditAttach({ attach, disabled, className, project, onSpo
   })
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
+    <div className={cn('flex min-w-0 shrink-0 items-center gap-1.5', className)}>
       <input ref={picker} type="file" multiple hidden accept={ACCEPT_UPLOAD}
              onChange={e => { attach.add(e.target.files); e.target.value = '' }} />
 
       <Button variant="ghost" size="sm" disabled={disabled}
               onClick={() => picker.current?.click()}
-              title="Attach a picture, a document or a recording to this request">
+              title="Save a picture or file in this project's media folder">
         <Paperclip className="size-3" />
       </Button>
 

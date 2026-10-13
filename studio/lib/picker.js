@@ -10,6 +10,13 @@ export function frameDoc(frame) {
 }
 
 
+// The screen the framed app is on: its address hash (`#/orders`) when it keeps its screens there, else its path.
+function appRoute(w) {
+  const hash = w.location.hash || ''
+  return hash.startsWith('#/') ? hash.slice(1).split('?')[0] : w.location.pathname + w.location.search
+}
+
+
 export function elementInfo(frame, el, vpMode = 'desktop') {
   const w = frame.contentWindow
   const attrs = {}
@@ -43,7 +50,7 @@ export function elementInfo(frame, el, vpMode = 'desktop') {
     text: (el.innerText || '').trim().slice(0, 160),
     attrs, chain,
     rect: { x: r.x, y: r.y, w: r.width, h: r.height },
-    route: w.location.pathname + w.location.search,
+    route: appRoute(w),
     scroll: { x: w.scrollX, y: w.scrollY },
 
     viewport: {

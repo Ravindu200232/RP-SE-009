@@ -45,4 +45,30 @@ describe('gateway routing', () => {
     expect(response.body.ok).toBe(true);
     expect(Object.keys(response.body)).not.toContain('services');
   });
+
+  it('answers the same readiness at /health, the path every package in this stack uses', async () => {
+    const response = await request(createApp(config)).get('/health').expect(200);
+    expect(response.body.ok).toBe(true);
+  });
+});
+
+describe('gateway response headers', () => {
+  it('sends the security headers and does not name its framework', async () => {
+    const response = await request(createApp(config)).get('/ready').expect(200);
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-frame-options']).toBe('DENY');
+    expect(response.headers['content-security-policy']).toMatch(/frame-ancestors 'none'/);
+    expect(response.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('lets only the origins FRAME_ANCESTORS names frame it', async () => {
+    process.env.FRAME_ANCESTORS = "'self' https://partner.example";
+    try {
+      const response = await request(createApp(config)).get('/ready').expect(200);
+      expect(response.headers['content-security-policy']).toMatch(/frame-ancestors 'self' https:\/\/partner\.example/);
+      expect(response.headers['x-frame-options']).toBeUndefined();   // it cannot name another origin
+    } finally {
+      delete process.env.FRAME_ANCESTORS;
+    }
+  });
 });

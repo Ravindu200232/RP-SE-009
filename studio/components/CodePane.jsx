@@ -245,7 +245,7 @@ export default function CodePane({ hidden }) {
                     }}
                     className="editor-layer absolute inset-0 size-full resize-none
                                overflow-auto bg-transparent text-transparent
-                               outline-none selection:bg-accent/30"
+                               outline-none selection:bg-accent"
                     style={{ caretColor: 'var(--tk-plain)' }} />
                 </div>
               )}

@@ -18,6 +18,7 @@ import CodePane from '@/components/CodePane'
 import SettingsModal from '@/components/SettingsModal'
 import TestingResult from '@/components/testing/TestingResult'
 import SrsResult from '@/components/srs/SrsResult'
+import { Wireframes } from '@/components/srs/Wireframes'
 import DeployPanel from '@/components/deploy/DeployPanel'
 import AgentChat from '@/components/AgentChat'
 import AgentDecision from '@/components/AgentDecision'
@@ -35,6 +36,11 @@ const TABS = [
   { id: 'code', label: 'Code', Icon: Code2 },
   { id: 'testing', label: 'Testing', Icon: FlaskConical },
   { id: 'deploy', label: 'Deploy', Icon: Rocket },
+  { id: 'versions', label: 'Version', Icon: History },
+  // The project's tools rather than its stages: what its databases hold, and its terminal.
+  { id: 'database', label: 'Database', Icon: Database, group: 'tools' },
+  { id: 'terminal', label: 'Terminal', Icon: SquareTerminal, group: 'tools' },
+  { id: 'ports', label: 'Ports', Icon: EthernetPort, group: 'tools' },
 ]
 
 async function retry(fn, times, waitMs) {
@@ -329,6 +335,90 @@ export default function Studio() {
            design_model: st.models.design || st.models.agent,
            think: st.think,
            qa_model: st.models.qa })
+  }
+
+  function approveSrsAndDraw() {
+    const name = useStore.getState().project
+    if (!name || wireframeApproval.current) return
+    useStore.getState().applyProjectEvent({
+      type: 'sync_state', project: name, status: 'running', source: 'wireframe',
+    })
+    setView('wireframe')
+    setMobileView('view')
+    const job = api.srs(`/projects/${encodeURIComponent(name)}/approve`, {
+      prompt: WIREFRAME_APPROVAL_PROMPT,
+    })
+    wireframeApproval.current = job
+    job.then(() => {
+      useStore.getState().applyProjectEvent({
+        type: 'sync_state', project: name, status: 'clean', source: 'wireframe',
+      })
+      useStore.getState().bumpProjects()
+    }).catch(error => {
+      if (isJobCancelled(error)) {
+        useStore.getState().applyProjectEvent({
+          type: 'sync_state', project: name, status: 'paused', source: 'wireframe',
+          detail: 'Wireframe generation stopped. Saved progress can be continued.',
+        })
+        return
+      }
+      useStore.getState().applyProjectEvent({
+        type: 'sync_state', project: name, status: 'failed', source: 'wireframe',
+        error: error.message,
+      })
+      useStore.getState().addLog('WARN', `Wireframe generation failed: ${error.message}`)
+    }).finally(() => { wireframeApproval.current = null })
+  }
+
+  function approveWireframesAndBuildPrototype() {
+    const name = useStore.getState().project
+    if (!name) return
+    setView('design')
+    setMobileView('view')
+  }
+
+  function startPrototypeFromDesign(customizerPrompt = '') {
+    const name = useStore.getState().project
+    if (!name || prototypeApproval.current) return
+    useStore.getState().switchAgent('designer')
+    useStore.getState().applyProjectEvent({
+      type: 'sync_state', project: name, status: 'running', source: 'prototype',
+      detail: 'Planning the prototype from the selected design…',
+    })
+    setView('prototype')
+    setMobileView('view')
+    const job = api.srs(`/projects/${encodeURIComponent(name)}/wireframes/approve`, {
+      prompt: [PROTOTYPE_APPROVAL_PROMPT, customizerPrompt].filter(Boolean).join('\n\n'),
+    })
+    prototypeApproval.current = job
+    job.then(result => {
+      if (result?.complete === false) {
+        useStore.getState().applyProjectEvent({
+          type: 'sync_state', project: name, status: 'paused', source: 'prototype',
+          detail: 'Prototype generation paused with completed pages saved.',
+        })
+        useStore.getState().bumpProjects()
+        return
+      }
+      useStore.getState().applyProjectEvent({
+        type: 'sync_state', project: name, status: 'clean', source: 'prototype',
+      })
+      useStore.getState().bumpProjects()
+    }).catch(error => {
+      if (isJobCancelled(error)) {
+        useStore.getState().applyProjectEvent({
+          type: 'sync_state', project: name, status: 'paused', source: 'prototype',
+          detail: 'Prototype generation stopped. Completed pages were saved.',
+        })
+        useStore.getState().bumpProjects()
+        return
+      }
+      useStore.getState().applyProjectEvent({
+        type: 'sync_state', project: name, status: 'failed', source: 'prototype',
+        error: error.message,
+      })
+      useStore.getState().addLog('WARN', `Prototype generation failed: ${error.message}`)
+    }).finally(() => { prototypeApproval.current = null })
   }
 
   async function importFolder(list) {
@@ -655,7 +745,8 @@ export default function Studio() {
               )}
               {view === 'deploy' && (
                 <DeployPanel key={`deploy-${project}`}
-                             onSettings={() => setSettingsOpen(true)} />
+                             onSettings={() => setSettingsOpen(true)}
+                             accountsRevision={accountsChanged + settingsClosed} />
               )}
             </div>
           </div>

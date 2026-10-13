@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node vite-dev.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"

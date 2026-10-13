@@ -233,7 +233,7 @@ export const useStore = create((set, get) => ({
 
   logs: [],
   addLog: (level, text) => set(s => ({
-    logs: [...s.logs.slice(-800), { level, text, at: Date.now() }],
+    logs: [...s.logs, { level, text, at: Date.now() }],
   })),
 
   // What the console shows about the run itself: the model, how much of its
@@ -305,13 +305,6 @@ export const useStore = create((set, get) => ({
   setProgress: (step, pct) =>
     set(s => ({ progress: advance(s.progress, step, pct) })),
   phases: [],
-  upsertPhase: (p) => set(s => {
-    const i = s.phases.findIndex(x => x.phase === p.phase)
-    if (i < 0) return { phases: [...s.phases, p] }
-    const next = s.phases.slice()
-    next[i] = { ...next[i], ...p }
-    return { phases: next }
-  }),
 
   files: {},
   activeFile: null,
@@ -442,12 +435,6 @@ export const useStore = create((set, get) => ({
   testRun: (attempt) => set(s => ({ tests: { ...s.tests, attempt, running: true } })),
 
   stage: '',
-  setStage: (stage) => set({ stage }),
-  testResult: (m) => set(s => {
-    const rows = [...s.tests.rows, {
-      status: m.status || 'run', msg: m.msg || '', detail: m.detail || '',
-      stage: s.stage, at: Date.now(),
-    }]
 
     const pass = rows.filter(r => r.status === 'pass').length
     const fail = rows.filter(r => r.status === 'fail').length

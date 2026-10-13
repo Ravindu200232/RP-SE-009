@@ -1,31 +1,21 @@
 # AgentForge
 
-AgentForge is an agentic full-stack application builder. A requirement moves through SRS planning, architecture, Next.js generation, automated QA, repair, preview and deployment while the Studio streams the work in a desktop UI.
+A studio for taking a product from a sentence to a deployed application:
+interview → plan → specification → design → prototype → build → test → deploy.
 
-## Pipeline
+The interface is the AgentForge Studio, copied unchanged from `RP-SE-009`. The
+engine underneath it is this repository's own Ollama terminal agent. Nothing in
+between is hard-coded: every stage is a prompt pack on disk, and the only things
+that say "no" to a model are the validation rules ported from `RP-SE-009`.
 
-```text
-Requirement
-   │
-   ▼
-SRS interview + diagrams
-   │
-   ▼
-Planner / architecture contract
-   │
-   ▼
-Builder ──► generated Next.js + MongoDB app
-   │
-   ▼
-QA: unit → runtime/API → E2E → security
-   │                 │
-   └──── repair ◄────┘
-   │
-   ▼
-Preview → Vercel / AWS deployment
+## Running it
+
+```powershell
+./studio.bat
 ```
 
-The builder is requirement-driven rather than CRUD-specific. Apps may be authenticated or public. When authentication exists, user-owned records such as carts, bookings and history are scoped from the server session rather than trusting client-supplied user IDs. Successful mutations must also update or revalidate visible state so users do not need a manual refresh.
+That starts the backend and the studio together and prints where to open it. The
+first run installs the studio's npm packages. To run beside another instance:
 
 ## Main capabilities
 
@@ -72,83 +62,94 @@ setup.bat
 start.bat
 ```
 
-`start.bat` prepares Electron when needed and opens the desktop shell. The Electron splash then starts `server.py` and the Studio, so a slow first dependency install does not look like a frozen command window.
+Requirements: Python 3.10+, Node 20+, and Ollama. Pick a model in the studio's
+settings before starting a project — the backend does not choose one for you.
 
-For everyday use, and for a desktop shortcut, run **`AgentForge.vbs`** instead:
-it does the same thing with no console window at all. `start.bat` leaves one
-open while it works, which is what you want the first time and not afterwards.
-If the hidden launcher cannot start, it says so and writes what happened to
-`start.log`.
+## One context, five agents
 
-### macOS / Linux
+The five agents — **SRS**, **prototype**, **builder**, **QA** and **deploy** —
+are not five conversations. They are five roles taking turns in one, against one
+workspace, with one model:
 
-```bash
-./setup.sh
-./start.command
+```
+workspaces/<project>/           the application being built
+  .agentforge/
+    context.json                THE conversation, all five agents share it
+    events.jsonl                what the studio's chat stream replays
+    interview.json  plan.json  design.json
+    srs/        srs.json, SRS.md, diagrams/*.mmd, handoff/{app,builder}.md, handoff.json
+    wireframe/  app/   a React app: src/pages/<page>.tsx for every screen, and bundle.html
+    prototype/  app/   the wireframe app, edited into the prototype; routes.json, demo-accounts.json
+    skills/     web-artifacts-builder   Anthropic's skill, staged for the agent to read
+    build/      report.json
+    qa/         report.json
+    deploy/     run.json, events.jsonl
 ```
 
-For backend-only development:
+What the SRS agent learned in the interview is still in front of the builder;
+what the builder did is still in front of the deployer. Agents do not re-read
+their way back to a shared understanding — they never lost it. They read a file
+when they need an exact value, not to re-learn something they were told.
 
-```bash
-python3 server.py
-```
+`context.json` is written after every turn, so closing the app does not lose the
+conversation. When the window fills, the engine summarises the oldest turns into
+a running memory; if the model returns nothing for a summary, a mechanical
+digest of the paths, commands and requests is kept instead. A thin memory is
+survivable; losing the session is not.
 
-The Studio is served through Electron at `http://localhost:3000/__agentforge`; the backend owns ports `7824`, `7825`, `7826` and the deployment sidecar on `7834` when used.
+Each stage runs **silent plan mode**: the agent plans the work and immediately
+carries it out, because the studio approved the stage by starting it. What it
+leaves behind is files. A message typed into the chat stream afterwards edits
+those same files through `write_file` and `replace_text`.
 
-## Source map
+## Wireframes and prototype: one React app, edited
 
-```text
-agentforge/
-├── server.py                    stable backend entrypoint
-├── server_runtime.py            ordered server-runtime assembler
-├── builder-agent/builder_agent/
-│   ├── loop.py                  the ReAct engine
-│   ├── agent.py                 one build: plan -> design -> build -> verify
-│   ├── evidence.py              the verification ledger
-│   ├── browser.py, journeys.py  isolated direct-CDP browser and E2E journeys
-│   ├── tools/                   files, search, terminal, verification, browser
-│   ├── assets/                  bundled skills and verified stack templates
-│   └── cli.py                   builder-agent run | plan | review | chat
-├── qa-agent/qa_agent/
-│   ├── harness.py               makes the runner work before authoring
-│   ├── unit.py, e2e.py          the two suites, at the deep profile
-│   ├── security.py              six static checks
-│   └── report.py                the Studio record and the PDF
-├── server_modules/
-│   ├── core/                    process/runtime lifecycle
-│   ├── services/                MongoDB, cancellation, images, pickers
-│   ├── builder/                 studio bridge: pipeline, edits, media, QA
-│   ├── srs/                     SRS bridge/API
-│   ├── deploy/                  deployment bridge/jobs
-│   └── ui/                      backend HTTP routes
-├── srs-agent/                   SRS service and diagram generation
-├── deployment-agent/            deployment planning/execution service
-├── studio/                      Next.js desktop UI
-├── desktop/                     Electron shell
-└── production-ready/            generated app output (gitignored)
-```
+Neither is hand-drawn HTML. Both are a small **React** app (TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide icons, Recharts) that
+the project's agent writes with its own file tools, following Anthropic's official
+[`web-artifacts-builder`](https://github.com/anthropics/skills/tree/main/skills/web-artifacts-builder) skill, which is kept unchanged in
+`prompts/skills/web-artifacts-builder/` and staged where the agent can read it.
 
-There are intentionally no compatibility-only one-line wrappers for the old flat agent paths. Internal imports point directly to the implementation package that owns the behavior.
+The handoff the agent works from is two files in `.agentforge/srs/handoff/`: a small **`app.md`**, which is what the customer asked
+for in their own words, who uses it and the site map, with nothing technical in it; and the developer's **`builder.md`**, the full
+specification, which the build, the tests and the deployment read.
 
-## Verification model
+- **Wireframes**: the agent reads the skill and `app.md` and writes `src/pages/<page>.tsx` for every screen of the site map, in
+  low fidelity. The Studio only creates the app (the skill's first step: `server_modules/web_app.py`, from `server_modules/web_kit/`) and,
+  when the agent is done, bundles it with Vite into one self-contained `bundle.html` (the skill's last step), which the Wireframe tab frames.
+- **Prototype**: a new app is set up, and the agent reads the skill, the approved wireframes (every page and what it imports),
+  `app.md` and the approved design, plans the prototype, and writes a high-fidelity, animated page for every screen. The wireframes stay
+  as they were. When the product has sign-in, the prototype signs in with one fictitious account for each role (`src/demo.ts`), the same
+  accounts the build is seeded with (`demo-accounts.json`). A screen with no page leaves the run resumable instead of handed over.
+- The packages (about 180 MB) are installed once into `<state>/web-kit` and linked into every app as `node_modules`; Node.js is the only
+  thing a computer needs. An app that does not bundle is given to the agent, with what the bundler said, to fix.
 
-Building runs at one quality profile. The deep profile is spent where it pays:
-the unit and end-to-end suites, which are the evidence anyone actually reads.
+## Scaffold-first build and evidence
 
-### The ledger
+After prototype approval, the builder installs the selected stack's template —
+Next.js, Vite or Remix on Supabase; Next.js, Vite, Remix or MERN on MongoDB alone (no Supabase
+account needed); or those MongoDB stacks with a Supabase Storage bucket for uploaded files — from `builder-agent/builder_agent/assets/templates/` into an
+empty project workspace.
+It never overwrites an existing application. Before it plans, the builder's
+model may ask the customer what it cannot settle itself - a decision with no safe
+default, or a value only they have - in its own words and only when it is really
+needed. Once the plan starts the build never stops to ask: it runs straight
+through on the project's connected database and records whatever it could not
+settle as a gap in the build report. The stack and testing guides in `_guides/` and the
+authentication guide (`prompts/shared/authentication.md`) are staged under
+`.agentforge/build/guides/` and passed into the build plan along with the SRS
+handoff, approved design customization and prototype. The build records its
+installed files in `.agentforge/build/scaffold.json`.
 
-A run declares what it must prove before it writes tests, and the scope is
-sealed so it cannot be narrowed once a flow turns out to be hard. Every suite
-then names the requirement ids it covers. A final answer is refused while a
-required layer has no current passing evidence: "I have finished" is a claim,
-and only the ledger closes the gate. Anything genuinely unprovable is recorded
-as a limitation, which is never a pass.
+QA uses the copied Vitest, Playwright, axe and Lighthouse configuration and the
+ZAP CI example. It saves runner JSON and actual screenshots under the project;
+the Studio's **Testing → Scaffold QA** view reads those artifacts. Unavailable
+tools, missing routes and incomplete requirements are reported as gaps, not
+counted as passing tests.
 
-A pass taken before the last edit is marked *outdated* rather than discarded:
-voiding everything on every keystroke is how a repair loop stops converging.
-The finished article is re-verified once, at the revision it is finished at.
+## Everything is a prompt
 
-### Unit tests
+`prompts/` holds every instruction this product gives a model. Changing how a
+stage behaves is editing a file:
 
 Counts come from Vitest's own assertion rows, and coverage from the runner's
 `coverage-summary.json`. A suite that exits 0 below the coverage floor is a
