@@ -3,7 +3,10 @@
 import { Check, Loader2 } from 'lucide-react'
 import { Button } from './ui'
 
-/** The accounts signed in here for one provider (Supabase, MongoDB Atlas), with the one new projects are made in marked. */
+/**
+ * The accounts signed in here for one provider (Supabase, MongoDB Atlas), with the one new projects are
+ * made in marked. `busy` is "switch:<id>" or "remove:<id>" while one of them is being done.
+ */
 export default function AccountList({ accounts, busy = '', onSwitch, onRemove }) {
   if (!accounts?.length) return null
   return (

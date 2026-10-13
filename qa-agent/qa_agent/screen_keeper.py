@@ -1,4 +1,11 @@
-"""Keeps the screenshots the end-to-end tests take, so a later test run does not take them away."""
+"""Keeps the screenshots the end-to-end tests take, so a later test run does not take them away.
+
+Playwright empties its output folder (`test-results/artifacts`) at the start of every run. The screens the journeys left are gone as
+soon as the accessibility run, or one re-run of a single test, begins: the JSON a run kept still names them, but the files are not
+there, and the review of the screens found nothing to look at. While a build or a testing run is going, the pictures are copied
+here as they appear, under the same path inside `KEPT`, and a screenshot whose original is gone is read from its copy
+(`build_evidence._screenshot_of`).
+"""
 from __future__ import annotations
 
 import shutil
@@ -26,7 +33,8 @@ def kept_for(workspace: Path, path: str | Path) -> Path | None:
 
 
 def sweep(workspace: Path, settled: bool = True) -> int:
-    """Copy the screenshots in the output folder that have no up-to-date copy yet. Returns how many were copied."""
+    """Copy the screenshots in the output folder that have no up-to-date copy yet. Returns how many were copied.
+    `settled`: leave a file touched in the last moment for the next sweep (the final sweep takes everything)."""
     source = workspace / ARTIFACTS
     copied = 0
     try:

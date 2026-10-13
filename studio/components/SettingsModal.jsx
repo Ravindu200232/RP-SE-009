@@ -29,7 +29,8 @@ const PROVIDER_ABOUT = {
 
 export default function SettingsModal({ onClose, onSaved, onImport, onZip, onOpenInNewTab, onLogout, initialTab }) {
   const user = useAuthStore(s => s.user)
-  // The open project, so the Plugins tab can offer to tick them for it rather than only hold the credentials.
+  // The open project, so the Plugins tab can offer to tick them for it rather
+  // than only hold the credentials.
   const project = useStore(s => s.project)
 
   // The old single "Integrations" page is now one page per service: land on the first of them.
@@ -87,7 +88,7 @@ export default function SettingsModal({ onClose, onSaved, onImport, onZip, onOpe
         const cloud = catalog.cloud || []
         const current = useStore.getState().models.builder
         const picked = cloud.find(row => row.id === current)?.id
-          || cloud.find(row => row.id === 'gpt-oss:120b-cloud')?.id || cloud[0]?.id
+          || cloud.find(row => row.id === 'deepseek-v4.1-flash:cloud')?.id || cloud[0]?.id
         if (picked) {
           useStore.setState(state => ({ models: { ...state.models, planner: picked, design: picked,
             builder: picked, agent: picked, qa: picked, srs: picked, deploy: picked } }))
@@ -108,6 +109,7 @@ export default function SettingsModal({ onClose, onSaved, onImport, onZip, onOpe
 
   const cloudOn = tone === 'ok'
   // AgentForge's own database is the whole machine's, so it is its admin's.
+  // Everyone's deployment accounts are their own — one Settings page per service.
   const isAdmin = Boolean(meta?.admin)
 
   const displayName = user?.name || user?.username || 'User'
@@ -406,7 +408,8 @@ export default function SettingsModal({ onClose, onSaved, onImport, onZip, onOpe
   )
 }
 
-/** The signed-in AgentForge account's requests (one per AI call). */
+/** The signed-in AgentForge account's requests (one per AI call): the limit the admin gave, what is used and what is left,
+ * going down live as the AI works (`account_usage` events). Nothing is shown when AgentForge accounts are off. */
 function EngineChoice({ value, onChange, host, onHost }) {
   return <div className="rounded-2xl border border-line bg-panel px-4 py-4 space-y-3">
     <h3 className="text-[13px] font-semibold text-ink">AI connection</h3>
@@ -486,14 +489,14 @@ function AdminRequests({ shown }) {
       {included ? (
         <>
           <p className="mt-1 text-[12px] text-muted">
-            Ollama account: ${Number(included.balance).toFixed(2)} left of ${Number(included.allowance).toFixed(2)} this period
+            AgentForge account: ${Number(included.balance).toFixed(2)} left of ${Number(included.allowance).toFixed(2)} this period
           </p>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-panel2">
             <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${usedShare}%` }} />
           </div>
         </>
       ) : shown.ollama?.error ? (
-        <p className="mt-1 text-[11.5px] text-muted">Ollama account: {shown.ollama.error}</p>
+        <p className="mt-1 text-[11.5px] text-muted">AgentForge account: {shown.ollama.error}</p>
       ) : null}
       <p className="mt-1.5 text-[11px] text-muted">Admin access is unlimited</p>
     </div>

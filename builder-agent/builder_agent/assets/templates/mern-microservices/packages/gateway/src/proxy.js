@@ -1,4 +1,10 @@
-/** Forward one request to an internal service. */
+/**
+ * Forward one request to an internal service.
+ *
+ * Written with fetch rather than a proxy library so the failure modes are
+ * visible: a service that is not up yet is a 503 the client can act on, not a
+ * stack trace, and never a 200 with an empty body.
+ */
 export function proxyTo(baseUrl) {
   return async function proxy(req, res) {
     const target = new URL(req.originalUrl.replace(/^\/api/, ''), baseUrl);

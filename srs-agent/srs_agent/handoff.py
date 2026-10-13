@@ -1,4 +1,17 @@
-"""The handoff documents every later stage reads."""
+"""The handoff documents every later stage reads.
+
+There are two, and they are not alike.
+
+`app.md` is small and has no technical detail: what the customer asked for, in their own words, who uses the product and
+the site map (every screen, who may open it, what is on it, and how people move through them). The wireframes and the
+prototype are made from it, so they are drawn from what the customer said and not from a specification.
+
+`builder.md` is the developer's: the specification in full (roles, access, data, API, requirements, workflows, rules),
+what done means and the traceability. The build, the tests and the deployment read it.
+
+Both are projections of what is already written, pure functions without a model call. That matters: a document a model
+writes can truncate, and these are the contract.
+"""
 from __future__ import annotations
 
 import hashlib
@@ -193,7 +206,11 @@ def _site_map(doc: dict) -> list[str]:
 
 
 def app_md(doc: dict, idea: str = "", said: str = "") -> str:
-    """What the product is, in the customer's words, and its site map. Small, and nothing technical in it."""
+    """What the product is, in the customer's words, and its site map. Small, and nothing technical in it.
+
+    `idea` is what the customer first asked for and `said` the interview as they answered it; both are theirs, so they are
+    quoted as they are.
+    """
     summary = doc.get("app_summary") or {}
     name = summary.get("app_name") or doc.get("project_name") or "The application"
     out: list[str] = [f"# {name}", ""]

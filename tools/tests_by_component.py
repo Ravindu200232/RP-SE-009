@@ -1,4 +1,10 @@
-"""The automated tests, grouped by the component (and so the team member) whose behaviour they verify."""
+"""The automated tests, grouped by the component (and so the team member) whose behaviour they verify.
+
+    python tools/tests_by_component.py            every group
+    python tools/tests_by_component.py c3         one group (c1, c2, c3, c4 or shared)
+
+Prints the result of each group and writes it to tools/tests_by_component.json.
+"""
 from __future__ import annotations
 
 import io

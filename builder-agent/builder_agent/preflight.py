@@ -1,4 +1,12 @@
-"""What a build needs from this computer and the person's accounts, checked before the build is planned."""
+"""What a build needs from this computer and the person's accounts, checked before the build is planned.
+
+Node.js and npm (every command of the build), a browser (the end-to-end tests and the screenshot reviews), and the stack's own
+services: a MongoDB stack's database (connected, and its cluster answering) and a Supabase stack's Supabase account. A build
+used to find out half-way: a MongoDB that was not connected was said in one line and the build went on against a database on
+this computer that was not there, failing the seed and every journey hours later; a Supabase account that was not connected
+failed the build after it had started. Now what is missing is listed at the start, in one Yes/No card - "connect them, then
+answer Yes to check again" - and Yes looks again, as many times as it takes. No stops the build before it has done anything.
+"""
 from __future__ import annotations
 
 import shutil
@@ -72,7 +80,8 @@ def card_text(gaps: list[dict[str, str]], again: bool) -> str:
 
 
 def ensure(project: str, stack: str, cancelled: Callable[[], bool], agent: str = bus.DEVELOPER) -> list[dict[str, Any]]:
-    """Hold the build until everything it needs is ready, asking the person each time something is still missing. Returns."""
+    """Hold the build until everything it needs is ready, asking the person each time something is still missing. Returns
+    what was asked about (empty when everything was ready at once). Raises RunCancelled on Stop, ValueError on No."""
     def say(line: str) -> None:
         bus.agent_msg(project, line, title="Before the build", kind="narration", agent=agent)
 

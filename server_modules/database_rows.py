@@ -1,4 +1,15 @@
-"""What the database panel shows beyond its command monitors: a few rows of one table or collection, and the Atlas."""
+"""What the database panel shows beyond its command monitors: a few rows of one table or collection, and the Atlas
+cluster behind the MongoDB connection.
+
+Rows are read the same way the monitors read everything else: a Supabase table through the Supabase command line
+tool (`db query --db-url`, the project's saved database connection), a MongoDB collection through the project's own
+driver (`scripts/mongo-inspect.mjs`, the connection string in its environment). A table or collection is named by the
+person, so its name is checked before it goes anywhere: an identifier, quoted, never text spliced into a query.
+
+Whatever comes back is masked before it leaves: a field whose name says it holds a credential (a password hash, a
+token, a key) shows as `<masked>`, and any value that is one of the project's own credentials, or looks like one, is
+hidden the way command output is.
+"""
 from __future__ import annotations
 
 import json
@@ -84,11 +95,13 @@ def _supabase_rows(project: str, schema: str, table: str) -> dict[str, Any]:
     folder.mkdir(parents=True, exist_ok=True)
     query = folder / f"rows-{uuid.uuid4().hex[:8]}.sql"
     query.write_text(sql, encoding="utf-8")
-    env, hidden = cli_monitor._set_environment("supabase", project)  # noqa: SLF001
     try:
+        env, hidden = cli_monitor._set_environment("supabase", project)  # noqa: SLF001
+        argv, connection_secrets = cli_monitor._database_argv(  # noqa: SLF001
+            project, ["db", "query", "--linked", "--project-ref", row["ref"], "-o", "json", "-f", str(query)])
+        hidden.extend(connection_secrets)
         done = subprocess.run(
-            [supabase_connect._tool(), "db", "query", "--linked", "--project-ref", row["ref"], "-o", "json",  # noqa: SLF001
-             "-f", str(query)],
+            [supabase_connect._tool(), *argv],  # noqa: SLF001
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=TIMEOUT,
             stdin=subprocess.DEVNULL, cwd=str(folder), env={**os.environ, "NO_COLOR": "1", **env},
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
@@ -173,7 +186,8 @@ def atlas() -> dict[str, Any]:
         return answer
     try:
         cluster = mongo_connect._api("GET", f"/groups/{group}/clusters/{name}")  # noqa: SLF001
-        # Atlas answers in one of two shapes: `replicationSpecs[].regionConfigs[]`, or the older `providerSettings` (which shared M0/M2 clusters still come back in).
+        # Atlas answers in one of two shapes: `replicationSpecs[].regionConfigs[]`, or the older
+        # `providerSettings` (which shared M0/M2 clusters still come back in).
         region = ((cluster.get("replicationSpecs") or [{}])[0].get("regionConfigs") or [{}])[0]
         legacy = cluster.get("providerSettings") or {}
         answer["cluster"] = {

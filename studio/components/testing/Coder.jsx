@@ -10,7 +10,13 @@ function stepLabel(step) {
   return text.replace(/^(\w+)\s+\1(?=[:\s])/, '$1')
 }
 
-/** A browser journey has no file to open, so show the steps it ran instead. */
+/**
+ * A browser journey has no file to open, so show the steps it ran instead.
+ *
+ * The unit column answers "what does this test say"; without this the E2E
+ * column answered only "how many passed", and the steps a journey actually
+ * drove - the ones a failure has to be read against - were nowhere on screen.
+ */
 function Journey({ flow }) {
   const stages = flow?.stages || []
   return (

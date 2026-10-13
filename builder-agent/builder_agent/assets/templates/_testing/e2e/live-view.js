@@ -1,4 +1,16 @@
-// Streams what a test's browser is showing to the AgentForge Studio, which displays it full-size in its preview while the test runs.
+// Streams what a test's browser is showing to the AgentForge Studio, which displays it full-size in
+// its preview while the test runs: the page, the pointer, the element being clicked or typed into.
+//
+// It only WATCHES. It never touches what the test does or how it ends: every failure in here is
+// swallowed, nothing here awaits anything for long, and without AGENTFORGE_LIVE_URL or
+// AGENTFORGE_LIVE_DIR (set only by the Studio) it does nothing at all, so `npm run qa:*` is the
+// same run everywhere else.
+//
+// The Studio's desktop app listens on no port: it names a folder instead, and each message is
+// dropped there as a file it reads in order.
+//
+// Only the first worker streams: three browsers fighting over one picture is unwatchable, and
+// the others run as fast as ever. Chromium only (the screencast is a DevTools feature).
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -112,7 +124,7 @@ export async function startLiveView(page, testInfo) {
     let stopped = false
     let paper = ''
 
-    // The pointer, from inside the page.
+    // The pointer, from inside the page. Registered before the test navigates anywhere.
     try {
       await page.exposeFunction('__agentforgeLive', point => {
         if (stopped || !point) return

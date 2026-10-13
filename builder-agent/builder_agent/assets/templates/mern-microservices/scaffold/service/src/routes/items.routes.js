@@ -16,7 +16,8 @@ itemsRouter.get('/', async (req, res, next) => {
 itemsRouter.post('/', async (req, res, next) => {
   try {
     const { slug, name } = req.body ?? {};
-    // Validate untrusted input before the database call; a schema error is a 500 unless it is caught, and the client cannot act on that.
+    // Validate untrusted input before the database call; a schema error is a
+    // 500 unless it is caught, and the client cannot act on that.
     if (!slug || !name) return res.status(400).json({ error: 'slug and name are required' });
     const item = await Item.create({ slug, name });
     res.status(201).json({ item: item.toPublic() });

@@ -48,7 +48,8 @@ const TABS = [
   { id: 'ports', label: 'Ports', Icon: EthernetPort, group: 'tools' },
 ]
 
-// Lifecycle names and workspace tab ids differ for a few stages.
+// Lifecycle names and workspace tab ids differ for a few stages.  This lets
+// the navigation show the stage the project is currently in.
 const STAGE_TAB = {
   interview: 'srs', plan: 'srs', srs: 'srs',
   design: 'wireframe', wireframe: 'wireframe',
@@ -58,6 +59,7 @@ const STAGE_TAB = {
 }
 
 // What starting each stage asks for: the first line of `prompts/wireframe/generate.md` and `prompts/prototype/generate.md`.
+// The agent reads the web-artifacts-builder skill and the files the earlier stages left; nothing more needs saying here.
 const WIREFRAME_APPROVAL_PROMPT = 'Generate low-fidelity wireframes.'
 
 const PROTOTYPE_APPROVAL_PROMPT = 'Generate a high-fidelity, animated prototype.'
@@ -130,10 +132,12 @@ export default function Studio() {
   const [cat, setCat] = useState(() => catalogue(null))
   const [screen, setScreen] = useState('home')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // The tab Settings opens on ('' = its own first tab), and a count of closings.
+  // The tab Settings opens on ('' = its own first tab), and a count of closings: Home re-reads
+  // the account connections whenever Settings closes, since that is where they are made.
   const [settingsTab, setSettingsTab] = useState('')
   const [settingsClosed, setSettingsClosed] = useState(0)
-  // A count of account changes made in Settings while it is open (a sign-in finishing, a token saved).
+  // A count of account changes made in Settings while it is open (a sign-in finishing, a token saved): the Deploy
+  // panel behind it reads who is signed in again each time, instead of showing "not connected" until it is reopened.
   const [accountsChanged, setAccountsChanged] = useState(0)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [mobileView, setMobileView] = useState('view') // 'chat' | 'view'
@@ -150,7 +154,8 @@ export default function Studio() {
   const { user, init: initAuth, logout, required: signInRequired, loading: authLoading } = useAuthStore()
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authInitialScreen, setAuthInitialScreen] = useState('methods')
-  // A fresh modal every time it opens: its screen is only read when it mounts, and the last person's email and password must not be waiting in it.
+  // A fresh modal every time it opens: its screen is only read when it mounts,
+  // and the last person's email and password must not be waiting in it.
   const [authKey, setAuthKey] = useState(0)
 
   function openAuth(which) {
@@ -159,7 +164,8 @@ export default function Studio() {
     setAuthModalOpen(true)
   }
 
-  // Signing out goes straight to signing in, with nothing of the last person's work left on screen for whoever signs in next.
+  // Signing out goes straight to signing in, with nothing of the last
+  // person's work left on screen for whoever signs in next.
   async function signOut() {
     await logout()
     setProjects([])
@@ -193,7 +199,8 @@ export default function Studio() {
     if (!authLoading && signInRequired && !user && !authModalOpen) openAuth('email')
   }, [authLoading, signInRequired, user, authModalOpen])
 
-  // A session that ends - signed out here, expired, or ended from somewhere else - lands on the sign-in page rather than an empty studio.
+  // A session that ends - signed out here, expired, or ended from somewhere
+  // else - lands on the sign-in page rather than an empty studio.
   const wasSignedIn = useRef(false)
   useEffect(() => {
     if (user) {
@@ -228,16 +235,16 @@ export default function Studio() {
           const saved = String(value || legacy).trim()
           return (saved && known.has(saved)) ? saved : fallback
         }
-        const now = useStore.getState().models
-        // A choice this engine does not have (an earlier default, a model since removed) is chosen again.
+        const state = useStore.getState()
+        const now = state.models
+        // A removed or plan-restricted model is replaced for every agent role, including older localStorage choices.
         const keep = value => value && (!known.size || known.has(value))
-        if (!(keep(now.planner) && keep(now.design) && keep(now.builder))) {
-          useStore.setState({ models: {
-            ...now,
-            planner: keep(now.planner) ? now.planner : pick(s?.planner_model),
-            design: keep(now.design) ? now.design : pick(s?.design_model),
-            builder: keep(now.builder) ? now.builder : pick(s?.builder_model),
-          } })
+        for (const role of state.ROLE_MODELS) {
+          if (!keep(now[role])) {
+            const saved = role === 'planner' ? s?.planner_model
+              : role === 'design' ? s?.design_model : role === 'builder' ? s?.builder_model : s?.agent_model
+            state.setRoleModel(role, pick(saved))
+          }
         }
         // The interview and the specification run on the saved model: never leave it empty or unknown.
         const chosen = useStore.getState().models.builder
@@ -308,7 +315,8 @@ export default function Studio() {
     const request = ++opening.current
     const rowObj = row || projects.find(p => p.name === name)
     const savedView = st.projectViews[name]
-    // Return to the exact tab the customer left open.
+    // Return to the exact tab the customer left open. A built project defaults
+    // to Preview only when it has no saved tab yet.
     const built = Boolean(rowObj?.build_available || st.buildAvailability[name])
     const requestedView = savedView === 'design' ? 'wireframe'
       : savedView || (built ? 'preview'
@@ -590,6 +598,20 @@ export default function Studio() {
         onSuccess={() => {
           setAuthModalOpen(false)
           refreshProjects()
+          api.models().then(r => {
+            const choices = catalogue(r)
+            setCat(choices)
+            const allowed = new Set(choices.all.map(row => row.id))
+            if (!allowed.size) return
+            const preferred = allowed.has('deepseek-v4.1-flash:cloud')
+              ? 'deepseek-v4.1-flash:cloud' : choices.all[0].id
+            const state = useStore.getState()
+            for (const role of state.ROLE_MODELS) {
+              if (state.models[role] && !allowed.has(state.models[role])) {
+                state.setRoleModel(role, preferred)
+              }
+            }
+          }).catch(() => {})
         }}
       />
 
@@ -761,7 +783,7 @@ export default function Studio() {
               try {
                 await api.deleteProject(name)
               } catch (e) {
-                // Server might have already removed it; still refresh the list.
+                // Server might have already removed it; still refresh the list
                 console.warn('deleteProject error:', e.message)
               }
               refreshProjects()
@@ -782,7 +804,7 @@ export default function Studio() {
               view === 'wireframe' && wireFocus ? 'hidden'
                 : mobileView === 'chat' ? 'flex w-full lg:w-auto' : 'hidden lg:flex'
             )}>
-              <AgentChat key={`${project}-${agentRole}`}
+              <AgentChat key={`${project}-${agentRole}-${user?.id || 'guest'}`}
                          projectTitle={projects.find(row => row?.name === project)?.title || ''} />
             </div>
 

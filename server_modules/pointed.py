@@ -1,4 +1,9 @@
-"""What the customer pointed at on a page, put into words for the agent."""
+"""What the customer pointed at on a page, put into words for the agent.
+
+The Studio's select and pencil tools pick things out of the framed app (`studio/lib/picker.js`): each is a small record of the element
+(its tag, the words in it, its address in the page, a piece of its markup). A model that is only sent words cannot see a record, so a
+change that came with some is told, in the request, what they were.
+"""
 from __future__ import annotations
 
 from typing import Any

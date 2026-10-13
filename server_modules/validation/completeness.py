@@ -1,4 +1,14 @@
-"""Does the specification actually cover the plan it came from?"""
+"""Does the specification actually cover the plan it came from?
+
+The schema says the document is the right shape and the standards review says the
+requirements are well written. Neither of them notices that a seven-screen
+product was specified with three requirements, that a database with two tables
+has no entity-relationship diagram, or that no requirement traces to a page.
+
+Those are the failures that survive both other gates, because each artifact is
+individually valid. What catches them is counting: the plan says what exists, so
+anything the plan has and the specification does not is a gap with a name.
+"""
 from __future__ import annotations
 
 import re
@@ -38,7 +48,11 @@ def _entity_words(text: str) -> tuple[str, ...]:
 
 
 def _covered(needle: str, haystacks: list[str]) -> bool:
-    """Whether some requirement plausibly speaks to this plan item."""
+    """Whether some requirement plausibly speaks to this plan item.
+
+    Deliberately generous: this is looking for the feature nobody wrote a
+    requirement for, not grading how well the wording matches.
+    """
     wanted = _words(needle)
     if not wanted:
         return True
@@ -102,7 +116,10 @@ def table_coverage(doc: dict, plan: dict) -> list[str]:
             gaps.append(f"the plan's record {record.get('name')!r} has no table in database_design")
     return gaps
 
-# Optional-in-the-schema sections a well-formed SRS is still expected to carry.
+# Optional-in-the-schema sections a well-formed SRS is still expected to
+# carry — every one of them can be legitimately empty for a given product (an
+# app with one role has no interesting access matrix), so this is a readout
+# the reviewer weighs alongside its own judgement, never a gate on its own.
 STRUCTURAL_SECTIONS = (
     ("security_requirements", "security requirements"),
     ("acceptance_criteria", "acceptance criteria"),
@@ -124,7 +141,13 @@ def section_completeness(doc: dict) -> dict:
 
 
 def ambiguity_resolution(doc: dict) -> dict:
-    """How many identified ambiguities are still open."""
+    """How many identified ambiguities are still open.
+
+    Nobody is in the room to answer a lingering question once generation is
+    done, so a specification that flagged its own ambiguities should resolve
+    nearly all of them (each already carries `assumption_made`, so resolving
+    one means standing behind that assumption, not deleting the entry).
+    """
     ambiguities = _dig(doc, "ambiguities")
     if not ambiguities:
         return {"total": 0, "resolved": 0, "rate": 1.0}
@@ -154,5 +177,3 @@ def check_document(doc: dict, plan: dict) -> list[str]:
     return gaps
 
 
-def as_instructions(gaps: list[str]) -> str:
-    return "\n".join(f"- {gap}" for gap in gaps)

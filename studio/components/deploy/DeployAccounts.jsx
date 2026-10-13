@@ -19,7 +19,10 @@ const AWS_REGIONS = ['ap-south-1', 'us-east-1', 'us-east-2', 'us-west-2',
                      'ap-southeast-1', 'ap-southeast-2', 'ap-northeast-1']
 const AWS_CONSOLE_PROFILE = 'agentforge-console'
 
-/** One service's page in Settings: its logo, whether it is connected, and its own form. */
+/**
+ * One service's page in Settings: its logo, whether it is connected, and its own form. Each service is listed
+ * on its own in the Settings sidebar (`provider` is its id there), so a person sees one account at a time.
+ */
 export default function DeployAccount({ provider, deploy, onSaved }) {
   const [probe, setProbe] = useState(null)
   const [note, setNote] = useState('')
@@ -129,7 +132,8 @@ function Mongodb({ deploy, onSave }) {
     catch (failure) { setAccountError(failure.message) } finally { setAccountBusy('') }
   }
 
-  // Use, or sign out of, one of the accounts signed in through the Atlas CLI.
+  // Use, or sign out of, one of the accounts signed in through the Atlas CLI. Each has the cluster made for it, so
+  // the connection string the deployments read changes with the account in use.
   async function changeAccount(kind, id) {
     setAccountBusy(`${kind}:${id}`); setAccountError('')
     try {
@@ -140,7 +144,7 @@ function Mongodb({ deploy, onSave }) {
     } catch (failure) { setAccountError(failure.message) } finally { setAccountBusy('') }
   }
 
-  // Make a new free cluster.
+  // Make a new free cluster. Only when asked: the ones the account already has are chosen from the list.
   async function provision() {
     setAccountBusy('provision'); setAccountError('')
     try {
@@ -262,7 +266,8 @@ function Mongodb({ deploy, onSave }) {
         </div>
         {status && !connected && <p className="text-[10.5px] text-bad">{status.message}</p>}
         {status && !connected && status.repairable && (
-          // Atlas refuses the saved password (another computer set the shared database user's password again).
+          // Atlas refuses the saved password (another computer set the shared database user's password again): this makes
+          // this computer a database user of its own on the same cluster and saves the new string.
           <Button size="sm" variant="primary" disabled={Boolean(busy)} onClick={repair}>
             {busy === 'repair' && <Loader2 className="size-3 animate-spin" />}Fix the connection
           </Button>

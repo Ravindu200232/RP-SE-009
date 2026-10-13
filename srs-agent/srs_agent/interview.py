@@ -1,4 +1,18 @@
-"""The requirements interview."""
+"""The requirements interview.
+
+One question at a time, each one chosen by the model from what is still
+unknown. There is no fixed question list and no fixed order: every turn, the
+model sees the full accumulated picture — what's KNOWN, PARTIAL or UNKNOWN
+across a hardcoded taxonomy of requirement categories (`server_modules
+.coverage`) — and decides for itself what single gap is most valuable to ask
+about next, in this particular project's own words. A single-screen tool
+finishes in a handful of questions and a multi-role system does not, and only
+something that has read the answers so far can tell which this is.
+
+The one question the catalogue still owns is the very first: which kind of
+product this is. Asking it before any model call anchors everything that
+follows, and costs nothing — the customer sees it the moment they press Start.
+"""
 from __future__ import annotations
 
 import json
@@ -16,7 +30,9 @@ ANSWER_TYPES = {"single_choice", "multi_choice", "yes_no", "number", "free_text"
 KINDS = {"single_choice": "single", "multi_choice": "multi", "yes_no": "yes_no",
          "number": "number", "free_text": "text"}
 
-# The catalogue's own key for this topic.
+# The catalogue's own key for this topic. Storing the answer under anything else
+# — `app_type:1`, say — leaves `app_type` looking unanswered, so the queue asks
+# it again and the model phrases the *next* topic's question under its name.
 APP_TYPE_KEY = "app_type"
 
 
@@ -27,7 +43,9 @@ def catalogue() -> dict[str, Any]:
         return {"default": "other", "types": {}}
 
 
-# Words that appear in every description and every idea, and so tell the guess nothing.
+# Words that appear in every description and every idea, and so tell the guess
+# nothing. Without this, "with" in "Subscription product with accounts" matched
+# "a hotel that takes bookings with payment" and every idea looked like SaaS.
 _NOISE_WORDS = {
     "with", "that", "this", "from", "into", "your", "their", "them", "they",
     "have", "has", "will", "would", "should", "must", "need", "needs", "want",
@@ -41,7 +59,11 @@ _NOISE_WORDS = {
 
 
 def _stems(text: str) -> set[str]:
-    """Words worth matching on, reduced to a crude stem."""
+    """Words worth matching on, reduced to a crude stem.
+
+    Crude on purpose: "bookings" and "booking", "rooms" and "room" have to meet,
+    and a five-character prefix does that without a stemmer.
+    """
     out: set[str] = set()
     for word in re.split(r"[^a-z]+", str(text or "").lower()):
         if len(word) > 3 and word not in _NOISE_WORDS:
@@ -50,7 +72,11 @@ def _stems(text: str) -> set[str]:
 
 
 def _guess_app_type(idea: str) -> str:
-    """The type this idea most sounds like, for the first question's default."""
+    """The type this idea most sounds like, for the first question's default.
+
+    A weak signal deliberately: it preselects nothing the customer cannot change
+    in one click, and a wrong guess costs them that click.
+    """
     words = _stems(idea)
     if not words:
         return ""
@@ -69,7 +95,13 @@ def _guess_app_type(idea: str) -> str:
 
 
 def _app_type_question(idea: str, index: int, total: int) -> dict[str, Any]:
-    """The first question, built from the catalogue rather than from the model."""
+    """The first question, built from the catalogue rather than from the model.
+
+    Asking it first is what stops the interview drifting: once the product has a
+    shape, every later question is asked inside that shape instead of exploring
+    the space of all possible products. It costs no model call, so the customer
+    sees it the moment they press Start.
+    """
     pack = catalogue()
     options = [{"label": f"{entry.get('icon', '')} {entry.get('label', key)}".strip(),
                 "value": key, "hint": entry.get("desc", "")}
@@ -101,7 +133,10 @@ def _blank() -> dict[str, Any]:
 def state(session: ProjectSession) -> dict[str, Any]:
     saved = session.read_record(*RECORD, fallback=None)
     data = saved if isinstance(saved, dict) else _blank()
-    # Defensive backfill for a record saved before these fields existed — never a reason to lose an interview already in progress.
+    # Defensive backfill for a record saved before these fields existed —
+    # never a reason to lose an interview already in progress.  In particular,
+    # do not let one partial/old record turn an ordinary retry into a KeyError
+    # (and therefore an HTTP 500) while the customer is answering a question.
     transcript = data.get("transcript")
     data["transcript"] = [row for row in transcript if isinstance(row, dict)] \
                          if isinstance(transcript, list) else []
@@ -137,7 +172,14 @@ def save(session: ProjectSession, data: dict[str, Any]) -> None:
 
 def _announce_question(project: str, session: ProjectSession, data: dict[str, Any],
                        question: dict[str, Any]) -> None:
-    """Put each interview question in the project's one durable chat stream."""
+    """Put each interview question in the project's one durable chat stream.
+
+    The interview used to keep its questions only inside its own screen, so
+    the shared SRS → wireframe → prototype → build → deploy conversation had
+    the customer's answers but not the questions they answered. Marking the
+    question before publishing makes refreshes safe: a reload can show the
+    same pending question without inserting it into the stream again.
+    """
     if question.get("announced"):
         return
     question["announced"] = True
@@ -296,7 +338,11 @@ def _turn_validator(valid_categories: set[str]):
 
 
 def _apply_turn(data: dict[str, Any], turn: dict[str, Any], source: str) -> None:
-    """Fold one turn's deltas into the persisted state, in place."""
+    """Fold one turn's deltas into the persisted state, in place.
+
+    Deltas only — a category the model did not mention this turn keeps
+    whatever it already had, so one bad turn can never wipe an earlier fact.
+    """
     now = time.time()
     cov = data["coverage"]
     for key, delta in (turn.get("coverage_updates") or {}).items():
@@ -314,7 +360,8 @@ def _apply_turn(data: dict[str, Any], turn: dict[str, Any], source: str) -> None
         entry["updated_at"] = now
 
     contradiction = turn.get("contradiction")
-    # The validator does not shape this field; a bare "yes" or `true` here used to raise and turn the whole question into an HTTP 500.
+    # The validator does not shape this field; a bare "yes" or `true` here used to raise and turn
+    # the whole question into an HTTP 500.
     if isinstance(contradiction, dict) and contradiction.get("found"):
         data["contradictions"].append({
             "id": f"c{len(data['contradictions']) + 1}",
@@ -341,7 +388,14 @@ _asking_guard = threading.Lock()
 
 
 def _ask_lock(project: str) -> threading.RLock:
-    """One interview transition at a time per project."""
+    """One interview transition at a time per project.
+
+    The studio's interview screen can fire its refresh more than once — a
+    reload, a double effect, an impatient click, or a retry after a lost
+    response.  Questions *and* answers must use the same lock: otherwise a
+    duplicate answer can overwrite the next question while the browser is
+    refreshing, which used to leave an invalid transient state and an HTTP 500.
+    """
     with _asking_guard:
         return _asking.setdefault(project, threading.RLock())
 
@@ -360,7 +414,8 @@ def _next_question(project: str) -> dict[str, Any]:
     if data.get("done"):
         return view(session, data)
 
-    # A question already on screen is asked again rather than replaced, so a browser reload does not cost the customer an answer.
+    # A question already on screen is asked again rather than replaced, so a
+    # browser reload does not cost the customer an answer.
     if data.get("pending"):
         _announce_question(project, session, data, data["pending"])
         return view(session, data)
@@ -369,7 +424,8 @@ def _next_question(project: str) -> dict[str, Any]:
     index = len(data["order"]) + 1
     budget = max(3, int(config.setting("interview_max_questions", 25)))
 
-    # The first question is the product's shape, and it comes from the catalogue rather than the model — instant, and it anchors everything after it.
+    # The first question is the product's shape, and it comes from the catalogue
+    # rather than the model — instant, and it anchors everything after it.
     if index == 1:
         question = _app_type_question(record.get("idea", ""), index, budget)
         data["pending"] = question
@@ -378,7 +434,8 @@ def _next_question(project: str) -> dict[str, Any]:
         _announce_question(project, session, data, question)
         return view(session, data)
 
-    # A safety ceiling, not a target: past it, stop gathering and ask for confirmation instead of cutting the customer off with nothing to show.
+    # A safety ceiling, not a target: past it, stop gathering and ask for
+    # confirmation instead of cutting the customer off with nothing to show.
     if index > budget:
         data["stage"] = "confirming"
 
@@ -407,7 +464,9 @@ def _next_question(project: str) -> dict[str, Any]:
                           budget=budget),
         validator=_turn_validator(set(cats)),
         label="interview:turn",
-        # `project` reports this turn's context to the chat's meter.
+        # `project` reports this turn's context to the chat's meter. The read tools come only
+        # with attached files: the prompt then tells the model to read them, which it cannot
+        # do without a workspace, and a turn with nothing to read stays a fast tool-less call.
         project=project,
         workspace=session.workspace if session.read_record("attachments.json", fallback=[]) else None)
 
@@ -436,7 +495,9 @@ def record_answer(project: str, payload: dict[str, Any]) -> dict[str, Any]:
         if not key:
             raise ValueError("an answer needs the key of the question it answers")
 
-        # A browser may retry a POST after its response was interrupted.
+        # A browser may retry a POST after its response was interrupted.  The
+        # first request already owns the answer, so replay its current view
+        # instead of treating that retry as a fresh mutation.
         if key in data["answers"]:
             return view(session, data)
 
@@ -472,7 +533,12 @@ def record_answer(project: str, payload: dict[str, Any]) -> dict[str, Any]:
         said = entry["text"] or str(entry["value"] or "")
         bus.user_msg(project, said, agent=bus.DEVELOPER)
 
-        # A plain "yes, that's right" to the confirmation question ends the interview outright — no model call needed just to agree with itself.
+        # A plain "yes, that's right" to the confirmation question ends the
+        # interview outright — no model call needed just to agree with itself.
+        # `text` always carries the picked option's own label (see Interview.jsx's
+        # submitAnswer — `text: combined || customText || selectedText`), so it is
+        # never empty for a plain click; only `custom` (what the customer typed
+        # themselves) tells a bare acceptance apart from an actual correction.
         if data["stage"] == "confirming" and "confirmed" in selected and not custom:
             data["done"] = True
             save(session, data)
@@ -482,10 +548,16 @@ def record_answer(project: str, payload: dict[str, Any]) -> dict[str, Any]:
             session.note("Interview confirmed. The customer signed off on the requirements summary.")
             return view(session, data)
 
-        # Into the project's one memory, so the prototype, the build and the deployment all know what the customer actually said.
+        # Into the project's one memory, so the prototype, the build and the
+        # deployment all know what the customer actually said — without a model call
+        # and without re-reading the transcript at every stage.
         asked_text = asked.get("question") or key
         session.note(f"Interview — {asked_text}\nThe customer answered: {said}")
-        # No acknowledgement call.
+        # No acknowledgement call. It cost a whole model round per answer and said
+        # nothing the customer needed; the transcript on disk is what every later
+        # stage reads, and it already has this answer. A correction to the
+        # confirmation summary re-enters the same turn loop on the next call,
+        # through the ordinary path above — no special case needed here.
         return view(session, data)
 
 
@@ -496,7 +568,10 @@ SKIPPED_ANSWER = ("The customer chose not to be interviewed, so nothing was aske
 
 
 def skip(project: str) -> dict[str, Any]:
-    """The customer does not want to be asked anything: the interview is over, and the plan is written from the idea alone."""
+    """The customer does not want to be asked anything: the interview is over, and the plan is written from the idea alone.
+
+    What was already answered is kept. The transcript says plainly that nothing was asked, so the plan states what it assumed
+    instead of reading an empty interview as "no requirements"."""
     with _ask_lock(project):
         session = session_for(project)
         data = state(session)

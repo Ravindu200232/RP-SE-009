@@ -18,10 +18,12 @@ const DEFAULTS = {
 
   models: { planner: '', design: '', builder: '', agent: '', qa: '',
             srs: '', deploy: '', image: 'fooocus' },
-  // Kept alongside the boolean for older build controls.
+  // Kept alongside the boolean for older build controls. The chat picker uses
+  // this richer level so it can offer Low, High and Extra high explicitly.
   thinkingLevel: 'high',
   think: true,
-  // Whether the run in flight is actually reasoning, as reported by the engine - not the same thing as the `think` switch, which is only a request.
+  // Whether the run in flight is actually reasoning, as reported by the
+  // engine - not the same thing as the `think` switch, which is only a request.
   reasoning: false,
   images: false,
   hist: [],
@@ -66,6 +68,7 @@ export const useStore = create((set, get) => ({
   projectSync: {},
   srsStamp: {},
   // What the agent may do without asking, per project: auto, manual, accept_edits or bypass (server_modules/permissions.py).
+  // A project that never picked one is in the default mode, which is also what a new project starts in.
   permissionModeByProject: {},
   defaultPermissionMode: 'auto',
   bypassEnabled: false,
@@ -73,7 +76,8 @@ export const useStore = create((set, get) => ({
   setPermissionMode: (project, mode) => set(state => ({
     permissionModeByProject: { ...state.permissionModeByProject, [project]: mode } })),
   setPermissionSettings: (patch) => set(patch),
-  // Artifact-specific refresh signals.
+  // Artifact-specific refresh signals. They update only the matching panel and
+  // never reset project navigation or reload the whole Studio app.
   prototypeArtifactStamp: {},
   setProjectMetadata: (rows, requestedAt = Date.now()) => set(state => ({ buildAvailability: { ...state.buildAvailability,
     ...Object.fromEntries(rows.filter(row => {
@@ -145,7 +149,9 @@ export const useStore = create((set, get) => ({
         if (current.lastEventAt > latestEventAt) session = { ...session, ...current,
           runStats: current.runStats || session.runStats }
         const ids = new Set(session.eventIds)
-        // Keep every recovered turn.
+        // Keep every recovered turn. The chat UI reveals older rows in small
+        // batches, so a reload or a late socket event cannot make history go
+        // missing just because the run was long.
         session.logs = [...saved.logs, ...current.logs.filter(row => row.at > (saved.logs.at(-1)?.at || 0))]
         session.chat = [...saved.chat, ...current.chat.filter(row => row.at > (saved.chat.at(-1)?.at || 0))]
         session = { ...session, draft: current.draft, selection: current.selection, previewRoute: current.previewRoute,
@@ -200,7 +206,8 @@ export const useStore = create((set, get) => ({
   e2eLive: null,
   project: null,
   view: 'preview',
-  // The deployment run the Deploy panel is showing, so the chat beside it can show that run's conversation without fetching the deploy state twice.
+  // The deployment run the Deploy panel is showing, so the chat beside it can
+  // show that run's conversation without fetching the deploy state twice.
   deployRunId: '',
   setDeployRunId: (deployRunId) => set({ deployRunId: deployRunId || '' }),
 
@@ -261,19 +268,24 @@ export const useStore = create((set, get) => ({
     logs: [...s.logs, { level, text, at: Date.now() }],
   })),
 
-  // What the console shows about the run itself: the model, how much of its context window is in use, and how much work it has done.
+  // What the console shows about the run itself: the model, how much of its
+  // context window is in use, and how much work it has done.
   runStats: null,
 
-  // Composing the next move, or carrying one out.
+  // Composing the next move, or carrying one out. The gap between the two is
+  // where a feed looks stalled, so it is shown rather than left blank.
   agentState: '',
   // How far along that is, when the engine says (`12/35` while it compacts its memory).
   agentDetail: '',
 
-  // The one question a run is waiting on, if any.
+  // The one question a run is waiting on, if any. It carries its own deadline
+  // and clears itself, so a closed dialog costs a choice and not a build.
   approval: null,
   setApproval: (approval) => set({ approval }),
 
-  // A question the agent stopped to ask, shown in the chat stream rather than over the top of it.
+  // A question the agent stopped to ask, shown in the chat stream rather than
+  // over the top of it. The deployment agent has always asked this way and it
+  // reads as the agent waiting on you; a dialog reads as the app interrupting.
   ask: null,
   setAsk: (ask) => set({ ask }),
 
@@ -281,7 +293,8 @@ export const useStore = create((set, get) => ({
   drawing: null,
   setDrawing: (drawing) => set({ drawing }),
 
-  // The engine's own browser, as it is right now.
+  // The engine's own browser, as it is right now. Headless, so this is the
+  // only way to see what it is doing.
   browserFrame: null,
 
   // Visual attachments for pending messages, including element selections and annotated screenshots.
@@ -298,7 +311,8 @@ export const useStore = create((set, get) => ({
   })),
   clearSelection: () => set({ selection: [] }),
 
-  // What the agent and the user actually said to each other, as opposed to the tool activity the chat panel derives from `logs`.
+  // What the agent and the user actually said to each other, as opposed to the
+  // tool activity the chat panel derives from `logs`.
   chat: [],
   pushChat: (entry) => set(s => ({
     chat: [...s.chat, { at: Date.now(), ...entry }],
@@ -338,7 +352,8 @@ export const useStore = create((set, get) => ({
 
   hydrate: () => {
     if (!LS) return
-    // Migrate the former single Agent choice into each explicit role.
+    // Migrate the former single Agent choice into each explicit role. Once a
+    // role is picked it has its own key and no longer follows the legacy one.
     const legacyAgent = read(KEYS.agent, DEFAULTS.models.agent)
 
     try {
@@ -358,7 +373,8 @@ export const useStore = create((set, get) => ({
         deploy: read(KEYS.deploy, DEFAULTS.models.deploy),
         image: read(KEYS.image, DEFAULTS.models.image),
       },
-      // Both tiers think.
+      // Both tiers think. What an older browser saved came from the switch
+      // the tiers replaced, and would have sent High without its thinking.
       think: DEFAULTS.think,
       thinkingLevel: ['low', 'high', 'xhigh'].includes(read(KEYS.thinkingLevel, ''))
         ? read(KEYS.thinkingLevel, 'high') : DEFAULTS.thinkingLevel,
@@ -379,7 +395,9 @@ export const useStore = create((set, get) => ({
   /** Agent roles that adopt the globally selected language model. */
   ROLE_MODELS: ['agent', 'planner', 'design', 'builder', 'qa', 'srs', 'deploy'],
 
-  /** The model every agent uses, picked beside the first input or the chat. */
+  /** The model every agent uses, picked beside the first input or the chat. It is saved on the server too:
+   *  the interview, the plan, the specification and the diagrams run on the saved model, not on what a
+   *  request carries. */
   applyModel: (model) => {
     const chosen = String(model || '').trim()
     if (!chosen) return []
@@ -414,7 +432,8 @@ export const useStore = create((set, get) => ({
   /** Persisted chat and log streams cached per project across workspace navigation. */
   streams: {},
 
-  // The project a run belongs to, which is not always the one on screen: you can start a build and go and look at something else while it works.
+  // The project a run belongs to, which is not always the one on screen: you
+  // can start a build and go and look at something else while it works.
   busyProject: '',
   setBusyProject: (busyProject) => set({ busyProject }),
 
@@ -423,7 +442,7 @@ export const useStore = create((set, get) => ({
     const sessions = { ...state.projectSessions }
     if (state.project) sessions[state.project] = { ...sessions[state.project], [state.agentRole]: captureSession(state) }
     const restoredSession = sessions[project]?.[state.agentRole]
-    // Event histories and model contexts are durable on the server.
+    // Event histories and model contexts are durable on the server. Bound browser caches.
     const evictable = Object.keys(sessions).filter(name => name !== project && !ROLES.some(role => sessions[name]?.[role]?.busy))
     for (const name of evictable.slice(0, Math.max(0, Object.keys(sessions).length - 8))) delete sessions[name]
     return {

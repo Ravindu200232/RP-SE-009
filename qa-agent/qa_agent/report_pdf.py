@@ -1,4 +1,9 @@
-"""The Testing views' evidence as one readable document (Markdown, printed to PDF by `server_modules.pdf`)."""
+"""The Testing views' evidence as one readable document (Markdown, printed to PDF by `server_modules.pdf`).
+
+It reads only what `verify.report()` already collected - the saved QA report merged with the
+runner files (`evidence.collect`) - and writes down what is there. A section with nothing
+recorded says so instead of being left out, so a missing layer stays visible in print too.
+"""
 from __future__ import annotations
 
 from typing import Any

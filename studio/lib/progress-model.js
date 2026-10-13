@@ -32,7 +32,7 @@ export function advance(prev, step, rawPct, now = Date.now()) {
   const shown = displayPct(state, now)
   const held = Math.max(state.pct, shown)
 
-  // 100 closes this piece of work.
+  // 100 closes this piece of work. Bank it and wait for whatever is next.
   if (raw >= 100) {
     const banked = clamp(Math.max(held, state.floor + state.span), 0, CEILING)
     return { ...state, step: label, raw, pct: round(banked), floor: round(banked),

@@ -55,13 +55,15 @@ export function usePlugins(project, pending, onPending) {
 
   const credentialsSaved = useCallback(async saved => {
     setState(s => ({ ...s, saved }))
-    // Updating credentials for any enabled provider refreshes the one handoff that contains every selected plugin.
+    // Updating credentials for any enabled provider refreshes the one handoff
+    // that contains every selected plugin.
     if (project && chosen.length) {
       try {
         const answer = await api.setProjectPlugins(project, chosen)
         setEnabled(answer.enabled || chosen)
       } catch (e) {
-        // The credential is already stored safely.
+        // The credential is already stored safely. A handoff refresh problem
+        // should not misleadingly report that save as a failure.
         useStore.getState().addLog('WARN', `Plugin saved, but its project handoff could not refresh — ${e.message}`)
       }
     }

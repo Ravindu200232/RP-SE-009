@@ -1,6 +1,11 @@
 'use client'
 
-/** Database: what the project's databases hold, read live by their own tools: the Supabase command line tool for the project's Supabase project, and the... */
+/**
+ * Database: what the project's databases hold, read live by their own tools: the Supabase command line tool for the
+ * project's Supabase project, and the project's own MongoDB driver for a MongoDB stack. The rail lists every look the
+ * catalogue (`prompts/database/monitors.json`) offers for the connections this project has; Home says what is connected
+ * and where. A table or collection opens its first rows beside the page.
+ */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {

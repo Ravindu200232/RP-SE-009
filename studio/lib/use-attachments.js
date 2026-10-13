@@ -77,7 +77,9 @@ export function useAttachments() {
         try {
           const res = await api.srsUpload(projectId, it.file,
                                           { purpose: it.purpose || '' })
-          // The SRS endpoint returns the saved attachment itself.
+          // The SRS endpoint returns the saved attachment itself.  Keeping its
+          // workspace-relative path lets the first agent turn read the source
+          // with its normal tools instead of relying on a pasted file name.
           const source = res?.attachment || res?.source || {}
           const text = source.text || ''
           const id = source.id || ''

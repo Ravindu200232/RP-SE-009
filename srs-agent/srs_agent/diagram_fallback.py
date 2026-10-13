@@ -1,10 +1,18 @@
-"""A diagram drawn straight from the specification, for when the model could not produce one."""
+"""A diagram drawn straight from the specification, for when the model could not produce one.
+
+The last resort of `document._draw_diagram`, after the model has been asked again without tools and still did not
+return Mermaid. It only restates facts the specification already holds - the same compact slice the model is given
+(`document._diagram_context`) - so nothing here is invented: a workflow's own steps become messages, a status field's
+own values become states, the tables and their relationships become entities. It never replaces a diagram the model
+drew, and a kind with no such facts yields "" (the diagram is then reported as not drawn, never faked).
+"""
 from __future__ import annotations
 
 import re
 from typing import Any, Callable
 
-# Kept in a label: letters, digits, spaces and plain punctuation.
+# Kept in a label: letters, digits, spaces and plain punctuation. Quotes, brackets, semicolons and '#' are what end a
+# Mermaid label early, so they go.
 _UNSAFE = re.compile(r"[^\w .,:/'&%+-]")
 _STATES = re.compile(r"\s*enum\((?P<values>.*)\)\s*$", re.IGNORECASE | re.DOTALL)
 

@@ -1,4 +1,9 @@
-"""The live browser: what a running test is looking at, shown in the studio's preview."""
+"""The live browser: what a running test is looking at, shown in the studio's preview.
+
+A generated app's Playwright run streams into here (its fixture posts frames, its reporter
+posts what the test is doing). Nothing is stored: the studio shows the newest frame, and the
+frames of a run that has ended are of no use to anyone.
+"""
 from __future__ import annotations
 
 import json
@@ -9,10 +14,12 @@ from typing import Any
 
 from . import bus
 
-# A frame is a JPEG as a data URL.
+# A frame is a JPEG as a data URL. Larger than this is not a screencast frame.
 MAX_FRAME_CHARS = 700_000
 
-# The desktop app's backend listens on no port, so a run cannot post to it.
+# The desktop app's backend listens on no port, so a run cannot post to it: it drops each message as a file
+# into a folder this module watches instead (see channel_for). How often the folder is looked at, and how long
+# a watcher with nothing to read stays up.
 POLL_SECONDS = 0.05
 IDLE_SECONDS = 900
 
@@ -29,7 +36,8 @@ def url_for(project: str) -> str:
 
 
 def channel_for(project: str) -> dict[str, str]:
-    """What a command run for `project` is told, to stream its live view: the API's address when the API."""
+    """What a command run for `project` is told, to stream its live view: the API's address when the API
+    listens, otherwise a folder to drop each message into (`AGENTFORGE_LIVE_DIR`), watched from here."""
     from . import config
 
     if config.TRANSPORT != "stdio":
@@ -166,5 +174,5 @@ def handle(project: str, body: dict[str, Any]) -> dict[str, Any]:
         event(project, body)
     elif kind == "end":
         finish(project)
-    # Whether anyone is looking.
+    # Whether anyone is looking. A run that finds nobody does not spend time streaming.
     return {"ok": True, "watching": bus.viewers() > 0}

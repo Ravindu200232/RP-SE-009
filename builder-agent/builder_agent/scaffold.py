@@ -1,4 +1,8 @@
-"""Install the selected, bundled application template before the build plan."""
+"""Install the selected, bundled application template before the build plan.
+
+Only an empty application workspace is scaffolded. Existing work is never
+replaced, and template files remain inert inside AgentForge itself.
+"""
 from __future__ import annotations
 
 import json
@@ -20,19 +24,24 @@ STACK_GUIDES = {
     "mern-microservices-only": "mern-microservices.md",
     "remix-mongo-only": "remix-mongo.md",
 }
-# The stacks that run on MongoDB and never touch Supabase.
+# The stacks that run on MongoDB and never touch Supabase. Their twins without "-only" keep Supabase for one thing: the
+# bucket uploaded files go in (the templates hold no Supabase code, so the two kinds install the same folder).
 MONGO_ONLY = frozenset({"nextjs-mongo-only", "vite-mongo-only", "mern-microservices-only", "remix-mongo-only"})
 MONGO_STACKS = frozenset({"nextjs-mongo", "vite-mongo", "mern-microservices", "remix-mongo"}) | MONGO_ONLY
 # Which template folder a stack installs; a stack not listed installs the folder of its own name.
 STACK_TEMPLATES = {"nextjs-mongo-only": "nextjs-mongo", "vite-mongo-only": "vite-mongo",
                    "mern-microservices-only": "mern-microservices", "remix-mongo-only": "remix-mongo"}
-# Where uploaded files are kept when no uploads plugin is selected, for the MongoDB stacks.
+# Where uploaded files are kept when no uploads plugin is selected, for the MongoDB stacks: the Supabase-bucket ones
+# use Supabase Storage, the Mongo-only ones use MongoDB's own GridFS. (The Supabase-database stacks say it in their guide.)
 UPLOAD_GUIDES = {**{stack: "uploads-supabase.md" for stack in MONGO_STACKS - MONGO_ONLY},
                  **{stack: "uploads-gridfs.md" for stack in MONGO_ONLY}}
 TEST_GUIDES = ("vitest.md", "playwright.md", "visual.md", "axe.md", "lighthouse.md", "zap.md")
-# Not about one app: mistakes every build of every stack has made, and the scaffold's answer to each.
+# Not about one app: mistakes every build of every stack has made, and the scaffold's
+# answer to each. Read before the stack guide so they are not learned again by failing.
 COMMON_GUIDES = ("pitfalls.md", "unit-tests.md")
-# Stack-neutral placeholder in the templates.
+# Stack-neutral placeholder in the templates. Every generated app gets a project slug of
+# its own (the local Supabase `project_id`, and the schema a test run uses) - a shared
+# default let one app's tests and local stack touch another's data.
 DB_PLACEHOLDER = "__APP_DB__"
 ENGINE_ENTRIES = frozenset({".agentforge", ".agents", ".git", ".gitignore", ".env",
                             ".env.local", ".env.example", ".vscode", ".idea", "node_modules",
@@ -74,7 +83,12 @@ def _pitfalls(stack: str) -> tuple[str, ...]:
 
 
 def project_slug(project: str) -> str:
-    """A project id unique to this workspace: lowercase, `_`, at most 38 characters."""
+    """A project id unique to this workspace: lowercase, `_`, at most 38 characters.
+
+    Used as the local Supabase CLI's `project_id` (`supabase/config.toml`) and as the
+    test schema name, so a build's own `supabase start`/tests never collide with another
+    project's local stack.
+    """
     name = re.sub(r"[^a-z0-9_]+", "_", project.lower()).strip("_")[:38].strip("_")
     return name or "app"
 

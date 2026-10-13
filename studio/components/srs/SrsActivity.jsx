@@ -8,7 +8,8 @@ const TITLES = {
   generating: 'Writing your specification',
 }
 
-/** One calm, classic working state: a spinner, what is being made and the latest update. */
+/** One calm, classic working state: a spinner, what is being made and the latest update. No box and no
+ * checklist of its own — every detail of the work streams in the chat. */
 export default function SrsActivity({ phase = 'planning', title = '', message = '', seconds = 0 }) {
   return (
     <div role="status" aria-live="polite" className="flex flex-col items-center px-6 py-10 text-center">

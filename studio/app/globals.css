@@ -32,7 +32,8 @@
   --ok-tint: rgba(22, 128, 60, 0.12);
   --red: #d04f5e;
   --bad-tint: rgba(208, 79, 94, 0.12);
-  /* A state is either healthy/current or needs attention. */
+  /* A state is either healthy/current or needs attention.  There are no
+     separate blue/yellow/orange status families in the Studio. */
   --yellow: var(--red);
   --warn-tint: var(--bad-tint);
   --info: var(--green);
@@ -116,7 +117,8 @@
     border-radius: var(--radius-ctl);
   }
 
-  /* Keep each component's original sizing, border and radius. */
+  /* Keep each component's original sizing, border and radius. Only the
+     interaction colors are shared: quiet gray hover and blue selection. */
   button:not(:disabled):hover {
     background-color: var(--bg4) !important;
     color: var(--ink) !important;
@@ -133,11 +135,14 @@
 }
 
 @layer utilities {
-  /* Rails and tab rows keep their scroll behavior without a visual browser scrollbar competing with their small controls. */
+  /* Rails and tab rows keep their scroll behavior without a visual browser
+     scrollbar competing with their small controls. */
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
 
-  /* Testing reads like a report, not a dashboard full of colored boxes. */
+  /* Testing reads like a report, not a dashboard full of colored boxes.
+     Color is kept on the status text, its thin border, and tiny progress
+     dots only. This also turns old solid test actions into text actions. */
   .testing-workspace :is([class*="bg-ok/"], [class*="bg-bad/"], [class*="bg-warn/"],
                            [class*="bg-green-"], [class*="bg-emerald-"],
                            [class*="bg-red-"], [class*="bg-rose-"],
@@ -164,7 +169,8 @@
     color: var(--deep) !important;
   }
 
-  /* Older stage pages were authored with square `rounded-none` surfaces. */
+  /* Older stage pages were authored with square `rounded-none` surfaces.
+     Keep their markup, but let the shared Studio design system round them. */
   [class~="rounded-none"] {
     border-radius: var(--radius-panel) !important;
   }
@@ -174,13 +180,16 @@
     background-color: var(--palette-spring) !important;
   }
 
-  /* Legacy stage pages used Tailwind's many status hues. */
+  /* Legacy stage pages used Tailwind's many status hues.  Keep the markup
+     readable while enforcing the Studio's two-state language globally:
+     green is passing/current; red is failed, wrong, or needs attention. */
   body :is([class*="text-amber-"], [class*="text-yellow-"], [class*="text-orange-"],
            [class*="text-rose-"], [class*="text-red-"], [class*="text-bad"],
            [class*="text-warn"]) {
     color: var(--red) !important;
   }
-  /* Errors and warnings match the success-card treatment: no colored fill, just a white surface, red copy and a clear red edge. */
+  /* Errors and warnings match the success-card treatment: no colored fill,
+     just a white surface, red copy and a clear red edge. */
   body :is([class*="bg-amber-"], [class*="bg-yellow-"], [class*="bg-orange-"],
            [class*="bg-rose-"], [class*="bg-red-"], [class*="bg-bad"],
            [class*="bg-warn"]):not([class*="rounded-full"][class*="size-"]) {
@@ -209,7 +218,11 @@
     color: var(--deep) !important;
   }
 
-  /* Blue is an affordance, never a filled surface. */
+  /* Blue is an affordance, never a filled surface.  Older views still use
+     `bg-accent` and Tailwind blue classes for primary buttons, selected cards
+     and prompt banners.  Normalize every one to the same white, outlined
+     pattern used by the question cards: the blue stays in the label/icon and
+     focus ring, while the component itself stays quiet and readable. */
   body :is([class*="bg-accent"], [class*="bg-blue-"], [class*="bg-sky-"],
            [class*="bg-indigo-"], [class*="bg-cyan-"]) {
     background-color: var(--palette-spring) !important;
@@ -238,7 +251,10 @@
   }
   body :is([class*="text-emerald-"], [class*="text-green-"], [class*="text-ok"]) { color: var(--green) !important; }
 
-  /* Passing/success cards use the same outlined treatment as the rest of the Studio. */
+  /* Passing/success cards use the same outlined treatment as the rest of the
+     Studio: green communicates the state through text and a clear border, not
+     a pale green fill behind the content. Small status lights stay filled so
+     they are still recognizable at a glance. */
   body :is([class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-ok"]):not([class*="rounded-full"][class*="size-"]) {
     background-color: var(--palette-spring) !important;
     border-color: color-mix(in srgb, var(--green) 48%, transparent) !important;
@@ -255,7 +271,8 @@
   }
 }
 
-/* Context is the one usage meter that intentionally keeps a blue fill: it is a quantitative reading, not an action button or selectable card. */
+/* Context is the one usage meter that intentionally keeps a blue fill: it is
+   a quantitative reading, not an action button or selectable card. */
 .context-window-card {
   border-color: color-mix(in srgb, var(--accent) 42%, var(--line)) !important;
 }
@@ -318,7 +335,8 @@ body .context-window-progress {
   background: color-mix(in srgb, var(--muted2) 65%, transparent);
 }
 
-/* A diagram's SVG carries its own white page; keep it even if the SVG ever arrives without its root style, so dark linework never lands on a dark surface. */
+/* A diagram's SVG carries its own white page; keep it even if the SVG ever arrives without its root style, so dark
+   linework never lands on a dark surface. */
 .srs-diagram svg {
   background-color: #fff;
 }

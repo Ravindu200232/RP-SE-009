@@ -1,4 +1,21 @@
-"""What the agent may do without asking: the permission modes, the way Claude Code has them."""
+"""What the agent may do without asking: the permission modes, the way Claude Code has them.
+
+A project is in one mode, picked beside the chat input and beside the first input of a new project:
+
+    auto           the agent edits files and runs its commands on its own; only a risky command (sudo, a download piped into
+                   a shell, Invoke-Expression, Start-Process, a credential sent out) is asked about in the chat
+    manual         every edit and every command is asked about first
+    accept_edits   edits and the usual web-development commands (npm, node, git, next, vercel...) go ahead; any other
+                   command is asked about
+    bypass         nothing is asked and nothing is refused; it has to be turned on in the mode menu first
+
+Planning is not a mode: a change typed into a project that has a specification is planned first and carried out once the plan
+is approved (`changes.py`), whatever the mode. The mode is what the carrying out may do without asking.
+
+A question is a card in the chat stream (`bus.ask_and_wait`, kind "permission") with three answers: allow, allow and do not ask
+again this session (for edits, or for that program), and deny (with a note for the agent, if the person wants to give one). The run
+holds still until it is answered; Stop ends the wait. A risky command is always asked, and has no "do not ask again".
+"""
 from __future__ import annotations
 
 import threading
@@ -97,7 +114,13 @@ def _keys(action: dict[str, Any]) -> set[str]:
 
 
 def needs_asking(mode: str, action: dict[str, Any], granted: set[str]) -> bool:
-    """Whether the person is asked about this action in this mode."""
+    """Whether the person is asked about this action in this mode.
+
+    auto           nothing is asked but a risky command (`level` "danger": sudo, a download piped into a shell, Invoke-Expression,
+                   Start-Process, a credential file sent out, a drive formatted)
+    accept_edits   edits and the usual web-development commands (npm, node, git, next, vercel... - `level` "") go ahead; a
+                   command outside them (`level` "unusual") is asked, and so is a risky one
+    manual         every edit and every command is asked"""
     if mode == "bypass":
         return False
     level = str(action.get("level") or "")

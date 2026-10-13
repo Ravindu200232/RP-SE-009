@@ -16,10 +16,13 @@ class SourceGuard:
 
     def __init__(self, app_root: Path):
         self.root = app_root.resolve()
-        # What changed during the last command but was left alone, because the change was the repository's own (a pull, a checkout, a commit), not the command's.
+        # What changed during the last command but was left alone, because the change was the
+        # repository's own (a pull, a checkout, a commit), not the command's.
         self.left_alone: list[str] = []
 
-    # Everything that is this application rather than one of its projects.
+    # Everything that is this application rather than one of its projects. A
+    # generated project's own build command runs with the user's permissions, so
+    # a stray `rm -rf` or an over-eager formatter reaches all of it.
     FILES = ("pyproject.toml", "README.md", "run.ps1", "start.bat",
              "studio.ps1", "studio.bat", "server.py")
     FOLDERS = ("src/ollama_terminal", "tests", "server_modules", "prompts",
@@ -74,7 +77,8 @@ class SourceGuard:
         self.left_alone = []
         added, altered = self._changes(before)
         names = [path.relative_to(self.root).as_posix() for path in [*added, *altered]]
-        # The repository moved while the command ran: those files are a pull or a checkout landing, and putting the old copies back would quietly undo it.
+        # The repository moved while the command ran: those files are a pull or a checkout landing,
+        # and putting the old copies back would quietly undo it.
         head = getattr(before, "head", "")
         if head and self.head() != head:
             self.left_alone = names

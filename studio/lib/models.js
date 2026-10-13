@@ -23,8 +23,9 @@ const CURATED = [
     desc: 'Very capable — needs ~40GB.' },
 ]
 
-// Presentation aliases only.
+// Presentation aliases only. Requests always keep the exact Ollama model id.
 const CLOUD_UI_LABELS = {
+  'deepseek-v4.1-flash:cloud': 'DeepSeek V4.1 Flash',
   'qwen3.5:397b-cloud': 'Qwen 397B',
   'minimax-m3:cloud': 'MiniMax M3',
   'gemma4:31b-cloud': 'Gemma 4 31B',
@@ -35,7 +36,7 @@ const CLOUD_UI_LABELS = {
 }
 
 export const TIERS = {
-  medium: { id: 'medium', label: 'Medium', model: 'deepseek-v4', think: false },
+  medium: { id: 'medium', label: 'Medium', model: 'deepseek-v4.1-flash:cloud', think: false },
   high: { id: 'high', label: 'High', model: 'deepseek-v4-flash:cloud', think: true },
   ultra: { id: 'ultra', label: 'Ultra', model: 'deepseek-v4-pro:cloud', think: true },
 }
@@ -79,7 +80,8 @@ export function catalogue(payload) {
     if (!byId.has(id)) byId.set(id, { id, tag: 'local' })
   }
 
-  // Models to pull are only worth offering where an Ollama app runs: with the built-in engine, or just an ollama.com key, there is none.
+  // Models to pull are only worth offering where an Ollama app runs: with the built-in engine, or just an
+  // ollama.com key, there is none.
   if (p.ollama_ready || p.engine === 'local') {
     for (const m of CURATED) {
       if (!byId.has(m.id)) byId.set(m.id, { ...m, willPull: true })

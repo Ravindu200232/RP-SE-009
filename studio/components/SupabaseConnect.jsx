@@ -14,7 +14,15 @@ const Field = ({ label, hint, children }) => (
   </label>
 )
 
-/** Supabase has no device-flow CLI sign-in the way GitHub/Vercel/Netlify/Azure do (see cli_signin.py's own docstring on why it isn't there. */
+/**
+ * Supabase has no device-flow CLI sign-in the way GitHub/Vercel/Netlify/Azure do (see
+ * cli_signin.py's own docstring on why it isn't there - tried live, `supabase login` refuses
+ * outside a real terminal). So this drives the real OAuth thing instead: a genuine "click, approve
+ * in the browser" sign-in, like "Sign in with Google". The OAuth app behind it is the publisher's,
+ * one for everyone, kept by the engine server (`status.broker`; supabase_connect.py), so the person
+ * registers nothing and types no client id or callback URL. Only a copy with no engine server (a
+ * development checkout) still asks for an OAuth app of the person's own, below.
+ */
 export default function SupabaseConnect({ onDone }) {
   const [status, setStatus] = useState(null)
   const [clientId, setClientId] = useState('')

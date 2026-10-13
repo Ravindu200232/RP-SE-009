@@ -1,8 +1,22 @@
 # Build an AgentForge desktop release: the app, its online installer, and the manifest the installer reads.
+#
+#   ./release/build.ps1                     build everything into release/out
+#   ./release/build.ps1 -Publish            ...and upload it as a GitHub release (needs `gh auth login`)
+#
+# release/out gets:
+#   AgentForge-<version>-win-x64.zip        the app: Electron, the studio UI, the backend, and its own Python
+#   AgentForgeSetup.exe                     the one-click installer people download
+#   manifest.json                           what the installer installs, with every file's sha256
+#   manifest.local.json                     the same, from the files on this computer (to test the installer offline)
+#
+# The command line tools a blank Windows computer is missing (Node.js, Git, gh, AWS, Azure and MongoDB Atlas CLIs, the
+# Vercel, Netlify and Supabase CLIs, Playwright's browser) are not in the zip: the installer fetches each from its official
+# source, pinned here to the version current when the release was built.
 param(
     [string]$Repo = '',
     [switch]$Publish,
-    # One part at a time (each is quick enough to run on its own, and the next picks up what it left in release/stage and release/out).
+    # One part at a time (each is quick enough to run on its own, and the next picks up what it left in
+    # release/stage and release/out): ui, stage, python, package, zip, manifest. Default: all of them.
     [string[]]$Phase = @('all')
 )
 
@@ -18,6 +32,7 @@ $stage = Join-Path $release 'stage\app'
 $out = Join-Path $release 'out'
 $cache = Join-Path $release 'cache'
 $version = (Get-Content (Join-Path $root 'desktop\package.json') -Raw | ConvertFrom-Json).version
+$releaseTag = 'v' + ($version -split '\.')[0]
 if (-not $Repo) {
     $Repo = 'Ravindu200232/agentforge-releases'
 }
@@ -35,7 +50,8 @@ function Get-Cached($url, $name) {
     $file = Join-Path $cache $name
     if (-not (Test-Path $file)) {
         Write-Host "   downloading $url"
-        # Windows' own curl streams to disk and resumes.
+        # Windows' own curl streams to disk and resumes; Windows PowerShell's Invoke-WebRequest holds the whole file
+        # in memory first and stalls on large ones (the Azure CLI zip).
         $curl = Join-Path $env:WINDIR 'System32\curl.exe'
         if (Test-Path $curl) {
             & $curl --fail --location --silent --show-error --retry 4 --continue-at - --user-agent 'AgentForge-release' --output "$file.part" $url
@@ -50,7 +66,9 @@ function Get-Cached($url, $name) {
 
 function Get-Sha256($file) { (Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant() }
 
-# Windows PowerShell's `Set-Content -Encoding UTF8` starts a file with a byte-order mark, and Node refuses a package.json that has one.
+# Windows PowerShell's `Set-Content -Encoding UTF8` starts a file with a byte-order mark, and Node refuses a
+# package.json that has one: every diagram render failed on installed copies. Text other programs read is written
+# without it.
 function Write-Text($path, $text) { [IO.File]::WriteAllText($path, ($text -join "`n"), (New-Object Text.UTF8Encoding $false)) }
 
 function Get-ZipStrip($file) {
@@ -128,6 +146,18 @@ if (Want 'python') {
     if ($LASTEXITCODE -ne 0) { throw 'pip install failed' }
     & $hostPython -m pip install --disable-pip-version-check --target $site --no-deps $PrivacyModel
     if ($LASTEXITCODE -ne 0) { throw 'pip install of the privacy filter model failed' }
+
+    # spaCy/thinc's Windows extensions import MSVCP140.dll by its ordinary
+    # name. Python's embeddable ZIP includes VCRUNTIME, but not this C++ DLL;
+    # on a clean PC the privacy filter fails while importing numpy_ops.
+    # NumPy's wheel already ships the matching x64 runtime under a hashed
+    # name for its own extensions. Make that same packaged binary available
+    # by the name thinc requests, next to python.exe (app-local DLL search).
+    $cppRuntime = @(Get-ChildItem (Join-Path $site 'numpy.libs') -Filter 'msvcp140-*.dll')
+    if ($cppRuntime.Count -ne 1) { throw 'Expected one NumPy-bundled MSVCP140.dll for the privacy filter' }
+    Copy-Item $cppRuntime[0].FullName (Join-Path $python 'MSVCP140.dll') -Force
+    & (Join-Path $python 'python.exe') -c 'import spacy, thinc.backends.numpy_ops, presidio_analyzer, presidio_anonymizer'
+    if ($LASTEXITCODE -ne 0) { throw 'Packaged privacy filter failed to import' }
 }
 
 if (Want 'package') {
@@ -184,7 +214,7 @@ $components = @()
 $localComponents = @()
 $appSize = (Get-Item $appZip).Length
 $appEntry = [ordered]@{ id = 'app'; title = "AgentForge $version"; version = $version; type = 'zip'; target = '.'; strip = 0;
-                        url = "https://github.com/$Repo/releases/download/v$version/" + (Split-Path $appZip -Leaf);
+                        url = "https://github.com/$Repo/releases/download/$releaseTag/" + (Split-Path $appZip -Leaf);
                         sha256 = (Get-Sha256 $appZip); size = $appSize }
 $components += $appEntry
 $localApp = [ordered]@{}; foreach ($key in $appEntry.Keys) { $localApp[$key] = $appEntry[$key] }; $localApp.url = $appZip
@@ -223,7 +253,9 @@ namespace AgentForge.Setup { static class Config {
     public const string ManifestUrl = "https://github.com/$Repo/releases/latest/download/manifest.json";
 } }
 "@
-# Who made the file, what it is and which version: the Details tab of its Properties, and what Windows shows beside an unknown program.
+# Who made the file, what it is and which version: the Details tab of its Properties, and what Windows shows beside an
+# unknown program. Without these a compiled exe says nothing about itself, and antivirus heuristics and SmartScreen
+# treat a file like that with more suspicion than one that does. (Only a code-signing signature makes Windows trust it.)
 $year = (Get-Date).Year
 Write-Text (Join-Path $installer 'AssemblyInfo.generated.cs') @"
 using System.Reflection;
@@ -248,8 +280,8 @@ Step "Done"
 Get-ChildItem $out | Where-Object { -not $_.PSIsContainer } | ForEach-Object { "   {0,-40} {1,10:N1} MB" -f $_.Name, ($_.Length / 1MB) }
 
 if ($Publish) {
-    Step "Publish v$version to github.com/$Repo"
-    gh release create "v$version" (Join-Path $out 'AgentForgeSetup.exe') $appZip (Join-Path $out 'manifest.json') `
-        --repo $Repo --title "AgentForge $version" --notes "Download AgentForgeSetup.exe and run it."
+    Step "Publish $releaseTag to github.com/$Repo"
+    gh release create $releaseTag (Join-Path $out 'AgentForgeSetup.exe') $appZip (Join-Path $out 'manifest.json') `
+        --repo $Repo --title "AgentForge $releaseTag" --notes "Download AgentForgeSetup.exe and run it."
     if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 }

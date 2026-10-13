@@ -1,6 +1,9 @@
 'use client'
 
-/** The mode menu, the way Claude Code has it: what the agent may do without asking. */
+/**
+ * The mode menu, the way Claude Code has it: what the agent may do without asking. Beside the chat input (for the open
+ * project) and beside the first input of a new project (the mode it starts in).
+ */
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, ShieldAlert } from 'lucide-react'
 

@@ -1,4 +1,10 @@
-"""Load the prompt packs."""
+"""Load the prompt packs.
+
+Every instruction this product gives a model lives in `prompts/` as markdown. No
+stage embeds its own wording: it names a pack, fills the placeholders, and sends
+what comes back. Changing how a stage behaves is editing a file, not editing
+code.
+"""
 from __future__ import annotations
 
 import re
@@ -24,7 +30,11 @@ def _raw(name: str) -> str:
 
 
 def load(name: str, **values: Any) -> str:
-    """One prompt, with its `{{placeholders}}` filled in."""
+    """One prompt, with its `{{placeholders}}` filled in.
+
+    An unfilled placeholder is left as-is rather than blanked, so a missing value
+    shows up in the transcript instead of silently becoming an empty instruction.
+    """
     text = _raw(name)
 
     def swap(match: re.Match[str]) -> str:
@@ -47,7 +57,11 @@ def exists(name: str) -> bool:
 
 @lru_cache(maxsize=32)
 def data(name: str) -> Any:
-    """A JSON asset that sits beside the prompts, such as the app type catalogue."""
+    """A JSON asset that sits beside the prompts, such as the app type catalogue.
+
+    Kept in the pack rather than in code for the same reason the prompts are:
+    changing the choices a customer is offered should be editing a file.
+    """
     import json
 
     path = (config.PROMPTS / f"{name}.json").resolve()

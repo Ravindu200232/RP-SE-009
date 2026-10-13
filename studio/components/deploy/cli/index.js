@@ -1,4 +1,7 @@
-/** Which page shows which command: `<command set>/<command id>` to the page written for it. */
+/**
+ * Which page shows which command: `<command set>/<command id>` to the page written for it. A command without a page
+ * is laid out automatically (see `CommandPage`). The commands themselves are data, in `prompts/deployment/monitors.json`.
+ */
 import VercelAccount from './vercel/VercelAccount'
 import VercelTeams from './vercel/VercelTeams'
 import VercelTeamMembers from './vercel/VercelTeamMembers'

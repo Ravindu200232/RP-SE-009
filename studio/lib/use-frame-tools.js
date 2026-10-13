@@ -1,6 +1,12 @@
 'use client'
 
-/** The select and pencil tools over a framed app, for a view that has no chat beside it (the wireframes' page view). */
+/**
+ * The select and pencil tools over a framed app, for a view that has no chat beside it (the wireframes' page view).
+ *
+ * `mode` is the tool in hand: 'pick' (click a thing on the page), 'pencil' (draw around it) or 'text' (retype words; see
+ * AppTextEdit). What was pointed at or marked is kept in `items`, each as the record the agent is told about (`info`, or
+ * `marked` for what a drawing is around), and is sent with the next request.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { attachPicker, elementsUnderStrokes, pickedFrom, pickLabel } from '@/lib/picker'

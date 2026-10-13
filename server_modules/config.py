@@ -1,4 +1,9 @@
-"""Paths, ports and settings."""
+"""Paths, ports and settings.
+
+Nothing here is a product decision. Every value is either a path derived from
+where this file sits, or a setting read from `settings.json` at call time, so a
+change to a setting never needs a change to code.
+"""
 from __future__ import annotations
 
 import json
@@ -8,16 +13,21 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 PROMPTS = ROOT / "prompts"
-# The installed desktop app keeps what is the user's outside its own folder, so an update or a reinstall never touches it.
+# The installed desktop app keeps what is the user's outside its own folder, so an update or a reinstall never
+# touches it: settings and records under AGENTFORGE_DATA (%APPDATA%\AgentForge), projects under
+# AGENTFORGE_WORKSPACES (Documents\AgentForge). A checkout run by hand keeps both beside the code, as before.
 DATA = Path(os.environ["AGENTFORGE_DATA"]) if os.environ.get("AGENTFORGE_DATA") else None
 WORKSPACES = Path(os.environ.get("AGENTFORGE_WORKSPACES") or (ROOT / "workspaces"))
 STATE = DATA / "state" if DATA else ROOT / ".agentforge-server"
 SETTINGS_FILE = STATE / "settings.json"
 PROJECTS_FILE = STATE / "projects.json"
-# "http" (the API and feed listen on the ports below) or "stdio" (the desktop app talks over stdin/stdout and nothing listens).
+# "http" (the API and feed listen on the ports below) or "stdio" (the desktop app talks over stdin/stdout and
+# nothing listens). What is reachable from a project's own commands depends on it (see live.channel_for).
 TRANSPORT = os.environ.get("AGENTFORGE_TRANSPORT", "http")
 
-# The studio's next.config.js proxies /__agentforge/api to the first and /__agentforge/ws to the second.
+# The studio's next.config.js proxies /__agentforge/api to the first and
+# /__agentforge/ws to the second. Both are overridable from the environment so a
+# second instance can run beside this one.
 API_PORT = int(os.environ.get("AGENTFORGE_API_PORT", "7824"))
 WS_PORT = int(os.environ.get("AGENTFORGE_WS_PORT", "7825"))
 API_PREFIX = "/__agentforge/api"
@@ -28,22 +38,30 @@ RECORD_DIR = ".agentforge"
 DEFAULTS: dict[str, Any] = {
     "ollama_host": os.environ.get("OLLAMA_HOST", "http://localhost:11434"),
     "ollama_api_key": "",
-    # "" chooses itself (ollama.com once a key is saved), "cloud" or "local" pins it.
+    # "" chooses itself (ollama.com once a key is saved), "cloud" or "local" pins it. See engine().
     "engine": "",
     "cloud": False,
     "model": "",
     "context": 0,
     "local_num_ctx": 0,
     "agent_think": False,
-    # The multi-level control "agent_think" alone can't express.
+    # The multi-level control "agent_think" alone can't express: "" (unset)
+    # means a settings.json saved before this existed, so agent_think's own
+    # boolean still decides — see thinking() below. Once set, it is the one
+    # source of truth and agent_think is kept only for older readers.
     "thinking_level": "",
     "mongodb_uri": "",
-    # The production MongoDB connection string a MongoDB-stack deployment uses (deploy_vars.py, mongo_check.py).
+    # The production MongoDB connection string a MongoDB-stack deployment uses (deploy_vars.py,
+    # mongo_check.py) - studio-wide like the tokens below, never the short-lived local test database
+    # `mongodb_uri` above runs builds and tests against.
     "deploy_mongodb_uri": "",
-    # Every other value the customer saved for a deployment run, by name (see deploy_vars.py).
+    # Every other value the customer saved for a deployment run, by name (see deploy_vars.py). A
+    # generated app's own Supabase project is a separate, per-project record (supabase_connect.py),
+    # not a studio-wide setting like this.
     "deploy_env": {},
     "deploy_env_secret": {},        # for each name in deploy_env: whether it was asked for as a secret
-    # The AgentForge account signed in here (accounts.py).
+    # The AgentForge account signed in here (accounts.py): its token for the admin app, what the admin app last said about it
+    # (status, request limit, requests used), and the admin app's address when it is not the one in accounts.json.
     "account_token": "",
     "account": {},
     "accounts_url": "",
@@ -57,7 +75,7 @@ DEFAULTS: dict[str, Any] = {
     "azure_account": "",
     "github_login": "",
     "github_client_id": "",
-    # The one Supabase account this studio is connected as (server_modules/supabase_connect.py):.
+    # The one Supabase account this studio is connected as (server_modules/supabase_connect.py):
     "supabase_client_id": "",
     "supabase_client_secret": "",
     "supabase_oauth_access_token": "",
@@ -76,7 +94,7 @@ DEFAULTS: dict[str, Any] = {
     "supabase_account_id": "",      # the active account's organisation id
     "supabase_account_credentials": {},   # the other accounts signed in, kept aside: id -> tokens (never sent to the UI)
     "supabase_org": "",
-    # The one MongoDB Atlas Service Account this studio is connected as (server_modules/mongo_connect.py):.
+    # The one MongoDB Atlas Service Account this studio is connected as (server_modules/mongo_connect.py):
     "mongodb_client_id": "",
     "mongodb_client_secret": "",
     "mongodb_oauth_access_token": "",
@@ -95,11 +113,18 @@ DEFAULTS: dict[str, Any] = {
     "max_steps": 40,
     "language": "English",
     "stack": "nextjs-supabase",
-    # The SRS already passes a deterministic schema + approved-plan coverage gate before diagrams.
+    # The SRS already passes a deterministic schema + approved-plan coverage
+    # gate before diagrams. Run one standards audit by default without asking a
+    # model to rewrite a very large document in full; callers may opt into
+    # additional review-repair rounds in settings.
     "srs_review_max_iterations": 0,
-    # A requirements session with a customer is bounded.
+    # A requirements session with a customer is bounded. Without a ceiling the
+    # interview follows one thread — payment, then refunds, then the refund
+    # email, then who receives it — until nobody remembers what was being built.
     "interview_max_questions": 25,
-    # External MCP (Model Context Protocol) servers the agent can also draw tools from, each {"id", "command", "args", "env", "enabled"}.
+    # External MCP (Model Context Protocol) servers the agent can also draw
+    # tools from, each {"id", "command", "args", "env", "enabled"} — additive
+    # to the built-in tool set, never a replacement for it.
     "mcp_servers": [],
 }
 
@@ -120,7 +145,9 @@ ENGINE_FILE = ROOT / "server_modules" / "engine.json"
 
 
 def built_in_engine() -> dict[str, str]:
-    """AgentForge's own AI engine (engine-proxy/): a server that holds the ollama.com key, so no key ships in the."""
+    """AgentForge's own AI engine (engine-proxy/): a server that holds the ollama.com key, so no key ships in the
+    app and nobody is asked for one. Its address and the app's token come from engine.json, or from
+    AGENTFORGE_ENGINE_URL / AGENTFORGE_ENGINE_TOKEN; {} when this copy has none."""
     url = os.environ.get("AGENTFORGE_ENGINE_URL", "").strip()
     token = os.environ.get("AGENTFORGE_ENGINE_TOKEN", "").strip()
     if not url:
@@ -131,7 +158,15 @@ def built_in_engine() -> dict[str, str]:
 
 
 def engine(saved: dict[str, Any] | None = None) -> str:
-    """Where the models run:."""
+    """Where the models run:
+
+    - "built-in": AgentForge's own engine server (built_in_engine), with nothing to set up;
+    - "cloud": ollama.com, with an API key saved in settings.json;
+    - "local": the Ollama app on this computer.
+
+    A saved "local", or "cloud" with a key, wins: a development setup keeps the engine it chose. Otherwise the
+    built-in engine when this copy has one, then a saved key, then the Ollama app here.
+    """
     saved = saved if saved is not None else settings()
     chosen = str(saved.get("engine") or "").strip().lower()
     has_key = bool(str(saved.get("ollama_api_key") or "").strip())
@@ -147,14 +182,18 @@ def engine(saved: dict[str, Any] | None = None) -> str:
 
 
 def settings() -> dict[str, Any]:
-    """The saved settings, over the defaults. `cloud` (the models run remotely, on ollama.com directly or through."""
+    """The saved settings, over the defaults. `cloud` (the models run remotely, on ollama.com directly or through
+    the built-in engine) is always what `engine()` decides, never a stale copy."""
     saved = _read(SETTINGS_FILE, {})
     merged = {**DEFAULTS, **(saved if isinstance(saved, dict) else {})}
     merged["cloud"] = engine(merged) in ("cloud", "built-in")
     return merged
 
 
-# ``xhigh`` is intentionally a distinct setting rather than an alias for ``high``.
+# ``xhigh`` is intentionally a distinct setting rather than an alias for
+# ``high``.  Ollama itself only accepts think on/off, but the agent can still
+# turn the extra choice into useful work by requiring a separate final
+# verification pass (see ProjectSession._system()).
 THINKING_LEVELS = ("off", "low", "high", "xhigh")
 
 
@@ -172,7 +211,9 @@ def save_settings(patch: dict[str, Any]) -> dict[str, Any]:
     if "thinking_level" in clean:
         if clean["thinking_level"] not in THINKING_LEVELS:
             raise ValueError(f"thinking_level must be one of {', '.join(THINKING_LEVELS)}")
-        # A reader that still only knows the old boolean gets a coherent answer.
+        # A reader that still only knows the old boolean gets a coherent
+        # answer: agent_think was always "does it reason", so both high
+        # levels map to true for older readers that only understand a boolean.
         clean["agent_think"] = clean["thinking_level"] in ("high", "xhigh")
     current.update(clean)
     _write(SETTINGS_FILE, current)
@@ -184,7 +225,12 @@ def setting(name: str, fallback: Any = None) -> Any:
 
 
 def thinking(saved: dict[str, Any] | None = None) -> str:
-    """The multi-level thinking/tool-use setting."""
+    """The multi-level thinking/tool-use setting.
+
+    A settings.json saved before this existed has no `thinking_level` — its
+    `agent_think` boolean still decides, so nobody's existing preference
+    silently changes on upgrade.
+    """
     saved = saved if saved is not None else settings()
     level = str(saved.get("thinking_level") or "").strip().lower()
     if level in THINKING_LEVELS:
@@ -193,12 +239,16 @@ def thinking(saved: dict[str, Any] | None = None) -> str:
 
 
 def thinking_enabled(saved: dict[str, Any] | None = None) -> bool:
-    """Whether the model reasons before answering (Ollama's native `think`)."""
+    """Whether the model reasons before answering (Ollama's native `think`).
+    "high" and "xhigh" do — "low" is deliberately reasoning-free, see
+    `thinking_encourages_tools()` for what it does get."""
     return thinking(saved) in ("high", "xhigh")
 
 
 def thinking_encourages_tools(saved: dict[str, Any] | None = None) -> bool:
-    """Whether the customer asked for extra encouragement to verify with a."""
+    """Whether the customer asked for extra encouragement to verify with a
+    read tool rather than guess — "low" gets this without paying for
+    reasoning tokens; both high levels get reasoning as well."""
     return thinking(saved) in ("low", "high", "xhigh")
 
 
@@ -212,7 +262,13 @@ def _default_workspace(project: str) -> Path:
 
 
 def validate_workspace_choice(value: str | Path) -> Path:
-    """Accept one user-picked empty folder without exposing Studio's own files."""
+    """Accept one user-picked empty folder without exposing Studio's own files.
+
+    A new build writes many files and may install dependencies.  Selecting a
+    drive root, the Studio installation, or a folder that already contains
+    work would make that promise unsafe, so the folder browser can only hand
+    over a writable empty folder outside those protected locations.
+    """
     raw = str(value or "").strip()
     if not raw:
         raise ValueError("choose a folder")
@@ -238,7 +294,12 @@ def validate_workspace_choice(value: str | Path) -> Path:
 
 
 def _custom_workspace(project: str) -> Path | None:
-    """Read a validated, per-project location without importing `store`."""
+    """Read a validated, per-project location without importing `store`.
+
+    `store` itself depends on this module, therefore the project record is
+    read through the same small JSON helper instead of creating a circular
+    import. Older records simply have no `workspace_path` and use the default.
+    """
     rows = _read(PROJECTS_FILE, {})
     record = rows.get(project) if isinstance(rows, dict) else None
     raw = record.get("workspace_path") if isinstance(record, dict) else ""
@@ -264,7 +325,10 @@ def record_dir(project: str) -> Path:
     return workspace_for(project) / RECORD_DIR
 
 
-# The empty stage-folder skeleton every new project starts with, so a read tool can list its way around before any stage has written into it.
+# The empty stage-folder skeleton every new project starts with, so a read
+# tool can list its way around before any stage has written into it. A
+# workspace layout fact, not a setting — kept here for the same reason
+# `workspace_for()` and `record_dir()` are.
 SCAFFOLD_DIRS = (
     "srs/handoff", "srs/diagrams", "srs/diagram-context",
     "srs/reviews",

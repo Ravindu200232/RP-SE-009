@@ -1,4 +1,11 @@
-"""Keep a pasted secret out of the conversation."""
+"""Keep a pasted secret out of the conversation.
+
+What is typed in the chat is sent to a model and kept in the project's logs. A connection string with a
+password, an access key or a private key does not belong there: it belongs in Settings, where it is kept
+out of both and handed only to the run that needs it (`deploy_vars.py`). This looks for the shapes such
+secrets have, and the studio says so and asks for them to be saved instead, rather than carrying on with
+the secret in the conversation.
+"""
 from __future__ import annotations
 
 import re

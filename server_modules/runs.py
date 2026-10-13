@@ -1,4 +1,9 @@
-"""What the studio asks for over the socket."""
+"""What the studio asks for over the socket.
+
+One dispatcher, shared by the WebSocket feed and the HTTP fallback routes the
+studio uses when the socket is down. Every message runs on its own thread so the
+feed stays live while the work happens, and every run reports through the bus.
+"""
 from __future__ import annotations
 
 import threading
@@ -51,7 +56,13 @@ def _thinking_from(message: dict[str, Any]) -> str:
 
 
 def _in_background(name: str, project: str, agent: str, fn, *args: Any, **kwargs: Any) -> None:
-    """Start exactly one mutating run per project."""
+    """Start exactly one mutating run per project.
+
+    Double clicks, an HTTP fallback racing a reconnecting WebSocket, and a
+    quick Resume after Start used to create two agents writing the same files.
+    Claim before the thread starts so the second request gets a useful answer
+    instead of a corrupt workspace.
+    """
     with _active_lock:
         current = _active.get(project)
         if current:
@@ -67,7 +78,9 @@ def _guarded(name: str, fn, args: tuple, kwargs: dict, agent: str = bus.DEVELOPE
     project = kwargs.pop("_project", "")
     try:
         fn(*args, **kwargs)
-        # Some stage functions deliberately return after preserving a partial checkpoint.
+        # Some stage functions deliberately return after preserving a partial
+        # checkpoint. A Stop that arrived during their final cleanup still owns
+        # the terminal state and cannot be replaced by a late completion.
         if project and getattr(session_for(project), "cancelled", False) is True:
             raise RunCancelled(project)
     except RunCancelled:
@@ -84,7 +97,8 @@ def _guarded(name: str, fn, args: tuple, kwargs: dict, agent: str = bus.DEVELOPE
 
 
 def _answer_held(project: str, text: str) -> dict[str, Any] | None:
-    """A build holding still for the customer's answer takes what they type next as that answer, wherever they typed."""
+    """A build holding still for the customer's answer takes what they type next as that answer, wherever they typed
+    it. Sent as a change request instead, it would only plan "nothing to change" while the build went on waiting."""
     question = bus.waiting_question(project)
     if not question:
         return None
@@ -99,7 +113,10 @@ def _answer_held(project: str, text: str) -> dict[str, Any] | None:
 
 
 def _journey_fix(project: str, typed: str, message: dict[str, Any]) -> dict[str, Any] | None:
-    """"Fix the failing journeys" (typed, or the button under the build's result): a request the Studio writes from the results."""
+    """"Fix the failing journeys" (typed, or the button under the build's result): a request the Studio writes from the results
+    on disk - which journeys, their spec files and why each failed - planned like any change; when it is done, the Studio runs
+    only those journeys again (`changes._execute`). Nothing runs them again unless this is asked. None when it was not asked
+    for, or there is nothing failed to fix."""
     from qa_agent import e2e_run
 
     if not e2e_run.fix_asked(typed) or not builder.built(project):
@@ -154,18 +171,26 @@ def agent_build(message: dict[str, Any]) -> dict[str, Any]:
         project = record["id"]
         permissions.start_project(project, str(message.get("permission_mode") or ""))
     else:
-        # A late WebSocket/fallback request can arrive after the customer deleted an SRS or project.
+        # A late WebSocket/fallback request can arrive after the customer
+        # deleted an SRS or project.  Do not announce a ghost project (or let
+        # a stale worker revive its workspace) when its record is gone.
         store.require(project)
     privacy.tell(project, hidden.found)
 
     if message.get("stack"):
         store.update(project, stack=str(message["stack"]))
 
-    # Start can select several providers before the workspace exists.
+    # Start can select several providers before the workspace exists. Persist
+    # all of them as soon as the project has an id.
     if "plugins" in message:
         plugins.configure_project(project, message.get("plugins") or [])
 
-    # Always, not only for a project the server just created.
+    # Always, not only for a project the server just created. The studio clears
+    # its own project before every build (`s.reset(null)` in Home), and adopts
+    # whatever this event names. Without it a run started from an approved SRS
+    # leaves the studio on "no project open", filing every later event against a
+    # project nothing is looking at — a build that works and a screen that never
+    # moves.
     bus.project_created(project)
 
     if message.get("prototype_only"):
@@ -178,7 +203,10 @@ def agent_build(message: dict[str, Any]) -> dict[str, Any]:
 
 
 def _spec_pending(project: str) -> bool:
-    """The plan is approved and the specification is not written (a run of it failed, or was stopped)."""
+    """The plan is approved and the specification is not written (a run of it failed, or was stopped).
+
+    The specification is the pipeline's to write: what a chat agent improvises in its place (a `requirements.md`, a
+    `spec.json`) is not the document the studio's views read, so the specification stays empty."""
     from srs_agent import document as srs_document
     from srs_agent import plan as plan_stage
 
@@ -198,7 +226,15 @@ def _write_specification(project: str, said: str = "") -> dict[str, Any]:
 
 
 def agent_update(message: dict[str, Any], screened: bool = False) -> dict[str, Any]:
-    """Something typed into the chat stream."""
+    """Something typed into the chat stream.
+
+    A project with a specification plans it first: the plan is shown in the chat and nothing is
+    changed until it is approved (`changes.py`). A project with nothing to change yet is answered
+    where it stands.
+
+    What was typed goes through the privacy filter first. `screened` says the caller already did that for what the person
+    typed (and added text that is not theirs, such as the description of what they pointed at): only the server sets it.
+    """
     _remember_model(message)
     project = str(message.get("project") or "").strip()
     request = str(message.get("prompt") or "").strip()
@@ -220,7 +256,8 @@ def agent_update(message: dict[str, Any], screened: bool = False) -> dict[str, A
         return answered
     running = active_run(project)
     if running:
-        # A change planned and carried out while a build or a test run is still writing the same files.
+        # A change planned and carried out while a build or a test run is still writing the same files: two agents on one
+        # workspace, and the change's failure reported under the build's name. It waits for the run to end instead.
         held = "This project is still working on its current run. Send this again when it has finished, or stop the run first."
         bus.agent_msg(project, held, title="Not sent")
         return {"ok": False, "detail": held}
@@ -233,7 +270,8 @@ def agent_update(message: dict[str, Any], screened: bool = False) -> dict[str, A
 
 
 def agent_update_direct(message: dict[str, Any], screened: bool = False) -> dict[str, Any]:
-    """A change applied at once, with no plan to approve: the feedback on a drawing, an answer to a."""
+    """A change applied at once, with no plan to approve: the feedback on a drawing, an answer to a
+    question the run itself asked, a message to a project that has no specification yet. (`screened`: see `agent_update`.)"""
     _remember_model(message)
     project = str(message.get("project") or "").strip()
     request = str(message.get("prompt") or "").strip()
@@ -322,7 +360,10 @@ def agent_resume(message: dict[str, Any]) -> dict[str, Any]:
     if stage in ("build", "test") and builder.built(project) and not build_phases.unfinished(session_for(project)):
         _in_background(f"test:{project}", project, bus.DEVELOPER, qa.run, project, "", _project=project)
     elif stage in ("prototype", "design") and not prototyper.exists(project):
-        # An interrupted prototype is still a design job.
+        # An interrupted prototype is still a design job. Sending it straight
+        # to the builder leaves the customer with neither a prototype nor a
+        # usable recovery button. Resume the prototype first; its checkpoint
+        # keeps the edits an earlier run made instead of starting over.
         _in_background(f"prototype:{project}", project, bus.DESIGNER, prototyper.generate_from_wireframes,
                        project, "", _project=project)
     elif stage in ("prototype", "design"):
@@ -378,7 +419,12 @@ def preview_start(message: dict[str, Any]) -> dict[str, Any]:
 
 
 def _start_preview(project: str, model: str = "", part: str = "") -> None:
-    """The agent starts the app (or one `part` of it) the way the Studio does, fixes what stops it,."""
+    """The agent starts the app (or one `part` of it) the way the Studio does, fixes what stops it,
+    then the Studio starts its own preview again.
+
+    The request is sent silently: the customer pressed a button, so nothing is posted as their
+    message, and it is not planned first - the prompt already says exactly what to do.
+    """
     session = session_for(project)
     stopped = lambda: getattr(session, "cancelled", False) is True
     session.begin(PREVIEW_START, role=bus.DEVELOPER)
@@ -389,7 +435,8 @@ def _start_preview(project: str, model: str = "", part: str = "") -> None:
         for _ in range(PREVIEW_START_ROUNDS):
             seen = str(preview_runtime.status(project).get("detail") or "")
             if not part:
-                # A preview shown as failed may still be alive, holding the ports the agent needs.
+                # A preview shown as failed may still be alive, holding the ports the agent needs. One
+                # part that is down leaves the rest of the app running while the agent works on it.
                 preview_runtime.stop(project)
             brief = preview_runtime.start_brief(project, seen, part)
             result = session.run_unplanned(prompts.load("preview/start-part" if part else "preview/start", **brief),
@@ -427,7 +474,10 @@ def _start_preview(project: str, model: str = "", part: str = "") -> None:
 
 
 def review_screens(message: dict[str, Any]) -> dict[str, Any]:
-    """Look at a project's screens again with a model that can look at pictures: the prototype's screens (`what`: "prototype"),."""
+    """Look at a project's screens again with a model that can look at pictures: the prototype's screens (`what`: "prototype"),
+    the prototype's journeys clicked through in a browser, shown live ("journeys"), the end-to-end tests' screenshots ("tests"),
+    or the screens and the tests together (the default). `fix`: false only looks and reports (nothing is changed); `model` is the
+    model for this run."""
     _remember_model(message)
     project = str(message.get("project") or "").strip()
     if not project:

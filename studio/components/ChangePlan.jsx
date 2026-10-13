@@ -1,6 +1,13 @@
 'use client'
 
-/** The plan for a request typed in the chat, as a card in the conversation. */
+/**
+ * The plan for a request typed in the chat, as a card in the conversation.
+ *
+ * It says what will change and in which stage, in what order and in which files, and what was
+ * assumed. Until it is approved nothing has been touched: approve it, or say what to change
+ * (here, or just type in the box below) and it is planned again. Every word on it comes from the
+ * plan the model wrote; the card only lays it out.
+ */
 
 import { useState } from 'react'
 import {
@@ -119,7 +126,8 @@ export default function ChangePlan({ turn }) {
               <h4 className="mb-1.5 text-[10px] font-semibold uppercase tracking-[.14em] text-muted2">What it touches</h4>
               <div className="flex flex-wrap gap-1.5">
                 {impact.map((row, i) => {
-                  // Deploy plans reuse this same card but `_execute_flow` does not consult `excluded_stages` — only the chat-typed change path does.
+                  // Deploy plans reuse this same card but `_execute_flow` does not
+                  // consult `excluded_stages` — only the chat-typed change path does.
                   const excludable = row.affected && waiting && !deploying
                   const isExcluded = row.affected && excluded.has(row.stage)
                   return (

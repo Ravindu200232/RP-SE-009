@@ -1,4 +1,10 @@
-"""The event bus the studio listens to."""
+"""The event bus the studio listens to.
+
+Every event shape here is one the studio's own reducer already understands
+(`studio/lib/agent-session.js`). The bus retains a project's durable history so
+a browser that reloads, or one that connects late, sees the same conversation
+the live socket was showing.
+"""
 from __future__ import annotations
 
 import itertools
@@ -8,12 +14,14 @@ import time
 import uuid
 from typing import Any, Callable, Iterable
 
-# The two roles the studio keeps separate sessions for.
+# The two roles the studio keeps separate sessions for. The prototype and design
+# work is the designer's; everything else is the developer's.
 DESIGNER = "designer"
 DEVELOPER = "developer"
 ROLES = (DESIGNER, DEVELOPER)
 
-# One conversation per project, shown identically on every tab.
+# One conversation per project, shown identically on every tab. Set False to go
+# back to the studio's own split between the designer's chat and the developer's.
 MIRROR_ROLES = True
 
 _ids = itertools.count(1)
@@ -23,10 +31,14 @@ _runs: dict[str, dict[str, dict]] = {}
 _listeners: list[Callable[[dict], None]] = []
 _pending_decisions: dict[str, dict] = {}
 _loaded: set[str] = set()
-# A project may be deleted while a model call is still unwinding on a daemon worker.
+# A project may be deleted while a model call is still unwinding on a daemon
+# worker.  Ignore every late event so it cannot recreate events.jsonl or make a
+# deleted project reappear in a connected Studio window.
 _discarded: set[str] = set()
 
-# Events a browser needs to rebuild the screen.
+# Events a browser needs to rebuild the screen. The rest — every token, every
+# tool result — is live-only: keeping it would make the file enormous and the
+# reload slow, and none of it is on screen a minute later.
 DURABLE = {"log", "user_msg", "agent_msg", "phase", "step", "progress", "run_state", "agent_state", "file", "file_read", "memory", "runtime_state",
            "test_start", "test_result", "test_fixing", "prototype", "done", "error",
            "cancelled", "sync_state", "change"}
@@ -38,7 +50,12 @@ def _event_log(project: str):
 
 
 def _load(project: str) -> None:
-    """Bring a project's own record of what happened back into memory."""
+    """Bring a project's own record of what happened back into memory.
+
+    The conversation survives a restart in `context.json`; without this the chat
+    beside it would not, and the customer would come back to a studio that had
+    forgotten a three-hour build it had just finished.
+    """
     if project in _loaded:
         return
     _loaded.add(project)
@@ -57,7 +74,9 @@ def _load(project: str) -> None:
                 continue
     except OSError:
         return
-    # `events.jsonl` is the durable conversation record.
+    # `events.jsonl` is the durable conversation record. Loading every
+    # durable row preserves the full chat after a restart instead of retaining
+    # only the latest section of a long-lived project.
     _history.setdefault(project, [])[:0] = rows
     for row in rows:
         if row.get("type") == "run_state":
@@ -131,7 +150,14 @@ def subscribe(fn: Callable[[dict], None]) -> Callable[[], None]:
 
 
 def emit(event: dict, mirrored: bool = False) -> dict:
-    """Stamp one event, keep it, and hand it to every listener."""
+    """Stamp one event, keep it, and hand it to every listener.
+
+    The studio keeps a separate chat per agent role and swaps which one is on
+    screen as you move between tabs — Prototype and Design show the designer's,
+    everything else the developer's. AgentForge is one conversation per project,
+    so each event is filed under both roles and the stream reads the same from
+    every tab instead of appearing to reset at each stage.
+    """
     event = dict(event)
     event.setdefault("at", int(time.time() * 1000))
     event.setdefault("event_id", uuid.uuid4().hex)
@@ -182,7 +208,12 @@ def viewers() -> int:
 
 
 def transient(event: dict) -> dict:
-    """Hand an event to every listener without keeping it."""
+    """Hand an event to every listener without keeping it.
+
+    A frame of a live browser is worth having for a fraction of a second. Kept in
+    the history, a few minutes of them would be tens of megabytes that the next
+    reload has to carry, for a picture nobody can look at any more.
+    """
     event = dict(event)
     event.setdefault("agent", DEVELOPER)
     event.setdefault("at", int(time.time() * 1000))
@@ -204,7 +235,13 @@ def history(project: str) -> list[dict]:
 
 
 def latest_memory(project: str) -> dict:
-    """The newest durable usage report for a project."""
+    """The newest durable usage report for a project.
+
+    Focused cloud tasks deliberately do not open the shared tool-agent chat.
+    Their token accounting still arrives as durable ``memory`` events, so the
+    session status endpoint can show the real context window after a restart
+    instead of a misleading ``0 / 0``.
+    """
     with _lock:
         _load(project)
         for event in reversed(_history.get(project, [])):
@@ -244,7 +281,8 @@ def user_msg(project: str, text: str, agent: str = DEVELOPER) -> None:
 def agent_msg(project: str, text: str, agent: str = DEVELOPER,
               title: str = "", kind: str = "", design: Any = None, images: list[dict[str, str]] | None = None,
               actions: list[dict[str, str]] | None = None) -> None:
-    """A message in the chat stream. `images` are pictures shown under it: [{"path": workspace-relative, "label": ...}]."""
+    """A message in the chat stream. `images` are pictures shown under it: [{"path": workspace-relative, "label": ...}].
+    `actions` are buttons under it, each sending its `prompt` as if the person had typed it: [{"label": ..., "prompt": ...}]."""
     event = {"type": "agent_msg", "project": project, "agent": agent, "text": text}
     if title:
         event["title"] = title
@@ -272,7 +310,12 @@ def run_state(project: str, status: str, run_id: str = "", agent: str = DEVELOPE
 
 
 def connection(project: str, state: str, agent: str = DEVELOPER, **fields: Any) -> None:
-    """The model service is not answering, or answers again: what the chat shows, with its "Try again"."""
+    """The model service is not answering, or answers again: what the chat shows, with its "Try again".
+
+    `state` is "retrying" (it failed, and is asked again after `pause` seconds: `failed` of `of` tries so far, `detail` says
+    what the service said), "waiting" (it was asked as many times as it will be on its own: the run holds still until the
+    person presses "Try again", or Stop) or "ok" (it answered). Not `DURABLE`: it is about now, never worth keeping.
+    """
     emit({"type": "connection", "project": project, "agent": agent, "state": state,
           **{key: value for key, value in fields.items() if key in {"failed", "of", "pause", "detail", "hold"}}})
 
@@ -299,7 +342,8 @@ def memory(project: str, model: str, used: int, context: int, tools: int,
           "requests": len([e for e in rows if e.get("type") == "agent_state" and e.get("state") == "thinking"]),
           "iterations": tools, "sent": max(0, turn_input_tokens),
           "received": max(0, turn_output_tokens),
-          # The bottom-of-chat meter intentionally uses only exact provider counts.
+          # The bottom-of-chat meter intentionally uses only exact provider
+          # counts.  Context-window usage above remains its own metric.
           "turn_started_at": max(0, turn_started_at),
           "turn_tokens": max(0, turn_output_tokens),
           "context_scope": context_scope})
@@ -347,42 +391,6 @@ def stream_end(project: str, file: str, content: str, agent: str = DEVELOPER) ->
           "file": file, "content": content})
 
 
-class StreamWriter:
-    """One file's live stream, front to back — `start()`, `token()` per."""
-
-    def __init__(self, project: str, agent: str = DEVELOPER,
-                min_interval: float = 0.08, min_chars: int = 24):
-        self.project = project
-        self.agent = agent
-        self.min_interval = min_interval
-        self.min_chars = min_chars
-        self._buf = ""
-        self._last = time.monotonic()
-
-    def start(self, file: str) -> None:
-        self._buf = ""
-        self._last = time.monotonic()
-        stream_start(self.project, file, agent=self.agent)
-
-    def token(self, text: str) -> None:
-        if not text:
-            return
-        self._buf += text
-        now = time.monotonic()
-        if len(self._buf) >= self.min_chars or (now - self._last) >= self.min_interval:
-            self._flush()
-
-    def _flush(self) -> None:
-        if self._buf:
-            stream(self.project, self._buf, agent=self.agent)
-            self._buf = ""
-            self._last = time.monotonic()
-
-    def end(self, file: str, content: str) -> None:
-        self._flush()
-        stream_end(self.project, file, content, agent=self.agent)
-
-
 def prototype_changed(project: str) -> None:
     emit({"type": "prototype", "project": project, "agent": DESIGNER})
 
@@ -428,7 +436,8 @@ def sync_state(project: str, status: str, detail: str = "", **extra: Any) -> Non
 
 def project_created(project: str) -> None:
     with _lock:
-        # Project ids are random, but releasing a tombstone here keeps this helper correct if an imported project intentionally reuses an id.
+        # Project ids are random, but releasing a tombstone here keeps this
+        # helper correct if an imported project intentionally reuses an id.
         _discarded.discard(project)
     emit({"type": "project", "project": project})
 
@@ -438,7 +447,9 @@ def done(project: str, text: str = "", agent: str = DEVELOPER) -> None:
     emit({"type": "done", "project": project, "agent": agent, "text": text})
 
 
-# A run that fails is reported by the session that was running it and then, when the exception reaches the worker thread, by the worker as well, in the same...
+# A run that fails is reported by the session that was running it and then, when the exception reaches the worker thread,
+# by the worker as well, in the same words. The chat read "Run failed" twice. The second report of the same failure within
+# a few seconds is dropped; a new run clears the memory (`run_state`), so a retry that fails the same way is still shown.
 FAILURE_ECHO_SECONDS = 5.0
 _last_failure: dict[str, tuple[str, float]] = {}
 
@@ -463,7 +474,11 @@ def cancelled(project: str, text: str = "", agent: str = DEVELOPER) -> None:
 
 def ask(project: str, kind: str, question: str, options: Iterable[str] = (),
         agent: str = DEVELOPER, **extra: Any) -> str:
-    """Put a question on screen and remember it until it is answered."""
+    """Put a question on screen and remember it until it is answered.
+
+    `kind` decides where the studio shows it: `question` in the chat stream,
+    `prototype` in the preview, anything else in a dialog.
+    """
     # Unique across restarts: a card still on screen from before one must never answer a newer question.
     decision_id = f"ask-{next(_ids)}-{uuid.uuid4().hex[:8]}"
     event = {"type": "approval", "project": project, "agent": agent,
@@ -496,7 +511,9 @@ _waiters: dict[str, dict] = {}
 
 def ask_and_wait(project: str, kind: str, question: str, options: Iterable[str] = (), agent: str = DEVELOPER,
                  cancelled: Callable[[], bool] = lambda: False, **extra: Any) -> str | None:
-    """`ask`, then hold this run until the customer answers: their answer comes back ("" when they left it to the."""
+    """`ask`, then hold this run until the customer answers: their answer comes back ("" when they left it to the
+    run), or None when the run was stopped first. Nothing is saved - a restart ends the run and its question together.
+    """
     waiter = {"done": threading.Event(), "reply": "", "project": project}
     with _lock:                      # the card and its waiter exist together: no answer can arrive between them
         decision_id = ask(project, kind, question, options, agent, **extra)

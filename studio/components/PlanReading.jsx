@@ -1,6 +1,13 @@
 'use client'
 
-/** The plan, laid out to be read. */
+/**
+ * The plan, laid out to be read.
+ *
+ * This is the one moment someone is asked to approve what is about to be
+ * built, and it used to arrive as raw Markdown in a monospace block — the
+ * shape of a file, not of a proposal. Headings become headings, bullets
+ * become bullets, and the parts that matter are legible at a glance.
+ */
 
 import { readInline, readPlan } from '@/lib/plan-read'
 import { cn } from '@/lib/utils'

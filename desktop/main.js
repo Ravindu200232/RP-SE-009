@@ -1,6 +1,15 @@
 'use strict'
 
-/** AgentForge as a desktop app. */
+/**
+ * AgentForge as a desktop app. One window, the studio in it, its backend a hidden child process, and no port:
+ *
+ *   agentforge://app/__agentforge/...        the studio's own files (a static build)
+ *   agentforge://app/__agentforge/api/...    the API, answered by the backend over its stdin/stdout (bridge.js)
+ *   window.agentforgeDesktop                 the live feed, in place of the WebSocket (preload.js)
+ *
+ * Every process the app starts (the backend, the previews and commands it runs) is its child, so Windows shows
+ * them together as one "AgentForge" in Task Manager, and quitting ends them all.
+ */
 const fs = require('node:fs')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
@@ -111,7 +120,8 @@ function createWindow() {
   })
   win.once('ready-to-show', () => win.show())
 
-  // Links leave the app for the system browser.
+  // Links leave the app for the system browser. "Open in a new tab" opens a blank window and then sends it
+  // somewhere: that window is kept hidden, and where it is sent goes to the browser instead.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url === 'about:blank') return { action: 'allow', overrideBrowserWindowOptions: { show: false } }
     if (/^https?:/i.test(url)) shell.openExternal(url)

@@ -1,11 +1,15 @@
 import express from 'express';
 import { itemsRouter } from './routes/items.routes.js';
 
-/** The app is built without listening, so a suite can drive it over supertest with no port and no teardown, and server.js stays the only file that binds. */
+/**
+ * The app is built without listening, so a suite can drive it over supertest
+ * with no port and no teardown, and server.js stays the only file that binds.
+ */
 export function createApp() {
   const app = express();
   app.use(express.json());
-  // Readiness is about this process only.
+  // Readiness is about this process only. It must not claim anything about
+  // the services or databases behind it.
   app.get('/health', (req, res) => res.json({ ok: true }));
   app.use('/items', itemsRouter);
   app.use((req, res) => res.status(404).json({ error: 'Not found' }));

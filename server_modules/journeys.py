@@ -1,4 +1,10 @@
-"""The workflows as journeys, each step tied to the page it happens on."""
+"""The workflows as journeys, each step tied to the page it happens on.
+
+Ported from RP-SE-009 `srs-agent/srs_agent/app/generators/wireframes.py`. The
+steps are the specification's own; what is added is which screen each one lands
+on, so a journey reads as a path through the wireframes rather than as a
+paragraph beside them.
+"""
 from __future__ import annotations
 
 import json
@@ -39,7 +45,10 @@ def _pages_of(doc: dict) -> list[dict[str, Any]]:
 
 
 def _role_names(doc: dict, who: Any) -> tuple[set[str], bool]:
-    """Every name of the role(s) a workflow's `who` refers to, and whether that is only someone who never signs in."""
+    """Every name of the role(s) a workflow's `who` refers to, and whether that is only someone who never signs in.
+
+    An empty set means `who` names no declared role, so nothing about access can be assumed from it.
+    """
     parts = {_norm(part) for part in re.split(r"[,/;&]|\bor\b|\band\b", str(who or ""), flags=re.I)} - {""}
     if not parts:
         return set(), False
@@ -57,7 +66,11 @@ def _role_names(doc: dict, who: Any) -> tuple[set[str], bool]:
 
 
 def open_to(doc: dict, who: Any, pages: list[dict] | None = None) -> list[dict]:
-    """The pages a workflow's role can open: every page without sign-in, and the signed-in pages that name the role."""
+    """The pages a workflow's role can open: every page without sign-in, and the signed-in pages that name the role.
+
+    A signed-in page that names no role is open to every signed-in role. Someone who never signs in opens only the pages
+    without sign-in. A `who` that names no declared role can open every page, since nothing says otherwise.
+    """
     pages = _pages_of(doc) if pages is None else pages
     names, public = _role_names(doc, who)
     if not names:
@@ -76,7 +89,12 @@ def _phrase(name: str) -> re.Pattern[str] | None:
 
 
 def _route_for_step(step: str, pages: list[dict]) -> str:
-    """The page a step names, or "" when it names none."""
+    """The page a step names, or "" when it names none.
+
+    Only a page named in the step counts — the first one it mentions, the longest name when two start at the same place.
+    A step that names no page happens where the person already is; `_carry_routes` puts it there rather than guessing
+    from a single shared word.
+    """
     best, best_at, best_len = "", None, 0
     for page in pages:
         pattern = _phrase(page["page_name"])
@@ -89,7 +107,14 @@ def _route_for_step(step: str, pages: list[dict]) -> str:
 
 
 def _carry_routes(steps: list[dict]) -> None:
-    """A step that names no screen happens on the one before it."""
+    """A step that names no screen happens on the one before it.
+
+    Workflow steps are sequential and a person stays where they are until
+    something moves them, so "the system checks the pickup date is free" happens
+    on the page the order was placed from. Carried rather than guessed, and
+    marked `named: False` so the studio can show an inherited route as the weaker
+    claim it is.
+    """
     for index, step in enumerate(steps):
         if step["route"]:
             continue
@@ -139,7 +164,16 @@ def journey_issues(doc: dict) -> list[dict[str, Any]]:
 
 
 def journey_contract_for(doc: dict) -> dict[str, Any]:
-    """The stable, product-only journey contract derived from the final SRS."""
+    """The stable, product-only journey contract derived from the final SRS.
+
+    This deliberately has no instructions for wireframes, prototypes, builds or
+    test runners. It says only who takes which product actions and where. The
+    QA stage uses its stable IDs to prove that every specified journey has a
+    real E2E test rather than trusting a generic test count.
+
+    Each step's page is the SRS's own `step_routes` entry when that is a page the workflow's role can open; otherwise the
+    page the step names, among the pages that role can open; otherwise the page the person is already on.
+    """
     pages = _pages_of(doc)
     out: list[dict[str, Any]] = []
     for number, flow in enumerate(doc.get("business_workflows") or [], 1):
@@ -195,7 +229,12 @@ def read_journey_contract(workspace: Path) -> dict[str, Any] | None:
 
 
 def e2e_coverage(workspace: Path, tests: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """Map real Playwright result titles to the generated journey IDs."""
+    """Map real Playwright result titles to the generated journey IDs.
+
+    The builder must name each user-journey test with its UJ id (for example,
+    ``[UJ-001] Customer places an order``). Generic route smoke, visual and
+    accessibility tests are intentionally not substitutes for this proof.
+    """
     contract = read_journey_contract(workspace)
     if contract is None:
         return None
@@ -204,10 +243,15 @@ def e2e_coverage(workspace: Path, tests: list[dict[str, Any]]) -> dict[str, Any]
     for journey in contract["journeys"]:
         journey_id = str(journey["id"])
         matcher = re.compile(rf"(?<![A-Z0-9-]){re.escape(journey_id)}(?![A-Z0-9-])", re.I)
-        # A suite name is part of Playwright's displayed test title, while a filename is not enough.
+        # A suite name is part of Playwright's displayed test title, while a
+        # filename is not enough: `UJ-001.spec.js` with an unrelated test
+        # body must not be accepted as real journey coverage.
         matched = [test for test in tests if matcher.search(" ".join(
             str(test.get(part) or "") for part in ("suite", "title")))]
-        # The journey is proved on the desktop browser: its desktop test decides (a test that passed only on its retry still passed - its last attempt is its result...
+        # The journey is proved on the desktop browser: its desktop test decides (a test that passed only on its retry still
+        # passed - its last attempt is its result - and is marked flaky). The same journey at phone width is reported
+        # beside it, as a warning when it fails, never as the journey failing. A journey tested only at phone width is
+        # judged on that.
         deciding = [test for test in matched if not _mobile(test)] or matched
         phone = [test for test in matched if _mobile(test)] if len(deciding) < len(matched) else []
         statuses = [str(test.get("status") or "unknown") for test in deciding]

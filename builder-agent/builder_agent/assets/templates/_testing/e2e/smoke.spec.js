@@ -1,4 +1,5 @@
 // Every public page opens, has a heading, and reports no errors (fixtures.js).
+// Every protected page refuses a signed-out visitor instead of rendering.
 import { test, expect } from './fixtures.js'
 import { publicRoutes, protectedRoutes } from './routes.js'
 

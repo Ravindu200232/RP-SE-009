@@ -200,5 +200,7 @@ def consume_handoff(project: str) -> None:
     try:
         (config.record_dir(project) / HANDOFF_FILE).unlink(missing_ok=True)
     except OSError:
-        # A temporary handoff must never turn an otherwise successful build or chat update into a failed run (for example, during a brief antivirus file lock on Windows).
+        # A temporary handoff must never turn an otherwise successful build or
+        # chat update into a failed run (for example, during a brief antivirus
+        # file lock on Windows). The next successful run can consume it.
         pass

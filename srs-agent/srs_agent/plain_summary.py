@@ -1,4 +1,9 @@
-"""The specification in plain words, for someone who is not technical: what the product is, who uses it, what it does (the."""
+"""The specification in plain words, for someone who is not technical: what the product is, who uses it, what it does (the
+functional requirements, grouped), how well it works (the quality requirements) and how it keeps people safe.
+
+A model writes it once from the specification and it is kept in `srs.json` with a fingerprint of what it was written from, so
+it is written again only when the specification has changed. The Overview shows it first.
+"""
 from __future__ import annotations
 
 import hashlib

@@ -3,6 +3,9 @@ import { signInRoute } from "@/demo";
 import { routes, type RouteDef } from "@/routes";
 
 // The app's routes live in the address hash (`#/orders`), so the whole app is one HTML file that can be opened from anywhere.
+// `src/routes.ts` is written by the Studio from the specification: every screen, and the page file (`src/pages/<file>.tsx`) it is
+// drawn in. A page is a component with a default export; link to another page with <Link to="/orders">.
+// This file belongs to the Studio and is written again each time the app is bundled: use it, do not edit it.
 
 type Params = Record<string, string>;
 
@@ -167,7 +170,8 @@ export function Router({ pages }: { pages: Record<string, { default?: React.Comp
     window.scrollTo(0, 0);
   }, [path]);
 
-  // The app never leaves its own page: a plain link to "/orders" opens that page, "#" and other sites do nothing, and a form is never really sent.
+  // The app never leaves its own page: a plain link to "/orders" opens that page, "#" and other sites do nothing, and a
+  // form is never really sent.
   React.useEffect(() => {
     const onClick = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;

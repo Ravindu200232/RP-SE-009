@@ -1,4 +1,13 @@
 // AgentForge's AI engine: a Cloudflare Worker between the app and ollama.com.
+//
+// The ollama.com API key lives here, as the Worker secret OLLAMA_API_KEY, and nowhere in the app: an installed
+// AgentForge sends its requests to this Worker with the app token (the secret APP_TOKEN), and the Worker sends them
+// on to ollama.com with the key. The app token is not a secret in the same way (it ships in every copy of the app),
+// so the Worker also limits how fast any one address may call it, and only the API the app uses is passed through.
+// A leaked or abused setup is fixed here, by changing a secret, with no new release of the app.
+//
+// The same Worker is also the sign-in broker for Supabase (see "Sign in with Supabase" below): the one OAuth app the
+// publisher registered keeps its client secret here, so nobody who installs AgentForge ever creates an OAuth app.
 
 const UPSTREAM = 'https://ollama.com'
 
@@ -11,7 +20,8 @@ const ALLOWED = new Set([
   'GET /api/version',
   'POST /api/web_search',
   'POST /api/web_fetch',
-  // The account's remaining credits (https://docs.ollama.com/api/balance), for the AgentForge admin app's balance bar: read with the key that stays here, so the...
+  // The account's remaining credits (https://docs.ollama.com/api/balance), for the AgentForge admin app's balance bar:
+  // read with the key that stays here, so the admin app never holds it.
   'GET /api/balance',
 ])
 
@@ -19,6 +29,8 @@ const ALLOWED = new Set([
 const FORWARD = ['content-type', 'accept', 'user-agent']
 
 // Standard per-million-token rates from https://ollama.com/pricing (2026-10-12).
+// Unknown models fail closed until their published rate is added. Cached input is
+// charged at the regular input rate, a conservative upper bound for the credit ledger.
 const PRICE = {
   'deepseek-v4.1-flash': [0.30, 1.20], 'deepseek-v4-flash': [0.44, 1.32],
   'deepseek-v4-pro': [1.32, 3.96],
@@ -43,6 +55,30 @@ function priceFor(model) {
     ? rate.map(value => value / 2) : rate
 }
 
+function freeBlockedModel(model) {
+  const name = String(model || '').trim().toLowerCase().replace(/:cloud$|-cloud$/, '').split(':')[0]
+  return name === 'glm-5.3' || name === 'glm-5.3-flash'
+}
+
+async function checkFreeModel(env, accountToken, model) {
+  if (!freeBlockedModel(model)) return null
+  if (!env.ACCOUNTS_URL) return answer(503, 'Cloud account service is unavailable.')
+  try {
+    const response = await fetch(`${env.ACCOUNTS_URL.replace(/\/$/, '')}/api/accounts/me`, {
+      headers: { authorization: `Bearer ${accountToken}` },
+    })
+    if (!response.ok) return answer(response.status, 'Cloud account could not be verified.')
+    const account = (await response.json()).account
+    if (!account) return answer(503, 'Cloud account could not be verified.')
+    if (!account.unlimited && (account.plan || 'free') === 'free') {
+      return answer(403, 'GLM 5.3 models are unavailable on the free plan. Choose another model.')
+    }
+  } catch {
+    return answer(503, 'Cloud account could not be verified.')
+  }
+  return null
+}
+
 async function meter(env, path, accountToken, payload) {
   if (!env.ACCOUNTS_URL || !env.ENGINE_METER_SECRET) throw new Error('Cloud metering is not configured')
   const response = await fetch(`${env.ACCOUNTS_URL.replace(/\/$/, '')}/api/accounts/${path}`, {
@@ -65,28 +101,52 @@ function usageOf(reply, payloadSize, outputSize) {
     outputTokens: exact ? Math.max(0, output) : Math.ceil(outputSize / 4), estimated: !exact }
 }
 
-async function recordStream(stream, env, reservation, model, rate, payloadSize) {
+function meteredBody(stream, env, reservation, model, rate, payloadSize) {
   const reader = stream.getReader()
   const decoder = new TextDecoder()
   let buffer = '', final = null, bytes = 0
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      bytes += value.byteLength
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-      for (const line of lines) {
-        try { const row = JSON.parse(line); if (row.done || row.usage) final = row } catch {}
-      }
-    }
-    if (buffer.trim()) { try { final = JSON.parse(buffer) } catch {} }
-  } finally {
-    const tokens = usageOf(final, payloadSize, bytes)
-    const costMicros = Math.ceil(tokens.inputTokens * rate[0] + tokens.outputTokens * rate[1])
-    await meter(env, 'settle', '', { reservation, model, costMicros, ...tokens }).catch(() => {})
+  let settlement = null
+  function accept(line) {
+    try { const row = JSON.parse(line); if (row.done || row.usage) final = row } catch {}
   }
+  function settleOnce() {
+    if (!settlement) {
+      const tokens = usageOf(final, payloadSize, bytes)
+      const costMicros = Math.ceil(tokens.inputTokens * rate[0] + tokens.outputTokens * rate[1])
+      settlement = meter(env, 'settle', '', { reservation, model, costMicros, ...tokens })
+        .catch(error => { console.warn('Cloud settlement failed:', error.message) })
+    }
+    return settlement
+  }
+  // Settlement is part of the response stream itself. A waitUntil task can be stopped after 30 seconds,
+  // while a model is still generating; that used to leave its $0.25 reservation stuck in the account.
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const { done, value } = await reader.read()
+        if (done) {
+          buffer += decoder.decode()
+          if (buffer.trim()) accept(buffer)
+          await settleOnce()
+          controller.close()
+          return
+        }
+        bytes += value.byteLength
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        for (const line of lines) accept(line)
+        controller.enqueue(value)
+      } catch (error) {
+        await settleOnce()
+        controller.error(error)
+      }
+    },
+    async cancel(reason) {
+      await reader.cancel(reason).catch(() => {})
+      await settleOnce()
+    },
+  })
 }
 
 function answer(status, error) {
@@ -109,13 +169,24 @@ async function tooMany(request, env) {
 }
 
 // --- Sign in with Supabase -------------------------------------------------------------------------------------------
-// Supabase's token endpoint wants the OAuth app's client secret, and a secret cannot ship inside an app everyone installs.
+//
+// Supabase's token endpoint wants the OAuth app's client secret, and a secret cannot ship inside an app everyone
+// installs. So the publisher registers ONE Supabase OAuth app, whose only callback URL is this Worker's
+// /oauth/supabase/callback, and the secret stays here (SUPABASE_CLIENT_SECRET; the client id, which is public, is the
+// variable SUPABASE_CLIENT_ID). The flow, with nothing stored in the Worker:
+//
+//   start     the app asks for an authorize URL, sending its flow id, a PKCE challenge and the local address the
+//             browser should come back to. The state in that URL is signed, so it can only have come from here.
+//   callback  Supabase sends the browser here with the code; the signed state is checked and the browser is sent on
+//             to the app's local address. The app keeps the PKCE verifier, so a code seen on the way is no use.
+//   token     the app trades the code (or later a refresh token) for tokens; the Worker adds the client secret.
 
 const SUPABASE_AUTHORIZE = 'https://api.supabase.com/v1/oauth/authorize'
 const SUPABASE_TOKEN = 'https://api.supabase.com/v1/oauth/token'
 const STATE_LIFETIME_MS = 10 * 60 * 1000
 
-// Only the app on this same computer may be sent back to.
+// Only the app on this same computer may be sent back to: `localhost` (Supabase's authorize endpoint refuses a
+// loopback IP), any port, and the sign-in callback path the app serves.
 const LOCAL_RETURN = /^http:\/\/localhost:\d{2,5}(\/[A-Za-z0-9_-]+)*\/supabase-oauth\/callback$/
 const FLOW_ID = /^[A-Za-z0-9_-]{8,100}$/
 const CHALLENGE = /^[A-Za-z0-9_-]{43,128}$/
@@ -250,7 +321,7 @@ async function supabaseToken(request, env, url) {
   })
 }
 
-// Route -> [handler, whether the app token is needed].
+// Route -> [handler, whether the app token is needed]. The callback is opened by a browser, which has no app token.
 const SIGN_IN = {
   'POST /oauth/supabase/start': [supabaseStart, true],
   'GET /oauth/supabase/callback': [supabaseCallback, false],
@@ -295,7 +366,13 @@ export default {
       catch { return answer(400, 'Invalid model request.') }
       rate = priceFor(model)
       if (!rate) return answer(400, 'This cloud model has no published USD rate yet.')
-      try { reservation = (await meter(env, 'authorize', accountToken, {})).reservation }
+      const freeModelError = await checkFreeModel(env, accountToken, model)
+      if (freeModelError) return freeModelError
+      // USD rates are micros per token. Hold enough for the input and a generous output estimate,
+      // without tying up $0.25 for every inexpensive Flash request.
+      const reserveMicros = Math.max(10_000, Math.min(250_000,
+        Math.ceil(requestBody.byteLength / 4 * rate[0] + 16_384 * rate[1])))
+      try { reservation = (await meter(env, 'authorize', accountToken, { reserveMicros })).reservation }
       catch (error) { return answer(error.status || 503, error.message) }
     }
 
@@ -328,10 +405,10 @@ export default {
       if (value) out.set(name, value)
     }
     if (reservation && upstream.ok && upstream.body) {
-      const [toClient, toMeter] = upstream.body.tee()
-      ctx.waitUntil(recordStream(toMeter, env, reservation, model, rate, requestBody.byteLength))
-      return new Response(toClient, { status: upstream.status, headers: out })
+      return new Response(meteredBody(upstream.body, env, reservation, model, rate, requestBody.byteLength),
+        { status: upstream.status, headers: out })
     }
+    if (reservation && upstream.ok) ctx.waitUntil(meter(env, 'settle', '', { reservation, model, costMicros: 0 }).catch(() => {}))
     return new Response(upstream.body, { status: upstream.status, headers: out })
   },
 }

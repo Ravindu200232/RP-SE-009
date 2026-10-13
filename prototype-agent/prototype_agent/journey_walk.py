@@ -1,4 +1,21 @@
-"""The prototype's journeys, clicked through in a real browser, with a picture at every step."""
+"""The prototype's journeys, clicked through in a real browser, with a picture at every step.
+
+The specification lists the journeys (`.agentforge/srs/user-journeys.json`): who does what, step by step, on which screen. Here
+each one is walked the way a person would walk it, in a browser that is already on the computer (`journey_driver.py`): sign in as
+the demo account whose journey it is, on the sign-in page, then for every step find the way to the screen the step happens on by
+clicking the links the screens really have, do what the step says there (a model reads what can be pressed or filled and says what
+to press and fill), and take a picture. Nothing about the pages is checked by reading their code: a link that is not there, or a
+button that does nothing, shows up as a step that could not be done.
+
+A model that can look at pictures then looks at the pictures of each journey and says, step by step, whether the step is shown done
+and what is visibly wrong on the screen, and whether the journey can be completed at all. What is found is fixed in the prototype's
+files, the app is bundled again, the journeys that had problems are walked once more, and what is still wrong is reported as it is.
+The walk is shown live in the Studio, the way a build's end-to-end tests are, and everything is in the chat with the pictures.
+
+A model that cannot look at pictures still gets the walk (each step reached or not, the pages' own errors); it just does not get the
+pictures looked at, and the chat says so. A computer with no browser skips all of it, with one line saying why. Neither is an error,
+and nothing here ever fails the prototype: it is a test, not a gate.
+"""
 from __future__ import annotations
 
 import json
@@ -75,7 +92,8 @@ def _canon(route: Any) -> str:
 
 
 def page_for(path: str, rows: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """The screen an address shows: a route written exactly so wins, else the one whose values (`/orders/[id]`) take it in. This is."""
+    """The screen an address shows: a route written exactly so wins, else the one whose values (`/orders/[id]`) take it in. This is
+    the app's own router's rule, so that a screen is the one the person sees."""
     want = _split(path)
     for row in rows:
         if _split(row.get("route")) == want:
@@ -133,7 +151,9 @@ _LITERAL = re.compile(r"""["'`](/[A-Za-z0-9_\-/\[\]:${}.]*)["'`]""")
 
 
 def link_graph(root: Path, rows: list[dict[str, Any]]) -> dict[str, set[str]]:
-    """Which screens each screen links to, read from the app's source, only to choose a way when there is no direct link: the way is."""
+    """Which screens each screen links to, read from the app's source, only to choose a way when there is no direct link: the way is
+    then clicked, a hop at a time, so a link that is not really there still shows up as a failure. What the shared components
+    (the navigation) link to is what every screen links to."""
     source = root / "app" / "src"
     if not source.is_dir():
         return {}
@@ -255,7 +275,7 @@ class Walk:
         self.signed_out = False                                # whether this step has already signed the person out
         self.sign_in_first = False                             # whether the journey begins with signing in
 
-    # what the Studio shows live: only the journey that is on the screen.
+    # what the Studio shows live: only the journey that is on the screen
     def event(self, state: str, **fields: Any) -> None:
         if self.streaming:
             live.handle(self.project, {"kind": "event", "state": state, **fields})
@@ -315,7 +335,9 @@ class Walk:
             return {"ok": False, "note": f"the browser could not open the prototype: {exc}", "shot": ""}
 
     def _sign_in(self, account: dict[str, Any], out: Path) -> dict[str, Any]:
-        """Sign in the way a person does, on the sign-in page, with the demo account of the role (or its own button). When the page."""
+        """Sign in the way a person does, on the sign-in page, with the demo account of the role (or its own button). When the page
+        has no way that works, the prototype is opened signed in as the role instead, so that the journey can still be walked, and
+        that the page's sign-in does not work is the first problem of the journey."""
         result = {"ok": False, "note": "", "shot": ""}
         email = str(account.get("email") or "")
         try:
@@ -374,7 +396,8 @@ class Walk:
         return ""
 
     def _sign_in_here(self, actions: list[str], notes: list[str]) -> tuple[bool, bool]:
-        """The step is signing in, and the person is on the sign-in page: the demo account is typed in (or its button pressed)."""
+        """The step is signing in, and the person is on the sign-in page: the demo account is typed in (or its button pressed).
+        Returns (whether anything was done, whether somebody is signed in now)."""
         account = self.account or {}
         used = self._type_credentials(account) or self._demo_button(account)
         if not used:
@@ -549,7 +572,9 @@ class Walk:
 
     def _do(self, journey: dict[str, Any], number: int, step: dict[str, Any], actions: list[str], visited: list[str],
             notes: list[str]) -> bool:
-        """Do what the step says on its screen: the model reads what can be used and says what to fill and press. When what it."""
+        """Do what the step says on its screen: the model reads what can be used and says what to fill and press. When what it
+        pressed opened a menu or a dialog, it is asked again, with that open, because what it wanted next (a choice in the
+        menu, the button that confirms the dialog) is in it."""
         changed = False
         for turn in range(TURNS):
             state = self.driver.state()
@@ -691,7 +716,8 @@ def problems(journey: dict[str, Any], walked: dict[str, Any], judged: dict[str, 
         verdict = seen.get(step["id"])
         if verdict:
             if not verdict["ok"] and step["reached"]:
-                # The screen was reached; whether it shows the step's exact result is the model's opinion of a prototype that has no server, so it is said (low) and never...
+                # The screen was reached; whether it shows the step's exact result is the model's opinion of a prototype that has no
+                # server, so it is said (low) and never sent to be fixed. What is really wrong shows as a defect or a step not done.
                 found.append({"step": step["id"], "severity": "low", "where": f"{step['route']} (step: {step['step']})",
                               "problem": f"the screenshot does not show the step done: {verdict['summary']}", "fix": ""})
             found += [{"step": step["id"], "severity": d["severity"], "where": d["where"], "problem": d["problem"], "fix": d["fix"]}
@@ -761,7 +787,9 @@ def can_walk(cancelled=None) -> tuple[bool, str]:
 
 def run(project: str, session: Any, rows: list[dict[str, Any]], accounts_doc: dict[str, Any], fix: bool = True, model: str = "",
         force: bool = False, rebuild: Any = None) -> dict[str, Any]:
-    """Click through the prototype's journeys, look at the pictures, fix what is found (`fix`: false only looks and reports)."""
+    """Click through the prototype's journeys, look at the pictures, fix what is found (`fix`: false only looks and reports).
+    `model` is the one this run chose, else the project's; `force` runs it even when the setting turns it off, because it was
+    asked for; `rebuild` bundles the app again after a fix. Always returns a result, never raises."""
     if not enabled() and not force:
         return {"status": "off"}
     try:
@@ -785,7 +813,8 @@ def run(project: str, session: Any, rows: list[dict[str, Any]], accounts_doc: di
 
 def _walk_all(project: str, session: Any, model: str, sees: bool, root: Path, rows: list[dict[str, Any]],
               accounts_doc: dict[str, Any], todo: list[dict[str, Any]], label: str) -> list[dict[str, Any]]:
-    """Walk `todo`, `lanes` browsers at a time (one when someone is watching, so every journey is seen), and have each walked."""
+    """Walk `todo`, `lanes` browsers at a time (one when someone is watching, so every journey is seen), and have each walked
+    journey looked at while the next is walked. Returns, per journey: the journey, what was walked, what was judged, the problems."""
     watching = bus.viewers() > 0
     lanes = 1 if watching else min(LANES, max(1, len(todo)))
     graph = link_graph(root, rows)
@@ -832,7 +861,8 @@ def _walk_all(project: str, session: Any, model: str, sees: bool, root: Path, ro
                     journey = jobs.get_nowait()
                 except queue.Empty:
                     return
-                # A step that timed out closes the browser; the next journey gets a new one rather than failing every step with "the browser has stopped" (it did, for four...
+                # A step that timed out closes the browser; the next journey gets a new one rather than failing every step
+                # with "the browser has stopped" (it did, for four journeys in a row).
                 if not getattr(driver, "alive", lambda: True)() and not session.cancelled:
                     driver.start()
                 walked = walk.walk(journey, root / JOURNEY_DIR / journey["id"])
@@ -888,7 +918,8 @@ def _run(project: str, session: Any, model: str, rows: list[dict[str, Any]], acc
     fixed: list[str] = []
     stopped = ""
     rounds: list[dict[str, Any]] = []
-    # Round by round: fix the journeys that still have problems, walk those again.
+    # Round by round: fix the journeys that still have problems, walk those again. The first round runs by itself; each one
+    # after it is asked for.
     while fix:
         request, count = _fix_request([(r["journey"], r["problems"]) for r in final.values()])
         again = [r["journey"] for r in final.values() if _worth_fixing(r["problems"])]

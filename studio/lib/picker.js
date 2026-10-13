@@ -76,7 +76,8 @@ export function pickedFrom(frame, el, vpMode) {
 }
 
 
-// A picture has no text to name it by, so it is named by its alt text or its file.
+// A picture has no text to name it by, so it is named by its alt text or its
+// file. Everything else reads better as the tag and the words in it.
 export function pickLabel(info) {
   if (!info) return ''
   if (info.isImage) {
@@ -130,7 +131,12 @@ export function ownText(element) {
 }
 
 
-/** What a drawing is about: the things on the page it was drawn around or over. */
+/**
+ * What a drawing is about: the things on the page it was drawn around or over. A stroke is a list of points in page coordinates.
+ * The things that mean something (words, a control, a picture) inside the box the stroke makes, or under its line, are found; the
+ * ones the drawing covers most come first. They are described like a picked element, so that a model that only reads words can be
+ * told what was marked.
+ */
 export function elementsUnderStrokes(frame, strokes, vpMode = 'desktop', most = 4) {
   const doc = frameDoc(frame)
   const win = frame?.contentWindow
@@ -161,7 +167,8 @@ export function elementsUnderStrokes(frame, strokes, vpMode = 'desktop', most = 
       const rect = hit.getBoundingClientRect()
       const across = Math.max(0, Math.min(rect.right, box.right) - Math.max(rect.left, box.left))
         * Math.max(0, Math.min(rect.bottom, box.bottom) - Math.max(rect.top, box.top))
-      // How much of the element the drawing covers, and how much of the drawing is the element.
+      // How much of the element the drawing covers, and how much of the drawing is the element: a thing that fills the drawing, or
+      // that the drawing fills, is what it is about; a page-sized box that only has the drawing somewhere in it is not.
       const size = Math.max(1, rect.width * rect.height)
       if (across / size < 0.3 && across / area < 0.3) continue
       scored.set(hit, across / size + across / area)

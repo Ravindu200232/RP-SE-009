@@ -1,4 +1,24 @@
-"""Deploying the application: planned first, then carried out by the provider's own command line tool."""
+"""Deploying the application: planned first, then carried out by the provider's own command line tool.
+
+    Deploy pressed ──► plan (read-only, reads the project and the target's skill pages, may ask)
+                          ▲                        │ the customer reads it in the chat
+                          └──── revise ◄───────────┤ approve ──► carried out with a terminal
+                                                   │             (git, gh, then the target's tool)
+                                                   │                         │
+                                                   │           the studio calls the live address itself;
+                                                   │           what does not hold goes back to the agent
+                                                   └ cancel
+
+This is the chat's plan-first flow (`server_modules/changes.py`) with a deployment's own prompts. The
+wording that tells the model what a complete deployment is, and how each target is done, lives in
+`prompts/deployment/`: `plan.md`, `execute.md` and one skill page per target. This module keeps the
+state, stages the skill pages where the agent can read them, measures what this computer has, and
+checks the outcome without taking the agent's word for it.
+
+The run's state and its events are files in the workspace (`.agentforge/deploy/`), written by the
+agent as it works. Everything the studio's Deploy panel shows is read back from them, so a browser that
+reconnects mid-deployment sees the run, not a blank panel.
+"""
 from __future__ import annotations
 
 import ipaddress
@@ -32,17 +52,21 @@ TERMINAL = {"LIVE", "FAILED", "ROLLED_BACK", "DESTROYED", "CANCELLED"}
 # The stages the studio and the chat show for this flow (see `changes._execute_flow`).
 STAGE_PLAN = "deploy_plan"
 STAGE_RUN = "deploy"
-# A deployment is fast: what the customer can change is a default stated in the plan, and only what nobody else can decide is asked (the account, a choice...
+# A deployment is fast: what the customer can change is a default stated in the plan, and only what nobody else can decide
+# is asked (the account, a choice that costs money, a value only they have). The prompts say three; this is the guard.
 MAX_QUESTIONS = 3
-# How many times a live address that does not hold is handed back to the agent before the run fails.
+# How many times a live address that does not hold is handed back to the agent before the run fails. One: a second round
+# of "fix a little, redeploy a little" is the loop a deployment must not have; it fails with the cause instead.
 REPAIR_ROUNDS = 1
 DATABASE_ANSWERS = 2               # how many times a question for the database connection is answered here before it is asked
 PROBE_SECONDS = 25
-# A host that has only just been released may answer the first request slowly or with a gateway error while it wakes up.
+# A host that has only just been released may answer the first request slowly or with a gateway error while it wakes up:
+# that is waited out (these many seconds before each further try), not handed to the agent as a failure to repair.
 PROBE_PATIENCE = (5, 10)
 PROBE_TRANSIENT = {429, 502, 503, 504}
 
-# Which skill pages each target reads, first the shared foundation, last the target's own.
+# Which skill pages each target reads, first the shared foundation, last the target's own. The pack
+# decides what a target can do; this only says where to find it.
 SKILLS_FOR = {
     "netlify": ["netlify"],
     "vercel": ["vercel"],
@@ -225,7 +249,12 @@ def _skill_slugs(project: str, target: str) -> list[str]:
 
 
 def stage_skills(project: str, target: str) -> list[str]:
-    """Copy the skill pages this deployment follows into the project, where the agent can read them."""
+    """Copy the skill pages this deployment follows into the project, where the agent can read them.
+
+    The agent's file tools stop at the workspace's edge, and the pack lives beside the application: so the
+    pages are copied in (fresh each time, so an edited page takes effect on the next run). Returns their
+    paths relative to the workspace, the shared foundation first.
+    """
     session = session_for(project)
     wanted = _skill_slugs(project, target)
     files = {f"{slug}/SKILL.md": prompts.skill("deployment", slug) for slug in wanted}
@@ -488,7 +517,8 @@ def _require_cli(target: str) -> None:
     if not row.get("installed"):
         raise ValueError(f"{provider.title} is not installed on this machine. "
                          f"Install it with `{row.get('install') or provider.install}` and try again.")
-    # Signed in, or a token saved in the Deploy panel that the run's commands are given (`cli_signin.env_tokens`).
+    # Signed in, or a token saved in the Deploy panel that the run's commands are given (`cli_signin.env_tokens`). Found out
+    # here, not halfway through: a deployment that found its CLI signed out stopped to ask, and could not be carried on.
     token_name = {"vercel": "VERCEL_TOKEN", "netlify": "NETLIFY_AUTH_TOKEN"}.get(key)
     if token_name and not row.get("signed_in") and token_name not in cli_signin.env_tokens():
         raise ValueError(f"The {provider.title} CLI is not signed in on this computer. Sign in to {provider.title} under Deploy, "
@@ -496,7 +526,8 @@ def _require_cli(target: str) -> None:
 
 
 def _require_mongodb(project: str, stack: str) -> None:
-    """A MongoDB application is deployed on the database the build used, so one has to be connected - in Settings, never in a."""
+    """A MongoDB application is deployed on the database the build used, so one has to be connected - in Settings, never in a
+    question in the chat, where a connection string would be typed to a model."""
     from builder_agent import scaffold
 
     if not scaffold.uses_mongodb(stack):
@@ -607,7 +638,8 @@ def _pause(seconds: float) -> None:
 
 
 def _get_patiently(url: str) -> httpx.Response:
-    """GET `url`, trying again after a short wait when the host is only just waking up (it did not answer, or said 429 or a."""
+    """GET `url`, trying again after a short wait when the host is only just waking up (it did not answer, or said 429 or a
+    gateway error). Whatever the last try gives is returned, or its error raised."""
     for wait in (*PROBE_PATIENCE, None):
         try:
             answer = httpx.get(url, follow_redirects=True, timeout=PROBE_SECONDS, headers={"User-Agent": "agentforge-recheck"})
@@ -678,7 +710,8 @@ def execute(project: str, change: dict, session: Any, model: str) -> dict[str, A
         if found["status"] in {"failed", "not_connected"}:
             return _settle(project, session, target, failed="The MongoDB database for this deployment is not available: "
                            + (found["reason"] or "no MongoDB is connected (Settings, Integrations)."))
-        # The cluster really answers (a refused password the Studio made is mended first), before anything is published.
+        # The cluster really answers (a refused password the Studio made is mended first), before anything is published: a
+        # paused cluster or a changed password used to be found by the deployed app, after the release.
         answers, why = mongo_connect.verify_or_repair(
             log=lambda line: bus.agent_msg(project, line, title="MongoDB", kind="narration"))
         if not answers:
@@ -702,7 +735,8 @@ def execute(project: str, change: dict, session: Any, model: str) -> dict[str, A
     progress.seen = len(events(project)) if resume else 0
 
     def carry(text: str) -> dict[str, Any]:
-        """One turn of the run. A turn that stopped for the customer without the question it stopped for is told."""
+        """One turn of the run. A turn that stopped for the customer without the question it stopped for is told
+        so once, and asks it (or carries on) - rather than the deployment failing with nobody asked anything."""
         outcome = session.execute_approved(text, plan_markdown(plan), model)
         stopped = outcome["status"] == "blocked" or str(run_state(project).get("state") or "") == "NEEDS_INPUT"
         if pending_question(project) or not stopped:
@@ -712,7 +746,8 @@ def execute(project: str, change: dict, session: Any, model: str) -> dict[str, A
     progress.start()
     try:
         result = carry(request)
-        # The repair rounds count only the repairs of a live address that did not hold.
+        # The repair rounds count only the repairs of a live address that did not hold. A database question answered here used
+        # to take the one repair round (and a second one ended the run as "could not be verified" without looking at it).
         repairs = answered = 0
         while True:
             question = pending_question(project)
@@ -804,7 +839,10 @@ def answer(project: str, reply: str) -> dict[str, Any]:
 
 
 def _retry_of(project: str) -> dict[str, Any] | None:
-    """The stopped deployment that can be taken up again: the newest that carried its plan out and did not finish."""
+    """The stopped deployment that can be taken up again: the newest that carried its plan out and did not finish.
+
+    A newer deployment that finished supersedes it, and a plan that never ran (or was refused) is not one to resume.
+    """
     if changes.active(project):
         return None
     for change in changes.recent(project):

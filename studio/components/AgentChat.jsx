@@ -36,7 +36,8 @@ const ICONS = {
   setup: Sparkles, note: Sparkles, effort: Sparkles,
 }
 
-// How much reasoning and tool lookup one model call used — Ollama has no native "effort" concept, so this is a rough four-level read, low to ultra.
+// How much reasoning and tool lookup one model call used — Ollama has no
+// native "effort" concept, so this is a rough four-level read, low to ultra.
 const EFFORT_TONE = {
   low: 'bg-black/[.06] text-muted dark:bg-black/[.08]',
   medium: 'bg-accent/60 text-ink',
@@ -44,7 +45,8 @@ const EFFORT_TONE = {
   ultra: 'bg-accent text-ink',
 }
 
-// Start at the current part of a long conversation.
+// Start at the current part of a long conversation. Earlier turns remain
+// available from the top of the stream; they are never removed from history.
 const TURN_PAGE_SIZE = 240
 
 export default function AgentChat({ projectTitle = '', readOnly = false, className = '' }) {
@@ -88,6 +90,8 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
   const [visibleTurnCount, setVisibleTurnCount] = useState(TURN_PAGE_SIZE)
 
   // Designer and Developer are tool permissions, not separate conversations.
+  // Merge their persisted UI projections while the backend shares the exact
+  // model Memory through .agentforge/engine/conversation.json.
   const lifecycleStream = useMemo(() => {
     const own = projectSessions[project] || {}
     const sessions = ['designer', 'developer'].map(role => role === agentRole
@@ -104,7 +108,9 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
     }
     return {
       logs: unique(sessions.flatMap(session => session.logs || []), ['at', 'level', 'text']),
-      // Backend events are mirrored to both role projections so every tab sees one conversation.
+      // Backend events are mirrored to both role projections so every tab sees
+      // one conversation. Role is deliberately not part of this key: including
+      // it rendered every persisted plan/message twice after a reload.
       chat: unique(sessions.flatMap(session => session.chat || []), ['at', 'text', 'title', 'kind']),
       busy: busy || ['designer', 'developer'].some(role => role !== agentRole && own[role]?.busy),
       startedAt: Math.max(0, ...sessions.map(session => Number(session.runStartedAt) || 0)),
@@ -112,9 +118,12 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
   }, [projectSessions, project, agentRole, logs, chat, busy, runStartedAt])
   const turns = useMemo(() => {
     const ordinary = chatTurns(lifecycleStream.logs, lifecycleStream.chat)
-    // The "Checking this stage now…" cards are gone: the files and actions in the stream already say what is happening.
+    // The "Checking this stage now…" cards are gone: the files and actions in
+    // the stream already say what is happening.
     return [...ordinary, ...lifecycleTurns(lifecycle)]
-      // Plans are internal execution input.
+      // Plans are internal execution input.  The stream shows the concrete
+      // files, searches and decisions used to make them, not a large final
+      // plan pasted into the conversation (including older persisted events).
       .filter(turn => turn.role !== 'stage' && turn.kind !== 'plan')
       .sort((a, b) => (a.at || 0) - (b.at || 0))
   }, [lifecycleStream, lifecycle])
@@ -122,7 +131,8 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
   const visibleTurns = turns.slice(firstVisibleTurn)
   const hiddenTurnCount = firstVisibleTurn
 
-  // Switching projects starts at that project's newest activity, with older messages one click away rather than erased or mixed with another project.
+  // Switching projects starts at that project's newest activity, with older
+  // messages one click away rather than erased or mixed with another project.
   useEffect(() => {
     setVisibleTurnCount(TURN_PAGE_SIZE)
   }, [project])
@@ -136,7 +146,9 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
     if (lifecycleStream.busy) setOpen(true)     // a run is the thing you watch
   }, [lifecycleStream.busy])
 
-  // Stage plans and evidence are durable backend facts, so the same stream remains truthful after reload and includes SRS, QA and Deploy even though those...
+  // Stage plans and evidence are durable backend facts, so the same stream
+  // remains truthful after reload and includes SRS, QA and Deploy even though
+  // those stages use different tool adapters.
   useEffect(() => {
     let cancelled = false
     let timer = null
@@ -158,7 +170,8 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
     return () => { cancelled = true; if (timer) clearTimeout(timer) }
   }, [project, lifecycleStream.busy])
 
-  // Pointing at something in the preview is the start of a sentence, so the box that finishes it comes to meet you.
+  // Pointing at something in the preview is the start of a sentence, so the
+  // box that finishes it comes to meet you.
   useEffect(() => {
     if (!selection.length) return
     setOpen(true)
@@ -185,7 +198,8 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
     }
   }, [open, turns.length])
 
-  // The moment a run ends, the next thing they typed goes.
+  // The moment a run ends, the next thing they typed goes. Firing sets the
+  // agent working again, which brings this back for the one after it.
   useEffect(() => {
     if (lifecycleStream.busy || !project) return
     const next = useStore.getState().takeQueued(project, agentRole) // takeQueued(project)
@@ -198,7 +212,8 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
     const typed = text.trim()
     if (!typed || !project || reading) return
 
-    // A question the agent stopped to ask is answered by the next thing they type.
+    // A question the agent stopped to ask is answered by the next thing they
+    // type. It is first because it is the one the run is actually blocked on.
     if (ask?.variable) return         // a value is given in the question's own private box, not here
     if (ask && answerAsk(typed)) {
       pushChat({ role: 'user', text: typed, at: Date.now() })
@@ -213,7 +228,8 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
       return
     }
 
-    // So is a drawing waiting in the preview: there is no dialog to type into, so what they say here is what changes about it.
+    // So is a drawing waiting in the preview: there is no dialog to type into,
+    // so what they say here is what changes about it.
     if (drawing && reviseDrawing(typed)) {
       pushChat({ role: 'user', text: typed, at: Date.now() })
       setText('')
@@ -266,7 +282,8 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
   /** Hold it until the run in front of it is done. */
   function queueUp(payload, body, shown, shots) {
     useStore.getState().enqueue({ project, payload, body, shown, shots })
-    // The console evidence in the payload has been taken; what arrives after this belongs to whatever is said next.
+    // The console evidence in the payload has been taken; what arrives after
+    // this belongs to whatever is said next.
     forgetConsole()
     attach.reset()
     clearSelection()
@@ -438,7 +455,11 @@ export default function AgentChat({ projectTitle = '', readOnly = false, classNa
   )
 }
 
-/** The conversation owns its history; a model is only the engine used for the next turn. */
+/**
+ * The conversation owns its history; a model is only the engine used for the
+ * next turn. Keeping this next to the stream makes that distinction visible
+ * instead of burying it in global Settings.
+ */
 function ChatModelControls({ project, agentRole, busy }) {
   const models = useStore(s => s.models)
   const thinkingLevel = useStore(s => s.thinkingLevel)
@@ -648,7 +669,8 @@ function Attached({ items, onRemove }) {
   )
 }
 
-/** Stop, as in Claude: the send button's place while the agent works, one press (or Esc) and it stops - no confirmation. */
+/** Stop, as in Claude: the send button's place while the agent works, one press (or Esc) and it stops - no
+ * confirmation. The run ends at once on the server; the button spins until the studio sees it has. */
 function useStopRun(busy) {
   const [stopping, setStopping] = useState(false)
   const addLog = useStore(s => s.addLog)
@@ -676,7 +698,8 @@ function useStopRun(busy) {
   return { stop, stopping }
 }
 
-/** The tiny ring beside the model opens the detailed context meter without taking a permanent footer row away from the conversation. */
+/** The tiny ring beside the model opens the detailed context meter without
+ * taking a permanent footer row away from the conversation. */
 function ContextUsage({ stats }) {
   const [open, setOpen] = useState(false)
   if (!stats) return null
@@ -731,7 +754,11 @@ function compact(n) {
   return value >= 1000 ? `${Math.round(value / 100) / 10}k` : String(value)
 }
 
-/** A request-level status line. */
+/**
+ * A request-level status line. Time ticks locally, while the token total comes
+ * only from the provider's completed-response accounting in the event stream.
+ * That means a slow model never gets a fabricated "typing" token animation.
+ */
 function LiveTurnMeter({ stats, startedAt = 0, reasoning = false, state = '' }) {
   const [now, setNow] = useState(() => Date.now())
   const started = Number(stats?.turn_started_at) || Number(startedAt) || now
@@ -823,7 +850,8 @@ function Thinking({ reasoning = false, state = '', detail = '' }) {
     browser_inspect: 'Checking the page in a browser',
   }
   const label = labels[state] || (reasoning ? 'Analysing project context' : 'Working')
-  // A model writing a whole page sends nothing until the page is done.
+  // A model writing a whole page sends nothing until the page is done. A clock
+  // that keeps counting is what tells a long write apart from a stuck one.
   const [seconds, setSeconds] = useState(0)
   useEffect(() => {
     setSeconds(0)
@@ -864,7 +892,11 @@ function Thinking({ reasoning = false, state = '', detail = '' }) {
   )
 }
 
-/** The model service is not answering. */
+/**
+ * The model service is not answering. While the run asks again by itself this counts down to the next try, with a button to
+ * ask at once; once it has asked as many times as it will, the run holds still here - nothing is lost - and the same button
+ * continues it from this very request.
+ */
 function ConnectionNotice({ connection, project }) {
   const [mark, setMark] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
@@ -1075,7 +1107,7 @@ function FileActionCard({ turn, live }) {
   const isPatch = turn.action === 'patched' || turn.action === 'edited' || turn.action === 'editing' || /patched|edited|editing/i.test(turn.title || '')
   const isRead = turn.kind === 'read'
 
-  // History & contents.
+  // History & contents
   const history = fileHistory[filePath] || fileHistory[fileName] || {}
   const oldText = history.oldContent || ''
   const currentText = files[filePath] || files[fileName] || history.newContent || fetchedContent || ''
@@ -1086,7 +1118,7 @@ function FileActionCard({ turn, live }) {
     return computeLineDiff(oldText, currentText)
   }, [isPatch, oldText, currentText])
 
-  // Lazy fetch if expanded and not in memory.
+  // Lazy fetch if expanded and not in memory
   useEffect(() => {
     if (expanded && !currentText && !readContent && !fetching && project) {
       setFetching(true)
@@ -1342,7 +1374,8 @@ const Turn = memo(function Turn({ turn, live }) {
     )
   }
 
-  // Bolt File Action Card (Image 1) Interactive File Action Card for write, patch and read (Image 1).
+  // Bolt File Action Card (Image 1)
+  // Interactive File Action Card for write, patch and read (Image 1)
   if (turn.file && (turn.kind === 'write' || turn.kind === 'read')) {
     return <FileActionCard turn={turn} live={live} />
   }

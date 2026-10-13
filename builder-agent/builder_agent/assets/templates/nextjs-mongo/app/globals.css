@@ -1,4 +1,7 @@
-/* Replace what is below the directives. */
+/* Replace what is below the directives. The design contract owns this file:
+   `.agents/skills/design-system/tokens.css` holds the tokens Tailwind reads,
+   and this is only enough for the build to be green and the first screen to
+   be readable. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

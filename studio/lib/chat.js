@@ -1,9 +1,25 @@
-/** The build, as a conversation. */
+/**
+ * The build, as a conversation.
+ *
+ * The panel beside the preview used to be a terminal: raw backend lines,
+ * scrolling past faster than anyone could read, with the one sentence that
+ * mattered buried in it. The build screen has the opposite problem — it is
+ * deliberately calm, shows five paced milestones, and drops everything else,
+ * so watching it you cannot tell whether the agent is working or stuck.
+ *
+ * This is the middle: every action the agent takes, in the order it took it,
+ * named in English. Nothing is dropped. A line this does not recognise is
+ * shown as it arrived rather than swallowed, because an unrecognised line is
+ * usually the interesting one.
+ */
 
-// Every action is its own row.
+// Every action is its own row. Grouping consecutive reads under one icon
+// saved space and made three separate steps look like one, which is the
+// opposite of what a step-by-step feed is for. Do not cap the list: the chat
+// panel pages older rows in rather than silently dropping them.
 
 const KINDS = [
-  // [pattern, kind, how to title it].
+  // [pattern, kind, how to title it]
   [/^\s*Reading\s+(.+)$/i, 'read', m => `Read ${m[1]}`],
   [/^\s*(?:Searching|globFiles|grepSearch)\s+(.+)$/i, 'read', m => `Searched for ${m[1]}`],
   [/^\s*listDir\s+(.+)$/i, 'read', m => `Listed ${m[1]}`],
@@ -36,14 +52,31 @@ const MUTED = [
   /fast refresh|webpack|destination stream closed/i,
 ]
 
-// Every line a dev server prints is forwarded as a log row, so starting one filled the conversation with a dozen turns about its own banner, its port, its...
+// Every line a dev server prints is forwarded as a log row, so starting one
+// filled the conversation with a dozen turns about its own banner, its port,
+// its environment file and each recompile — none of which anybody asked for.
+// It is a log; it belongs in the log. What survives is the line that says the
+// preview is up, and anything the server itself called a problem.
 const SERVER_LINE = /^\[[^\]]{1,24}\]\s*/
 const SERVER_READY = /\bready in\b|- local:|listening on/i
 
-// The engine polls a long-running command every few seconds and logs a fresh "still running" line each time, identical but for the elapsed seconds.
+// The engine polls a long-running command every few seconds and logs a fresh
+// "still running" line each time, identical but for the elapsed seconds. Read
+// as a conversation that is one command ticking, not a new event every poll.
 const STILL_RUNNING = /^Command still running \((\d+)s\):\s*(.+)$/i
 
-/** The badge a backend line wears, turned into the row's own icon. */
+/**
+ * The badge a backend line wears, turned into the row's own icon.
+ *
+ * The engine writes its log with a symbol in front of every line - a hammer
+ * for a build, a bin for a delete, a warning triangle. In a terminal that is a
+ * column you read down. In the conversation it was a second icon sitting in
+ * the text beside the row's real one, in a font that renders it at a different
+ * size, so a tidy feed read as a pile of symbols.
+ *
+ * The symbol was never decoration though: it says what kind of thing happened,
+ * which is exactly what decides the icon. So it is read, then removed.
+ */
 const BADGES = [
   [/[🏗🧱]/u, 'setup'], [/[📂📁]/u, 'setup'], [/[📄📎]/u, 'read'],
   [/[✏🖊🖉]/u, 'write'], [/[🗑🚮]/u, 'write'], [/[🖼🎨]/u, 'design'],
@@ -51,7 +84,14 @@ const BADGES = [
   [/[✅✔]/u, 'done'], [/[❌✗✖]/u, 'warn'],
 ]
 
-// Anything at the start of a line that is not a letter, a digit or an opening bracket: emoji, arrows, bullets, variation selectors and the spaces between them.
+// Anything at the start of a line that is not a letter, a digit or an opening
+// bracket: emoji, arrows, bullets, variation selectors and the spaces between
+// them. Deliberately not a list of known symbols - the next release of the
+// engine will use one nobody listed here.
+//
+// A dot is only decoration when nothing follows it, or the warning about
+// `.env.local` loses its first character and becomes a sentence about a file
+// that does not exist.
 const LEADING_SYMBOLS = /^(?:[^\p{L}\p{N}([{"'#/$.]|\.(?![\p{L}\p{N}]))+/u
 
 function badgeOf(line) {
@@ -91,7 +131,8 @@ function classify(row) {
     return { kind: 'run', title: `Command still running (${stillRunning[1]}s)`,
              detail: stillRunning[2].slice(0, 200), runKey: stillRunning[2] }
   }
-  // Completed file events already carry a path.
+  // Completed file events already carry a path. Keep that information for
+  // the clickable file cards instead of inferring success from row order.
   const changed = /^(written|created|patched|edited|updated|removed|deleted)\s+(.+?)(?:\s+\(\d+ lines\))?$/i.exec(line)
   if (changed) {
     const path = changed[2].replace(/^[`'"]|[`'"]$/g, '').replace(/\\/g, '/')
@@ -116,14 +157,26 @@ function classify(row) {
     if (match) return { kind, title: title(match), detail: '' }
   }
   if (row.level === 'SUCCESS') return { kind: 'done', title: line, detail: '' }
-  // Not recognised.
+  // Not recognised. Show it rather than drop it — the line nobody wrote a rule
+  // for is usually the one worth reading — under whatever the engine drew in
+  // front of it, which is the best hint available about what it was.
   return { kind: badge || 'note', title: line.slice(0, 220), detail: '' }
 }
 
-/** What one log row became, remembered against the row itself. */
+/**
+ * What one log row became, remembered against the row itself.
+ *
+ * The feed is rebuilt on every arriving line, and the history it is rebuilt
+ * from holds eight hundred rows - so during a build every line reclassified
+ * the entire run through a dozen regular expressions, several times a second,
+ * to add one row at the end. A log row is never edited after it is appended,
+ * so its answer cannot change; and returning the same object each time is what
+ * lets the rows already on screen skip rendering again.
+ */
 const remembered = new WeakMap()
 
-// A name a row keeps for as long as it exists.
+// A name a row keeps for as long as it exists. A key built from position would
+// change for every row as new lines arrive and remount the history.
 let counted = 0
 
 function turnFor(row) {
@@ -137,9 +190,11 @@ function turnFor(row) {
 export function chatTurns(logs = [], chat = []) {
   const turns = []
   let previous = ''
-  // Track in-progress file operations so that when the completed event arrives, it supersedes the in-progress card rather than rendering a duplicate row.
+  // Track in-progress file operations so that when the completed event arrives,
+  // it supersedes the in-progress card rather than rendering a duplicate row.
   const pendingFileTurns = new Map()
-  // Same idea for a command being polled: each "still running" tick updates the one row in place instead of piling up a new row every few seconds.
+  // Same idea for a command being polled: each "still running" tick updates
+  // the one row in place instead of piling up a new row every few seconds.
   const pendingRunTurns = new Map()
 
   for (const row of logs) {

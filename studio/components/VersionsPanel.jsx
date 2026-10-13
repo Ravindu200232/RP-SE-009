@@ -1,6 +1,10 @@
 'use client'
 
-/** The project's versions: every update approved in the chat is saved as v1, v2, ... */
+/**
+ * The project's versions: every update approved in the chat is saved as v1, v2, ... with its summary,
+ * the stages and files it changed, and what the tests said before and after. A list you can open and
+ * close; the newest is open. The same record is a file in the project (`.agentforge/versions/`).
+ */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, ChevronDown, CircleAlert, FileText, FlaskConical, History, Loader2, RefreshCw, X } from 'lucide-react'

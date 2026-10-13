@@ -1,4 +1,10 @@
-"""Testing the built application."""
+"""Testing the built application.
+
+The report on disk is the record, and it is written after every layer rather than
+once at the end — a run that is interrupted still leaves what it proved. The
+studio's Testing screen reads that file directly, so a partial report is a
+partial screen, not an empty one.
+"""
 from __future__ import annotations
 
 import json
@@ -16,7 +22,11 @@ REPORT = (QA_DIR, "report.json")
 
 
 def provenance_text(value: Any) -> str:
-    """How the results were produced, as the sentence the pages show."""
+    """How the results were produced, as the sentence the pages show.
+
+    The agent that writes the report sometimes records it as an object (the method and the runner files); a page that
+    shows it as it is cannot draw an object, and the whole testing view fails.
+    """
     if isinstance(value, str):
         return value.strip()
     if isinstance(value, dict):
@@ -36,7 +46,8 @@ def report(project: str) -> dict[str, Any]:
     if not isinstance(saved, dict):
         # No Testing run yet — the build's own artifacts are still evidence.
         saved = {}
-    # The id is the project's; the studio matches a report to the project open by it.
+    # The id is the project's; the studio matches a report to the project open by it. An agent that writes the report
+    # often puts the app's name there instead, and the results then never show.
     saved["project"] = project
     from .evidence import collect
     result = collect(session.workspace, saved)
@@ -50,6 +61,8 @@ def _publish(session: ProjectSession, project: str, previous_rows: int) -> int:
     """Turn whatever the agent has written so far into studio test events."""
     current = report(project)
     # Rows derived from the build's own record are not live test results.
+    # This file is updated live by an agent. Ignore a partial/malformed row
+    # until it becomes a complete object instead of taking down the watcher.
     rows = [r for r in (current.get("timeline") or [])
             if isinstance(r, dict) and not r.get("derived")]
     for row in rows[previous_rows:]:
@@ -78,11 +91,13 @@ def run(project: str, direction: str = "") -> dict[str, Any]:
 
     session = session_for(project)
     session.begin("test", role=bus.DEVELOPER)
-    # Runner outputs have fixed filenames.
+    # Runner outputs have fixed filenames. Keep their previous state before a
+    # new test run can replace it, including a run started after a chat repair.
     from .evidence import archive_results
     archive_results(session.workspace, "Before this Testing run", "before-test-run")
     bus.test_start(project)
-    # The optional browser_inspect tool reads this managed preview page by page; it never owns a second server or sends data outside the local machine.
+    # The optional browser_inspect tool reads this managed preview page by page;
+    # it never owns a second server or sends data outside the local machine.
     from server_modules import preview_runtime
     preview = preview_runtime.open_preview(project)
     if preview.get("status") not in {"starting", "running"}:
@@ -112,13 +127,17 @@ def run(project: str, direction: str = "") -> dict[str, Any]:
                    + reference_staging.as_bullets(guide_paths))
         if direction.strip():
             request += f"\n\n## What the customer asked you to check\n\n{direction.strip()}"
-        # The end-to-end journeys are the Studio's to run (`e2e_run.py`), once: reused while the app is what they last ran on, run again only when the person asks for it.
+        # The end-to-end journeys are the Studio's to run (`e2e_run.py`), once: reused while the app is what they last ran on,
+        # run again only when the person asks for it.
         from . import e2e_run
         rerun = rerun_asked(direction)
         request += "\n\n" + prompts.load(
             "testing/journeys-reused" if e2e_run.current(session.workspace) and not rerun else "testing/journeys-studio").strip()
 
-        # The plan already runs and records every requested layer.
+        # The plan already runs and records every requested layer. A second
+        # agent audit repeats expensive builds/browser runs without adding UI
+        # evidence, so finish from the runner-owned JSON instead.
+        # The journeys' screenshots are copied as the tests take them: the next test run empties Playwright's output folder.
         from .screen_keeper import Keeper
         with Keeper(session.workspace):
             result = session.run_task(request, audit=False)
@@ -131,7 +150,8 @@ def run(project: str, direction: str = "") -> dict[str, Any]:
             ran = e2e_run.run(project, session, reason="test", force=rerun)
         if session.cancelled:
             raise RunCancelled(project)
-        # A model that can look at pictures looks at the screenshots of a run that really happened (a reused one was looked at when it ran), round by round, asking...
+        # A model that can look at pictures looks at the screenshots of a run that really happened (a reused one was looked
+        # at when it ran), round by round, asking before each round after the first.
         from . import e2e_review
         if ran.get("status") in {"passed", "failed"}:
             e2e_review.run(project, session)

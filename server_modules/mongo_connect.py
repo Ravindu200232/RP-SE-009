@@ -1,4 +1,37 @@
-"""Connecting a MongoDB Atlas account, and giving the studio a real cluster of its own."""
+"""Connecting a MongoDB Atlas account, and giving the studio a real cluster of its own.
+
+Atlas has a true browser sign-in OAuth2 flow (Atlas App Connections, authorization-code + PKCE,
+the same shape as `supabase_connect.py`'s own OAuth dance) - but unlike Supabase's, it is not
+self-service: MongoDB issues the `client_id`/`client_secret` only after approving an application as
+a design partner (confirmed live against
+https://www.mongodb.com/docs/atlas/app-connections/partner-integration-guide/ - its own
+"Prerequisites & Eligibility" section says so explicitly). Until that approval exists, this studio
+cannot offer a sign-in with an OAuth app of its own for Atlas.
+
+What it can offer is MongoDB's own: the Atlas CLI's `atlas auth login` signs a person in through the
+browser and a one-time code, with MongoDB's OAuth app, and nothing for the person to register or
+paste. That is the way in for a non-technical person (`cli_signin.py`, the "atlas" provider, run in a
+pseudo-terminal because its login opens with a menu). Once the CLI is signed in, the cluster is made
+with its commands (`_ensure_cluster_cli`), the CLI keeping the credential as it does for every
+command line tool in this studio.
+
+Still there for automation, and for anyone who has one: a Service Account - Atlas's own recommended
+replacement for a bare API key pair, and still real OAuth2 underneath (`POST
+https://cloud.mongodb.com/api/oauth/token`, `grant_type=client_credentials`, confirmed live against
+MongoDB's docs). The customer creates one once, in the Atlas UI (Organization Access Manager ->
+Service Accounts, any role that can manage projects and clusters), and pastes its Client ID and
+Secret here; the exchange itself is a standard, verifiable OAuth2 grant rather than a bespoke token
+format. When both exist, the Service Account is used.
+
+One studio-wide connection, like the account-level tokens in `config.py` (`github_token`,
+`vercel_token`, ...) - a Service Account belongs to the customer's Atlas organisation, not to one
+AgentForge project, and `deploy_mongodb_uri` (the setting this module ultimately writes) is already
+studio-wide for exactly that reason. `ensure_cluster()` creates (or reuses) one free M0 cluster, one
+database user and an open-from-anywhere IP access list entry, then writes the resulting real
+`mongodb+srv://` connection string into that same setting - every other part of the system
+(`deploy_vars.py`, `mongo_check.py`, the Integrations panel's plain paste box) keeps working exactly
+as it does for a hand-typed string, because that is still, in the end, exactly what this produces.
+"""
 from __future__ import annotations
 
 import json
@@ -24,7 +57,9 @@ ACCESS_TOKEN_SETTING = "mongodb_oauth_access_token"
 EXPIRES_AT_SETTING = "mongodb_oauth_expires_at"
 ORG_SETTING = "mongodb_org"
 
-# What a provisioned cluster is called and recorded under.
+# What a provisioned cluster is called and recorded under - not a customer choice (this is the one
+# studio-wide cluster, not a project of its own the way Supabase's is), just somewhere stable to
+# look for it again so a second `ensure_cluster()` call reuses it instead of making another.
 GROUP_NAME = "agentforge-studio"
 CLUSTER_NAME = "agentforge"
 LEGACY_DB_USERNAME = "agentforge_app"     # the one database user every studio used to share (see `db_username`)
@@ -47,7 +82,9 @@ def cli_account() -> dict:
 
 
 def status(accounts: bool = False) -> dict:
-    """What the studio may show: never the credentials or tokens, only that an account is."""
+    """What the studio may show: never the credentials or tokens, only that an account is
+    connected (and how), which organisation, and whether a cluster has already been provisioned.
+    With `accounts`, also every account signed in through the Atlas CLI (asking the CLI about each)."""
     service_account = credentials_saved()
     cli = {} if service_account else cli_account()
     answer = {
@@ -64,7 +101,12 @@ def status(accounts: bool = False) -> dict:
 
 
 def db_username() -> str:
-    """The database user this studio connects as, one for each installation of it."""
+    """The database user this studio connects as, one for each installation of it.
+
+    It used to be one name, `agentforge_app`, for every studio that used the cluster, and whoever provisioned last gave it a new
+    password: the connection string every other studio (another PC, the desktop app, a deployed application) had saved then
+    stopped being accepted ("refused the username or password"), again and again. Each installation now makes a user of its own
+    the first time it needs one, so setting up one never changes what another is signed in with."""
     saved = str(config.setting(DB_USER_SETTING) or "").strip()
     if saved:
         return saved
@@ -74,7 +116,11 @@ def db_username() -> str:
 
 
 # --- more than one account (each is a profile of the Atlas CLI) ---------------------------------------
-# Signing in through the CLI as another account gives it a profile of its own (cli_signin `add`), so the first stays signed in.
+#
+# Signing in through the CLI as another account gives it a profile of its own (cli_signin `add`), so the first stays
+# signed in. One profile is the active one: every cluster command names it, and the studio's cluster record (the
+# project, the cluster and the connection string made for it) belongs to it, so switching puts the other account's
+# record in its place instead of leaving a string for a cluster the new account cannot reach.
 
 PROFILE_SETTING = cli_signin.ATLAS_PROFILE_SETTING
 CLUSTERS_SETTING = "mongodb_clusters_credentials"  # "credentials" in the name keeps it out of GET /settings
@@ -191,7 +237,8 @@ def _request_token(client_id: str, client_secret: str) -> dict:
 
 
 def _token() -> str:
-    """The access token to use right now, silently refreshed if it has lapsed. Service Account."""
+    """The access token to use right now, silently refreshed if it has lapsed. Service Account
+    tokens carry no separate refresh token - a lapsed one is just asked for again the same way."""
     access = str(config.setting(ACCESS_TOKEN_SETTING) or "")
     expires_at = float(config.setting(EXPIRES_AT_SETTING) or 0)
     if access and time.time() < expires_at:
@@ -219,7 +266,8 @@ def _api(method: str, path: str, json_body: dict | None = None, token: str = "")
 
 
 def save_account(client_id: str, client_secret: str) -> dict:
-    """Saved only after a real token exchange succeeds - the same "tried for real before accepting."""
+    """Saved only after a real token exchange succeeds - the same "tried for real before accepting
+    it" rule every other credential in this studio follows (deploy_vars.accept, cli_signin)."""
     client_id, client_secret = str(client_id or "").strip(), str(client_secret or "").strip()
     if not client_id or not client_secret:
         raise ValueError("Both the Client ID and Client Secret are needed.")
@@ -260,7 +308,9 @@ def _ensure_group(token: str, exact: bool = False) -> str:
     if named:
         return str(named["id"])
     if groups and not exact:
-        # A Service Account scoped to one existing project (Project Owner there) rather than given organisation-wide "Project Creator" never has the right to create a...
+        # A Service Account scoped to one existing project (Project Owner there) rather than given
+        # organisation-wide "Project Creator" never has the right to create a second project - use
+        # the one it can already see instead of failing on a permission most people never grant.
         return str(groups[0]["id"])
     created = _api("POST", "/groups", {"name": GROUP_NAME, "orgId": org_id}, token=token)
     group_id = str(created.get("id") or "")
@@ -270,7 +320,10 @@ def _ensure_group(token: str, exact: bool = False) -> str:
 
 
 def _ensure_cluster(token: str, group_id: str, say, region: str = "", exact: bool = False) -> str:
-    """The name of the cluster to use in this project - not necessarily CLUSTER_NAME: a free-tier."""
+    """The name of the cluster to use in this project - not necessarily CLUSTER_NAME: a free-tier
+    project allows only one M0 cluster, so an existing one (whatever a person already made by hand)
+    is reused rather than failing to create a second one there is no room for. `exact`: only CLUSTER_NAME,
+    made if it is not there (the person asked for a new cluster; the ones they have are chosen from a list)."""
     try:
         _api("GET", f"/groups/{group_id}/clusters/{CLUSTER_NAME}", token=token)
         return CLUSTER_NAME
@@ -307,7 +360,8 @@ def _ensure_db_user(token: str, group_id: str, password: str) -> None:
             "roles": [{"roleName": "readWriteAnyDatabase", "databaseName": "admin"}],
         }, token=token)
         return
-    # It is already there (an earlier attempt, or the same cluster chosen again).
+    # It is already there (an earlier attempt, or the same cluster chosen again): the connection string needs a
+    # password that is known, so set one rather than keep a string whose password is not the user's.
     _api("PATCH", f"/groups/{group_id}/databaseUsers/admin/{db_username()}", {"password": password}, token=token)
 
 
@@ -315,34 +369,37 @@ def _ensure_access_list(token: str, group_id: str) -> None:
     entries = _api("GET", f"/groups/{group_id}/accessList", token=token).get("results") or []
     if any(e.get("cidrBlock") == "0.0.0.0/0" for e in entries):
         return
-    # Every MongoDB-stack deployment target (Vercel/Netlify serverless, or a fixed-IP target that has not told Atlas its address yet) needs to reach this cluster...
+    # Every MongoDB-stack deployment target (Vercel/Netlify serverless, or a fixed-IP target that
+    # has not told Atlas its address yet) needs to reach this cluster; the connection string's own
+    # username/password is the real access control, matching the note deploy_vars.py's own comment
+    # makes about this exact trade-off for a studio-managed cluster.
     _api("POST", f"/groups/{group_id}/accessList", {
         "accessList": [{"cidrBlock": "0.0.0.0/0", "comment": "AgentForge-managed cluster: open, password-protected"}],
     }, token=token)
-
-
-def account_facts() -> dict:
-    """What the build may ask about: whether an Atlas account is connected, the cluster this studio already."""
-    from . import deploy_vars
-
-    saved = {row["name"] for row in deploy_vars.names()}
-    return {"atlas_connected": credentials_saved() or bool(cli_account()),
-            "studio_cluster": str(config.setting(CLUSTER_NAME_SETTING) or ""),
-            "connection_string_saved": bool(config.setting("deploy_mongodb_uri", "") or "MONGODB_URI" in saved)}
 
 
 _provision_lock = threading.Lock()
 
 
 def ensure_for_project(project: str, log=None) -> dict:
-    """The database a MongoDB-stack build or deployment runs on, made without asking anyone."""
+    """The database a MongoDB-stack build or deployment runs on, made without asking anyone.
+
+    The customer's connected cluster gives every project databases of its own (`deploy_vars.build_databases`), so when a
+    connection string is saved there is nothing to make. When none is saved but an Atlas account is signed in, the cluster
+    (and its database user and access list) is made now and the connection string it gives is saved where every command, the
+    preview and the deployment read it - the way a Supabase project is made for a project the first time it builds. With
+    neither, nothing is made and the caller says so: the customer connects Atlas in Settings, never in a question.
+
+    Blocking (a new cluster takes a few minutes) and never raises: {"status": "ready" | "created" | "not_connected" | "failed",
+    "database": the project's database name, "reason": why it failed}."""
     say = log or (lambda _line: None)
     from . import deploy_vars
 
     created = False
     named = str((config.setting("deploy_env", {}) or {}).get("MONGODB_URI") or "")
     if named and not str(config.setting("deploy_mongodb_uri", "") or ""):
-        # A connection string the customer saved by name is theirs to use as it is.
+        # A connection string the customer saved by name is theirs to use as it is: a deployment may start on it (the start
+        # check counts it), so it must not be refused here as "not connected".
         return {"status": "ready", "database": urlsplit(named).path.strip("/"), "reason": ""}
     with _provision_lock:
         if not str(config.setting("deploy_mongodb_uri", "") or ""):
@@ -364,7 +421,10 @@ def ensure_for_project(project: str, log=None) -> dict:
 
 
 def verify_or_repair(log=None) -> tuple[bool, str]:
-    """Whether the saved connection really answers (the same check every command makes), and if not why. A password Atlas no."""
+    """Whether the saved connection really answers (the same check every command makes), and if not why. A password Atlas no
+    longer accepts for a database user the Studio made is mended first (another computer set it again): this computer gets a
+    database user of its own and a new string. Used before a build and before a deployment, so neither finds out half-way.
+    A string saved by name (`MONGODB_URI` in the deployment values) is the customer's own and is not checked here."""
     from . import deploy_vars
 
     say = log or (lambda _line: None)
@@ -385,7 +445,8 @@ def verify_or_repair(log=None) -> tuple[bool, str]:
 
 
 def can_repair(uri: str = "") -> bool:
-    """Whether a connection string that Atlas refuses can be replaced by the studio: it made the string itself (its database user."""
+    """Whether a connection string that Atlas refuses can be replaced by the studio: it made the string itself (its database user
+    is an `agentforge_` one, not a person's own), it knows the cluster, and an Atlas account is signed in to make a new user with."""
     uri = str(uri or "").strip() or str(config.setting("deploy_mongodb_uri", "") or "")
     user = urlsplit(uri).username or ""
     saved = str(config.setting("deploy_mongodb_uri", "") or "")
@@ -395,7 +456,9 @@ def can_repair(uri: str = "") -> bool:
 
 
 def repair_connection(log=None) -> dict:
-    """The saved connection string's password is refused: give this installation a database user of its own on the cluster it."""
+    """The saved connection string's password is refused: give this installation a database user of its own on the cluster it
+    already uses and save the new string. What other computers, the desktop app or a deployed application hold is not touched
+    (their user and its password stay as they are); the studio no longer sets a shared user's password again."""
     say = log or (lambda _line: None)
     if not can_repair():
         raise ValueError("This connection cannot be fixed from here: it was not made by AgentForge, or no Atlas account is signed in. "
@@ -424,7 +487,10 @@ def _finish_cluster_api(token: str, group_id: str, cluster_name: str, say) -> di
 
 
 def ensure_cluster(log=None, region: str = "", create: bool = False) -> dict:
-    """The studio's one Atlas cluster: the existing one, or a freshly provisioned one. Blocking."""
+    """The studio's one Atlas cluster: the existing one, or a freshly provisioned one. Blocking
+    (cluster creation takes a few minutes) - called from a background job (routes_deploy.py), the
+    same way the Deploy panel already runs anything slow. `create`: make the studio's own cluster even when one is
+    already in use (what "create a new cluster" asks for); the ones a person has are chosen with `use_cluster`."""
     say = log or (lambda _line: None)
     if not credentials_saved() and not cli_account():
         raise ValueError("Sign in to MongoDB Atlas first.")
@@ -444,7 +510,8 @@ def ensure_cluster(log=None, region: str = "", create: bool = False) -> dict:
 # --- choosing one of the clusters the account already has ----------------------------------------------
 
 def _cluster_row(group_id: str, project: str, cluster: dict) -> dict:
-    """One cluster as the picker shows it: the project it is in, its state, size and region. The Atlas API and the CLI."""
+    """One cluster as the picker shows it: the project it is in, its state, size and region. The Atlas API and the CLI
+    word the size and region differently across versions, so both shapes are read."""
     provider = cluster.get("providerSettings") if isinstance(cluster.get("providerSettings"), dict) else {}
     specs = cluster.get("replicationSpecs") if isinstance(cluster.get("replicationSpecs"), list) else []
     regions = (specs[0].get("regionConfigs") if specs and isinstance(specs[0], dict) else None) or []
@@ -490,7 +557,8 @@ def _clusters_api() -> list[dict]:
 
 
 def list_clusters() -> dict:
-    """Every cluster the account in use can see, project by project, and which one this studio uses now."""
+    """Every cluster the account in use can see, project by project, and which one this studio uses now.
+    `missing` says the cluster the studio has on record is no longer among them (deleted, or another account's)."""
     if not credentials_saved() and not cli_account():
         raise ValueError("Sign in to MongoDB Atlas first.")
     rows = [row for row in (_clusters_api() if credentials_saved() else _clusters_cli()) if row["name"]]
@@ -503,7 +571,8 @@ def list_clusters() -> dict:
 
 
 def use_cluster(group_id: str, cluster_name: str, log=None) -> dict:
-    """Use a cluster the account already has: the database user and open access list this studio needs are added to."""
+    """Use a cluster the account already has: the database user and open access list this studio needs are added to
+    its project, and the connection string for it replaces the one saved."""
     say = log or (lambda _line: None)
     group_id, cluster_name = str(group_id or "").strip(), str(cluster_name or "").strip()
     if not group_id or not cluster_name:
@@ -520,7 +589,9 @@ def _keep_cluster(cluster: dict, group_id: str, cluster_name: str, password: str
     srv = str((cluster.get("connectionStrings") or {}).get("standardSrv") or "")
     if not srv:
         raise ValueError("Atlas did not return a connection string for the cluster.")
-    # standardSrv is a bare mongodb+srv://<cluster-host> (no path, no query, confirmed live) - credentials are ours to add, never Atlas's to generate.
+    # standardSrv is a bare mongodb+srv://<cluster-host> (no path, no query, confirmed live) -
+    # credentials are ours to add, never Atlas's to generate. No database is named: every project gets databases of its own
+    # on the cluster, named after the project (`deploy_vars.build_databases`), so two projects never share one.
     scheme, _, rest = srv.partition("://")
     host = rest.split("/", 1)[0].split("?", 1)[0]
     uri = f"{scheme}://{db_username()}:{password}@{host}/?retryWrites=true&w=majority"
@@ -532,7 +603,9 @@ def _keep_cluster(cluster: dict, group_id: str, cluster_name: str, password: str
 
 
 def _wait_until_accepted(uri: str, say, seconds: int = 75) -> dict:
-    """A database user Atlas has only just made is refused for a few seconds, whatever its password: the same string that is."""
+    """A database user Atlas has only just made is refused for a few seconds, whatever its password: the same string that is
+    right is answered with "refused the username or password" until Atlas has applied it. The connection is called ready once it
+    is accepted (or, if it is not within `seconds`, the way it is: the person is told by the next check, not by silence)."""
     from . import mongo_check
 
     deadline = time.time() + seconds
@@ -577,7 +650,9 @@ def _rows(body: Any) -> list[dict]:
 
 
 def _ensure_cluster_cli(say, region: str = "", exact: bool = False) -> dict:
-    """What `ensure_cluster` does with a Service Account, with the commands of the CLI the person signed in with: the."""
+    """What `ensure_cluster` does with a Service Account, with the commands of the CLI the person signed in with: the
+    project, one free M0 cluster, a database user whose password is set here, and an open access list. `exact`: only
+    the studio's own project and cluster, made if they are not there, never one that is someone else's."""
     say("Finding or creating the Atlas project…")
     orgs = _rows(_atlas(["organizations", "list"]))
     if not orgs:
@@ -628,13 +703,15 @@ def _finish_cluster_cli(say, group_id: str, cluster_name: str) -> dict:
         _atlas(["dbusers", "create", "readWriteAnyDatabase", "--username", db_username(), "--password", password,
                 "--projectId", group_id])
     else:
-        # It is already there (an earlier attempt that did not finish): the connection string needs a password that is known, so set one rather than guess.
+        # It is already there (an earlier attempt that did not finish): the connection string needs a password
+        # that is known, so set one rather than guess.
         _atlas(["dbusers", "update", db_username(), "--password", password, "--projectId", group_id])
 
     say("Opening the cluster to the deployed application…")
     entries = _rows(_atlas(["accessLists", "list", "--projectId", group_id]))
     if not any(e.get("cidrBlock") == "0.0.0.0/0" for e in entries):
-        # Every MongoDB-stack deployment target needs to reach this cluster.
+        # Every MongoDB-stack deployment target needs to reach this cluster; the connection string's own
+        # username and password are the real access control (see `_ensure_access_list`).
         _atlas(["accessLists", "create", "0.0.0.0/0", "--type", "cidrBlock", "--projectId", group_id,
                 "--comment", "AgentForge-managed cluster: open, password-protected"])
     return _keep_cluster(cluster, group_id, cluster_name, password, say)

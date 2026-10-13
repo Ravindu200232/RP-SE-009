@@ -1,4 +1,13 @@
-"""A record of every update the customer approved in the chat: v1, v2, ..."""
+"""A record of every update the customer approved in the chat: v1, v2, ...
+
+Each finished update leaves one file pair under `<project>/.agentforge/versions/`: `v3.json` for the
+studio and `v3.md` for a person reading the folder. The record says what was asked, what the plan
+was, which files were added, changed or removed, and what the tests came to before and after. It
+also keeps a copy of the test result records as they were before the update ran (`v3/results-before/`),
+so an update can never cost the project the results it already had.
+
+Nothing here interprets the update: it lists what the plan said and what the folder shows.
+"""
 from __future__ import annotations
 
 import json

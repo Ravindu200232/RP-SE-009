@@ -1,11 +1,15 @@
-"""The `--require` hooks the Studio loads into the Node processes it starts for a project."""
+"""The `--require` hooks the Studio loads into the Node processes it starts for a project.
+
+`dns-fallback.cjs` goes into every one of them (the agent's commands, the end-to-end runs, the preview): a cluster name this
+computer's DNS could not look up is asked again and then of public DNS, as the Studio's own connection check already does.
+`frame-headers.cjs` goes into the preview only (`preview_runtime.py`).
+"""
 from __future__ import annotations
 
 from pathlib import Path
 
 HOOKS = Path(__file__).resolve().with_name("preview_hooks")
 DNS_FALLBACK = HOOKS / "dns-fallback.cjs"
-FRAME_HEADERS = HOOKS / "frame-headers.cjs"
 
 
 def add(env: dict[str, str], *hooks: Path) -> dict[str, str]:

@@ -1,6 +1,8 @@
 'use client'
 
-/** Registering external MCP (Model Context Protocol) servers. */
+/** Registering external MCP (Model Context Protocol) servers: additive tool
+ * sources the agent can call alongside its built-in read/write/run tools,
+ * never a replacement for them. */
 
 import { useState } from 'react'
 import { Check, Loader2, Plug, Plus, Trash2 } from 'lucide-react'

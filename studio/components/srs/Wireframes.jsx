@@ -18,7 +18,8 @@ function useSrsId(owner) {
   useEffect(() => {
     if (!owner) return
     if (/^prj_/.test(owner)) { setSrsId(owner); return }
-    // A built project owns its pages by name; `link.json` is the only thing that knows both names, and the studio reads it through `srs-results`.
+    // A built project owns its pages by name; `link.json` is the only thing
+    // that knows both names, and the studio reads it through `srs-results`.
     let live = true
     api.srsResults(owner)
       .then(found => { if (live) setSrsId(found?.link?.srs_id || '') })
@@ -81,7 +82,8 @@ export function Wireframes({ srs, onApprove, onRetryPrototype, onFocus, generati
   const [designApproved, setDesignApproved] = useState(false)
   const [loadedCount, setLoadedCount] = useState(0)
   const frame = useRef(null)
-  // The select, pencil and text tools over the page on show: they work on the page's own frame, and what they pick goes with the next request typed under it.
+  // The select, pencil and text tools over the page on show: they work on the page's own frame, and what they pick goes with the
+  // next request typed under it.
   const tools = useFrameTools(frame, { loaded: loadedCount })
   const { setMode, clearItems } = tools
 
@@ -101,7 +103,8 @@ export function Wireframes({ srs, onApprove, onRetryPrototype, onFocus, generati
       .catch(failure => setError(failure?.message || 'The wireframes could not be read.'))
   }, [owner])
 
-  // A chat/feature update may rewrite the SRS or the wireframes without remounting this tab.
+  // A chat/feature update may rewrite the SRS or the wireframes without remounting
+  // this tab. Refresh only this data view; never reload the whole Studio app.
   useEffect(() => { load() }, [load, srsStamp])
 
   /** Poll while the agent is drawing, so the pages light up as their files are written. */

@@ -41,7 +41,11 @@ export function answerAsk(reply) {
   return true
 }
 
-/** The answer to a question that asks for a value (a password, a connection string): sent from the question's own private box, never echoed into the chat. */
+/**
+ * The answer to a question that asks for a value (a password, a connection string): sent from the question's own
+ * private box, never echoed into the chat. Resolves with what the server said, so the card can show why a value was
+ * not accepted; the question stays open until one is.
+ */
 export async function answerValue(value) {
   const ask = useStore.getState().ask
   if (!ask) return { ok: false, detail: 'That question is no longer waiting.' }
@@ -73,7 +77,10 @@ export function declineAsk() {
   return true
 }
 
-/** The answer to a permission card: `allow`, `always` (and do not ask again this session) or `deny` (with a note for the agent). */
+/**
+ * The answer to a permission card: `allow`, `always` (and do not ask again this session) or `deny` (with a note for the agent).
+ * The card goes at once; the run it holds still goes on when the server has the answer.
+ */
 export function answerPermission(card, verdict, note = '') {
   const store = useStore.getState()
   store.applyProjectEvent({ type: 'approval_resolved', project: card.project, agent: card.agent, id: card.id })
@@ -194,7 +201,8 @@ export function connect() {
   sock.onclose = (event) => {
     if (mine !== sock) return
     clearInterval(heartbeat)
-    // 4401: nobody is signed in on this socket.
+    // 4401: nobody is signed in on this socket. Reconnecting cannot fix that;
+    // signing in does, and that calls connect() again.
     if (event?.code === 4401) {
       sock = null
       useStore.getState().setStatus('disconnected', 'sign in to continue')
@@ -238,7 +246,7 @@ export function send(obj) {
   if (obj.project) current.applyProjectEvent({ type: 'run_state', project: obj.project, agent, status: 'queued' })
   if (obj && obj.type) {
     useStore.getState().setWorkKind(WORK_KIND[obj.type] || 'build')
-    // Whose run this is.
+    // Whose run this is. The project on screen can change while it works.
     if (obj.project) useStore.getState().setBusyProject(obj.project)
   }
   if (obj && obj.prompt !== undefined) {
@@ -270,7 +278,7 @@ export function send(obj) {
 
 function handle(m) {
   const s = useStore.getState()
-  // Contracts: approval?.id === m.id | browser_frame.
+  // Contracts: approval?.id === m.id | browser_frame
   if (m.type === 'runtime_state') { s.setRuntime(m); return }
   if (m.type === 'project') {
     // Only the unnamed new run can adopt its server-assigned project.
@@ -281,7 +289,9 @@ function handle(m) {
   // The signed-in AgentForge account's requests, as they are used (Settings shows them live).
   if (m.type === 'account_usage') { s.setAccountUsage(m); return }
   if (!m.project) return
-  // What the app's tests are doing is watched in the Preview, so the Preview comes up for the first picture of a run (once.
+  // What the app's tests are doing is watched in the Preview, so the Preview comes up for the
+  // first picture of a run (once: someone who then goes elsewhere is left there), and for a
+  // finished build, so the app is what they see.
   if (m.type === 'show_preview') {
     if (m.project === s.project && !s.drawing) {
       // The project list has not caught up with the build yet, and the Preview is refused until it has.
@@ -289,7 +299,9 @@ function handle(m) {
     }
     return
   }
-  // A live picture arrives ten times a second: it goes straight to the screen, not through the session reducer (which copies the chat and the logs for every event).
+  // A live picture arrives ten times a second: it goes straight to the screen, not through the
+  // session reducer (which copies the chat and the logs for every event). The pointer arrives on
+  // its own and is kept across pictures.
   if (m.type === 'browser_frame' && m.frame) {
     if (m.project === s.project) {
       useStore.setState(st => ({ browserFrame: { ...m, cursor: st.browserFrame?.cursor, bg: m.bg || st.browserFrame?.bg } }))

@@ -3,7 +3,10 @@
 import { Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/** The mark beside a model that can look at pictures. */
+/**
+ * The mark beside a model that can look at pictures. Such a model can be shown the prototype's screens (the Studio
+ * photographs every page and has it check them), and can see the screenshots its own screenshot tool takes.
+ */
 export default function VisionBadge({ className }) {
   return (
     <span title="Can look at pictures: the prototype's screens are checked by looking at them"

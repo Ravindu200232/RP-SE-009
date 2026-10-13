@@ -59,17 +59,45 @@ class AccountsTest(unittest.TestCase):
         accounts.current(fresh=True)
         accounts.check()
 
+    def test_free_plan_hides_glm_and_replaces_an_older_choice(self):
+        self.enterContext(mock.patch.object(config, "built_in_engine", return_value={"url": "https://engine", "token": "x"}))
+        config.save_settings({accounts.TOKEN: "account-token", "model": "glm-5.3-flash:cloud"})
+        self.replies["/api/accounts/me"] = (200, {"account": self.approved()})
+        with mock.patch.object(httpd.ollama_cloud, "engine_names",
+                               return_value=["glm-5.3", "glm-5.3-flash", "deepseek-v4.1-flash"]):
+            shown = httpd.models({})
+        self.assertEqual([row["id"] for row in shown["cloud"]], [accounts.DEFAULT_FREE_MODEL])
+        self.assertEqual(shown["selected"], accounts.DEFAULT_FREE_MODEL)
+        self.assertEqual(config.setting("model"), accounts.DEFAULT_FREE_MODEL)
+        with self.assertRaisesRegex(accounts.NotAllowed, "unavailable on the free plan"):
+            accounts.check("glm-5.3:cloud")
+        with self.assertRaisesRegex(ValueError, "unavailable on the free plan"):
+            httpd.write_settings({"agent_model": "glm-5.3-flash:cloud"})
+        accounts.check(accounts.DEFAULT_FREE_MODEL)
+
+    def test_paid_and_admin_accounts_keep_glm_access(self):
+        self.enterContext(mock.patch.object(config, "built_in_engine", return_value={"url": "https://engine", "token": "x"}))
+        config.save_settings({accounts.TOKEN: "account-token"})
+        self.replies["/api/accounts/me"] = (200, {"account": self.approved(plan="paid")})
+        accounts.check("glm-5.3:cloud")
+        with mock.patch.object(httpd.ollama_cloud, "engine_names", return_value=["glm-5.3"]):
+            self.assertEqual(httpd.models({})["cloud"][0]["id"], "glm-5.3:cloud")
+        self.replies["/api/accounts/me"] = (200, {"account": self.approved(unlimited=True)})
+        accounts.current(fresh=True)
+        accounts.check("glm-5.3-flash:cloud")
+
     def test_local_ollama_needs_no_cloud_account_or_credit(self):
         config.save_settings({"engine": "local"})
         self.assertEqual(httpd.auth_me({})["user"]["id"], "local")
         accounts.check()
+        accounts.check("glm-5.3:cloud")
         accounts.record()
         self.assertFalse(accounts.flush())
         self.assertEqual(self.calls, [])
 
     def test_direct_personal_api_key_does_not_spend_agentforge_credit(self):
         config.save_settings({"engine": "cloud", "ollama_api_key": "personal"})
-        accounts.check()
+        accounts.check("glm-5.3-flash:cloud")
         self.assertEqual(self.calls, [])
 
     def test_checkout_uses_bearer_token_and_never_places_it_in_url(self):
@@ -78,12 +106,18 @@ class AccountsTest(unittest.TestCase):
         self.assertTrue(httpd.account_checkout({})["ok"])
         self.assertEqual(self.calls[-1], ("POST", "/api/accounts/checkout", {}, "account-token"))
 
-    def test_signup_receives_free_credit_and_signs_in_immediately(self):
-        self.replies["/api/accounts/signup"] = (201, {"token": "new-token", "account": self.approved(usedUsd=0, remainingUsd=8)})
+    def test_signup_waits_for_emailed_code_before_creating_an_account(self):
+        self.replies["/api/accounts/signup"] = (200, {"verificationRequired": True, "email": "nimal@example.com"})
         result = httpd.auth_signup({"username": "nimal", "email": "nimal@example.com", "password": "password"})
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["verificationRequired"])
+        self.assertEqual(config.setting(accounts.TOKEN, ""), "")
+        self.replies["/api/accounts/signup/verify"] = (201, {"token": "new-token", "account": self.approved(usedUsd=0, remainingUsd=8)})
+        result = httpd.auth_signup_verify({"email": "nimal@example.com", "code": "123456"})
         self.assertTrue(result["ok"])
         self.assertEqual(config.setting(accounts.TOKEN), "new-token")
         self.assertEqual(result["user"]["account"]["remainingUsd"], 8)
+        self.assertEqual(self.calls[-1][2], {"email": "nimal@example.com", "code": "123456"})
 
 
 if __name__ == "__main__":

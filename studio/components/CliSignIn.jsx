@@ -5,7 +5,15 @@ import { Check, ExternalLink, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button } from './ui'
 
-/** Signs in to a provider through its own command line tool (`cli_signin.py`. */
+/**
+ * Signs in to a provider through its own command line tool (`cli_signin.py`: `gh`, `vercel`,
+ * `netlify`, `az`, `aws`, `atlas`), the same shape for every one of them. Supabase is not one of these -
+ * its CLI has no browser sign-in at all; see `SupabaseConnect.jsx` for its own OAuth flow instead.
+ *
+ * Says whether the tool is installed (and how to install it if not), who it is already signed in as
+ * (which can be used as it is, with no browser), and otherwise runs its login: the code to type and
+ * the link to open appear here, and the sign-in finishes on its own once approved in the browser.
+ */
 export default function CliSignIn({ provider, onDone, region = '', label = '', add = false }) {
   const [tool, setTool] = useState(undefined)        // undefined: asking; null: could not ask
   const [state, setState] = useState(null)           // the running sign-in: { flow_id, title }

@@ -1,4 +1,10 @@
-"""The one authentication guide the wireframes, the prototype and the build all read."""
+"""The one authentication guide the wireframes, the prototype and the build all read.
+
+Like the selected design's DESIGN.md, it is a file in the workspace that each stage's agent reads itself:
+`prompts/shared/authentication.md`, staged at `.agentforge/auth/AUTHENTICATION.md`. It says how signing up,
+signing in, sessions, role-based access and the signed-in and signed-out navigation work; the specification
+still decides which roles and pages exist. A product with no sign-in gets no guide.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,7 +15,6 @@ from . import prompts, reference_staging
 PROMPT = "shared/authentication"
 FOLDER = ".agentforge/auth"
 NAME = "AUTHENTICATION.md"
-PATH = f"{FOLDER}/{NAME}"
 
 
 def needed(doc: Any) -> bool:

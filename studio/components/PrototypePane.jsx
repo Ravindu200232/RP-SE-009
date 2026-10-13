@@ -356,7 +356,8 @@ export default function PrototypePane({ project, hidden, onBuild, generating = f
     }
   }
 
-  // Photograph every screen and have a model that can look at pictures say what is wrong; fix it.
+  // Photograph every screen and have a model that can look at pictures say what is wrong; fix it. Or click through the journeys
+  // in a real browser, watch it, and fix what cannot be done by clicking or looks wrong.
   async function look(what) {
     try {
       await api.reviewScreens(project, what, true)

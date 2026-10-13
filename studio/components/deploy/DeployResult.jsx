@@ -7,12 +7,16 @@ import { useStore } from '@/lib/store'
 import { STATE_TEXT, TARGETS, TERMINAL } from '@/lib/deploy-constants'
 import { Button, SectionLabel, Tag } from '../ui'
 
-/** The last finished deployment, in short: what it was, where it is, whether it held up, and (when it stopped part of the way) the way to carry on. */
+/**
+ * The last finished deployment, in short: what it was, where it is, whether it held up, and (when it stopped part of the way)
+ * the way to carry on. Everything else about it is in the navigation, read live from the provider's own command line tool.
+ */
 export default function DeployResult({ data, onResumed }) {
   const project = useStore(s => s.project)
   const [resuming, setResuming] = useState(false)
   const [problem, setProblem] = useState('')
-  // The stopped run this card was resumed from: hidden from the moment it carries on, so its old error is gone and the pipeline shows instead.
+  // The stopped run this card was resumed from: hidden from the moment it carries on, so its old error is gone and the
+  // pipeline shows instead. If the resumed run stops again it finishes at another time, and the card comes back for it.
   const [resumedFrom, setResumedFrom] = useState(null)
   const last = data?.last
   if (!last || !TERMINAL.has(last.state)) return null

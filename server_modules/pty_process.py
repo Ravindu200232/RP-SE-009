@@ -1,4 +1,11 @@
-"""A command run as if from a real terminal, for the few tools whose sign-in refuses to start without one."""
+"""A command run as if from a real terminal, for the few tools whose sign-in refuses to start without one.
+
+The Atlas CLI's `atlas auth login` begins with an interactive menu ("Select authentication type"), and without a
+terminal it exits on the spot ("Incorrect function"): a plain pipe is not enough, on any platform. So this gives the
+command a pseudo-terminal (ConPTY on Windows, `pty` elsewhere) and presents it the way the sign-ins in `cli_signin.py`
+already expect a process to look: `.stdout` yields its lines (with the terminal's colour and cursor codes removed),
+`.poll()` / `.returncode` say whether it has finished, and `.send()` types an answer to a prompt.
+"""
 from __future__ import annotations
 
 import codecs
@@ -11,7 +18,8 @@ from typing import Callable, Iterator
 
 # Colour, cursor movement and title codes a terminal program prints; they are for a screen, not for reading.
 _ESCAPES = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()][A-Za-z0-9]|\x1b[=>MN78]")
-# A terminal moves to the next line with a cursor code rather than a newline.
+# A terminal moves to the next line with a cursor code rather than a newline; keep those as line breaks, or the
+# end of one sentence runs into the start of the next.
 _MOVES_DOWN = re.compile(r"\x1b\[[0-9;]*[BEHfJ]")
 _MOVES_RIGHT = re.compile(r"\x1b\[[0-9;]*C")
 _LINE_END = re.compile(r"\r\n|\r|\n")
@@ -190,7 +198,8 @@ def _spawn_windows(command: list[str], env: dict[str, str]) -> PtyProcess:
 
     startup = STARTUPINFOEXW()
     startup.StartupInfo.cb = ctypes.sizeof(STARTUPINFOEXW)
-    # Without this the child inherits this process's own (here redirected) standard handles and never sees the terminal.
+    # Without this the child inherits this process's own (here redirected) standard handles and never sees the
+    # terminal; with it, and no handles given, it takes them from the terminal.
     startup.StartupInfo.dwFlags = 0x00000100  # STARTF_USESTDHANDLES
     startup.lpAttributeList = ctypes.cast(attributes, ctypes.c_void_p)
     block = ctypes.create_unicode_buffer("".join(f"{k}={v}\0" for k, v in env.items()) + "\0")

@@ -55,9 +55,11 @@ export default function AgentDecision() {
   if (question.kind === 'setup') {
     return <SetupDecision question={question} left={left} sending={sending} onAnswer={answer} />
   }
-  // A question is not here either: it is a turn in the chat stream, answered in the box that sends everything else.
+  // A question is not here either: it is a turn in the chat stream, answered
+  // in the box that sends everything else. See `Asked` in AgentChat.
   if (question.kind === 'question') return null
-  // A drawing is looked at, not answered.
+  // A drawing is looked at, not answered. It belongs in the preview with the
+  // select and pencil tools, so nothing is rendered here for it.
   if (question.kind === 'prototype') return null
   return <DesignDecision question={question} left={left} sending={sending} onAnswer={answer} />
 }
@@ -66,7 +68,8 @@ export default function AgentDecision() {
 function SetupDecision({ question, left, sending, onAnswer }) {
   const choices = question.choices || []
   const [choice, setChoice] = useState(choices[0]?.id || '')
-  // Choosing Stripe should not ask for PayHere's merchant id, so the fields belong to the option and the question shows only the chosen one's.
+  // Choosing Stripe should not ask for PayHere's merchant id, so the fields
+  // belong to the option and the question shows only the chosen one's.
   const fields = [...(question.fields || []),
                   ...(choices.find(option => option.id === choice)?.fields || [])]
   const [values, setValues] = useState({})

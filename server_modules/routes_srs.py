@@ -1,4 +1,10 @@
-"""The `/srs/...` router."""
+"""The `/srs/...` router.
+
+The studio posts most specification work as a job — `{path, method, body}` — and
+polls for it, so one router serves both the direct GETs and the queued POSTs.
+Everything here is the SRS agent and the prototype agent's design stage; nothing
+here decides anything itself.
+"""
 from __future__ import annotations
 
 import re
@@ -51,7 +57,8 @@ def create_project(_project: str, body: dict) -> Any:
         raise ValueError("describe what you want built")
     hidden = privacy.scrub(idea) if privacy.enabled() else privacy.Scrubbed(idea)       # NotSent (a ValueError) when it cannot run
     idea = hidden.text
-    # The model picked beside the first input: the interview, the plan and the specification all run on the saved model, so it is saved here, before any of them...
+    # The model picked beside the first input: the interview, the plan and the specification all run on the
+    # saved model, so it is saved here, before any of them starts.
     chosen = str(body.get("model") or "").strip()
     level = str(body.get("thinking_level") or "").strip().lower()
     patch: dict[str, Any] = {}
@@ -280,7 +287,9 @@ _WORKING = ("srs", "wireframes", "wireframe-edit", "prototype", "prototype-edit"
 
 @route("POST", rf"/projects/{P}/app/text-edit")
 def edit_app_text(project: str, body: dict) -> Any:
-    """Retype some words on a page of the wireframes or the prototype: `old` becomes `new` in the app's source when `old` is."""
+    """Retype some words on a page of the wireframes or the prototype: `old` becomes `new` in the app's source when `old` is
+    written there in exactly one place, and the app is bundled again. Otherwise `{"ok": false, "reason"}` says why not, and the studio
+    hands the change to the agent."""
     kind = str(body.get("kind") or "")
     if kind not in web_app.KINDS:
         raise ValueError("the words are on the wireframes or on the prototype")

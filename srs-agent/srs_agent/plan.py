@@ -1,4 +1,9 @@
-"""The approval plan."""
+"""The approval plan.
+
+What the customer actually reads and signs off on. It is a ceiling, not a
+summary: the specification's tables come from its records, its roles from its
+users, its pages from its screens, and nothing downstream may exceed it.
+"""
 from __future__ import annotations
 
 import json
@@ -13,7 +18,8 @@ from . import interview
 
 RECORD = ("plan.json",)
 
-# Sections a revision may return on their own; anything returned replaces that section outright, and anything omitted is kept.
+# Sections a revision may return on their own; anything returned replaces that
+# section outright, and anything omitted is kept.
 SECTIONS = ("app_name", "product_intent", "users", "screens", "records",
             "workflows", "features", "account_policy", "look_and_feel",
             "assumptions", "open_questions")
@@ -33,7 +39,11 @@ def save(session: ProjectSession, data: dict[str, Any]) -> None:
 
 
 def _merge(previous: dict[str, Any] | None, revised: dict[str, Any]) -> dict[str, Any]:
-    """A revision replaces the sections it returns and keeps the ones it does not."""
+    """A revision replaces the sections it returns and keeps the ones it does not.
+
+    `open_questions` is the exception: a revision that returns none has settled
+    them all, which is what lets the customer approve.
+    """
     if not previous:
         return revised
     merged = dict(previous)

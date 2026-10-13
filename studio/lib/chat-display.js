@@ -1,4 +1,10 @@
-/** Presentation-only cleanup for natural-language agent messages. */
+/**
+ * Presentation-only cleanup for natural-language agent messages.
+ *
+ * The backend stream is evidence and must remain byte-for-byte intact in the
+ * store. This module only prepares ordinary prose for display. Command and
+ * command-output turns deliberately never call it.
+ */
 
 const MOJIBAKE = [
   ['ï»¿', ''], ['Â·', '·'], ['Â©', '©'], ['Â®', '®'], ['Â ', ' '],
@@ -31,7 +37,8 @@ export function cleanChatProse(value) {
     return marker
   }
 
-  // Keep inline code and unquoted glob paths exact while their display marks are removed.
+  // Keep inline code and unquoted glob paths exact while their display marks
+  // are removed. A path such as **/*.test.js is not Markdown emphasis.
   text = text.replace(/(`+)([^\n]*?)\1/g, (_all, _ticks, body) => protect(body))
   text = text.replace(/\*\*\/[\w*?./\\-]+/g, match => protect(match))
 

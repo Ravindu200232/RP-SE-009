@@ -1,4 +1,20 @@
-"""The specification's diagrams, looked at: a model that can see pictures checks how each one is drawn, and what it finds is fixed."""
+"""The specification's diagrams, looked at: a model that can see pictures checks how each one is drawn, and what it finds is fixed.
+
+Mermaid draws every diagram to an SVG. That the source parsed does not say the picture is readable: labels run out of their
+shapes, a line goes through a box, a diagram is drawn so wide that its text is tiny. So each SVG is photographed in a browser
+that is already on the computer (silent: no window opens, nothing the person is signed in to is touched) and the picture goes to
+a vision model, which says what is visibly wrong with it.
+
+At most two rounds, never more:
+
+1. round 1 looks at every diagram; the ones with a problem that matters are drawn again from a corrected source, and the
+   corrected diagram has to render;
+2. round 2 looks once more at only the diagrams that were drawn again. Whatever is still wrong is reported as it is, and a
+   diagram that came out worse than it was is put back as it was.
+
+A model that cannot look at pictures (`server_modules/vision.py`), or a computer with no browser, skips all of this with one
+line saying why. Neither is an error, and nothing here ever fails the specification: it is a review, not a gate.
+"""
 from __future__ import annotations
 
 import html
@@ -79,7 +95,8 @@ def _problems_text(defects: list[dict[str, Any]]) -> str:
 
 
 def _redraw(project: str, session: Any, model: str, entry: dict[str, Any], review: dict[str, Any]) -> dict[str, Any] | None:
-    """The diagram drawn again from a corrected source. Returns what the entry was before (to put it back), or None when the."""
+    """The diagram drawn again from a corrected source. Returns what the entry was before (to put it back), or None when the
+    corrected source did not make a diagram that Mermaid draws: the diagram then stays as it was."""
     kind = str(entry["kind"])
     old_source = str(entry.get("source") or "")
     request = prompts.load("srs/diagram-look-fix", kind=kind.replace("_", " "), source=old_source[:SOURCE_LIMIT],
@@ -120,7 +137,11 @@ def _save_report(session: Any, report: dict[str, Any]) -> None:
 
 def run(project: str, session: Any, diagrams: list[dict[str, Any]], fix: bool = True, model: str = "",
         force: bool = False) -> dict[str, Any]:
-    """Look at the drawn diagrams and fix what is wrong with how they are drawn (`fix`: false only looks and reports)."""
+    """Look at the drawn diagrams and fix what is wrong with how they are drawn (`fix`: false only looks and reports).
+
+    `diagrams` are the specification's diagram entries; a corrected one is changed in place, so the caller saves the document
+    afterwards. `force` runs it even when the setting turns it off, because it was asked for. Always returns a result, never
+    raises (except for Stop)."""
     if not enabled() and not force:
         return {"status": "off"}
     rows = [d for d in diagrams if isinstance(d, dict) and d.get("kind") and _svg_of(d) and d.get("source")

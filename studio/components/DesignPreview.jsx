@@ -13,10 +13,12 @@ const BORDERS = { hairline: '1px', defined: '1.5px', bold: '2.5px' }
 const UNITS = { compact: 6, cozy: 8, comfortable: 11 }
 const SCALES = { compact: 0.94, balanced: 1, comfortable: 1.06, dramatic: 1.14 }
 
-// The content column, as a share of the page.
+// The content column, as a share of the page. The catalogue's widths are for a
+// real viewport; shown at this size, what reads is the proportion.
 const WIDTHS = { 1120: '78%', 1280: '87%', 1440: '95%', full: '100%' }
 
-// How long anything here takes to react, from the motion choice.
+// How long anything here takes to react, from the motion choice. Hovering the
+// preview is then the setting itself, not a description of it.
 const SPEEDS = { none: '0ms', subtle: '150ms', expressive: '260ms' }
 
 /** How the product speaks, in the two places a page always speaks. */

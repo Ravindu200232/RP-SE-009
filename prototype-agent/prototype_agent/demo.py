@@ -1,4 +1,9 @@
-"""The sign-in the prototype demonstrates: who the roles are, which pages each may open, and one fictitious account for each."""
+"""The sign-in the prototype demonstrates: who the roles are, which pages each may open, and one fictitious account for each.
+
+What is the same for every prototype is worked out here from the specification, without a model, so the accounts the prototype signs in
+with (`src/demo.ts`, read by `src/lib/session.tsx`) are the same ones the finished application is seeded with (`demo-accounts.json`).
+How the pages look is the agent's.
+"""
 from __future__ import annotations
 
 import re
@@ -45,7 +50,12 @@ def _items(value: Any) -> list[str]:
 
 
 def can_open(doc: dict, role: dict) -> tuple[list[dict], list[dict]]:
-    """The pages a role may open and the ones it may not."""
+    """The pages a role may open and the ones it may not.
+
+    A page is open to a role when it needs no sign-in, when the page's own roles name it, or when the access matrix lists the page
+    for it by name or by route. Either source is enough: an access matrix that names pages differently from the page list must not
+    take a role's own pages away from it.
+    """
     names = {_norm(name) for name in _names(role)}
     row = next((r for r in (doc.get("role_access_matrix") or []) if isinstance(r, dict) and _norm(r.get("role")) in names), None)
     listed = _items((row or {}).get("allowed_pages"))
@@ -110,7 +120,8 @@ def draw_accounts(doc: dict) -> list[dict]:
         slug = re.sub(r"[^a-z0-9]+", ".", key.lower()).strip(".") or f"user{index}"
         yes, no = can_open(doc, role)
         destinations = [str(page["route"]) for page in yes if str(page.get("route")) != sign_in]
-        # A role signs in to the top of its own area — the dashboard or account page it came for — not to the public home page: of the signed-in pages it may open...
+        # A role signs in to the top of its own area — the dashboard or account page it came for — not to the public home page:
+        # of the signed-in pages it may open, the one with the shortest fixed route.
         own = [route for route in destinations if (protected.get(route) or {}).get("login_required")]
         lands_on = (min(own, key=lambda route: ("[" in route, len([part for part in route.split("/") if part])))
                     if own else (destinations or [sign_in])[0])
@@ -136,7 +147,8 @@ def _some(pages: list[dict], skip: str = "", most: int = 6) -> str:
 
 
 def accounts_message(accounts: list[dict], routes_out: list[dict], sign_in: str, built: bool = False) -> str:
-    """What the customer is told when the prototype (or, `built`, the application) is finished: how to enter as each role, and how."""
+    """What the customer is told when the prototype (or, `built`, the application) is finished: how to enter as each role, and how
+    much each role can open. The accounts are only ever given here, in the chat: no page of the app shows them."""
     if not accounts:
         return ""
     page = next((r for r in routes_out if r["route"] == sign_in), {})

@@ -1,4 +1,13 @@
-"""The approval plan's depth floor."""
+"""The approval plan's depth floor.
+
+Ported from RP-SE-009 `srs-agent/srs_agent/app/agents/plan_rules.py`.
+
+The check that matters is not "is there enough of it" in the abstract — a
+calculator with six tables is worse than a calculator with one. It is: does every
+thing the plan claims to have actually carry what makes it that thing. A screen
+with no purpose, a record with no fields, a role with nothing it can do — each of
+those is a hole that the specification, the build and the tests all fall through.
+"""
 from __future__ import annotations
 
 import re
@@ -6,7 +15,8 @@ from typing import Any, Callable
 
 PRIVILEGED = ("admin", "manager", "owner", "staff", "cashier", "operator", "moderator")
 REGISTRATION_MODES = {"open", "admin_created", "invite", "request", "none"}
-# A product with one screen and no stored records is a real product; it just is not the kind this depth floor is about.
+# A product with one screen and no stored records is a real product; it just is
+# not the kind this depth floor is about.
 THIN_ARCHETYPES = {"landing-single-page", "single-tool", "marketing"}
 
 MIN_INTENT_CHARS = 120

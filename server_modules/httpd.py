@@ -1,4 +1,9 @@
-"""The studio's HTTP API."""
+"""The studio's HTTP API.
+
+Every route the studio calls, on one threaded server. Work that needs a model
+never runs inline — it goes through `jobs` and the browser polls — so a
+specification that takes ten minutes does not hold a socket open for ten minutes.
+"""
 from __future__ import annotations
 
 import base64
@@ -68,7 +73,9 @@ def _project(ctx: dict[str, Any]) -> str:
     return name
 
 
-# ========================================================================= who is signed in...
+# =========================================================================
+# who is signed in
+# =========================================================================
 
 LOCAL_USER = {"id": "local", "username": "local", "name": "You",
               "email": "", "plan": "local"}
@@ -77,7 +84,12 @@ LOCAL_USER = {"id": "local", "username": "local", "name": "You",
 @route("GET", r"/health")
 @route("GET", r"/healthz")
 def health(_ctx: dict) -> Any:
-    """A dependency-free readiness response for the local Studio API."""
+    """A dependency-free readiness response for the local Studio API.
+
+    This deliberately does not contact Ollama, a preview, or a cloud service:
+    callers can distinguish a reachable Studio from an unavailable optional
+    dependency and can use it safely while the rest of the application starts.
+    """
     return {
         "ok": True,
         "service": "agentforge-studio",
@@ -120,6 +132,16 @@ def auth_signup(ctx: dict) -> Any:
         return {"ok": False, "error": str(exc)}
 
 
+@route("POST", r"/auth/signup/verify")
+def auth_signup_verify(ctx: dict) -> Any:
+    if not accounts.enabled() or config.engine() == "local":
+        return {"ok": False, "error": "Email verification is for AgentForge Cloud accounts."}
+    try:
+        return accounts.verify_signup(str(ctx.get("email") or "").strip(), str(ctx.get("code") or "").strip())
+    except ConnectionError as exc:
+        return {"ok": False, "error": str(exc)}
+
+
 def auth_local(ctx: dict) -> Any:
     name = str(ctx.get("name") or ctx.get("username") or "").strip()
     user = {**LOCAL_USER, **({"name": name} if name else {}),
@@ -146,7 +168,9 @@ def account_checkout(_ctx: dict) -> Any:
     return accounts.checkout()
 
 
-# ========================================================================= what the studio asks on load...
+# =========================================================================
+# what the studio asks on load
+# =========================================================================
 
 @route("GET", r"/models")
 def models(_ctx: dict) -> Any:
@@ -171,11 +195,15 @@ def models(_ctx: dict) -> Any:
     cloud_models = [m for m in local if m["id"].endswith("-cloud") or m["id"].endswith(":cloud")]
     local_models = [m for m in local if m not in cloud_models]
     if engine in ("cloud", "built-in"):
-        # ollama.com itself (with the key, or through the built-in engine).
+        # ollama.com itself (with the key, or through the built-in engine): every model it serves, named the way
+        # the Ollama app names them (ollama_cloud.studio_name), so a choice made either way keeps working.
         seen = {m["id"] for m in cloud_models}
         cloud_models += [{"id": studio_name, "tag": "cloud", "remote": name}
                          for name in ollama_cloud.engine_names(saved)
                          if (studio_name := ollama_cloud.studio_name(name)) not in seen]
+    free_catalog = engine == "built-in" and accounts.free_plan()
+    if free_catalog:
+        cloud_models = [m for m in cloud_models if not accounts.restricted_model(m["id"])]
     return {
         "local": [m["id"] for m in local_models],
         "local_models": local_models,
@@ -185,7 +213,7 @@ def models(_ctx: dict) -> Any:
         "engine": engine,
         "ollama_ready": ready,
         "cloud_account": "",
-        "selected": saved.get("model", ""),
+        "selected": config.setting("model", "") if free_catalog else saved.get("model", ""),
     }
 
 
@@ -197,7 +225,10 @@ def privacy_status(_ctx: dict) -> Any:
 
 @route("GET", r"/models/capabilities")
 def model_capabilities(_ctx: dict) -> Any:
-    """Which of the models in `/models` can look at a picture (`{"capabilities": {id: {"vision": bool}}, "pending": n}`)."""
+    """Which of the models in `/models` can look at a picture (`{"capabilities": {id: {"vision": bool}}, "pending": n}`).
+
+    Ollama is asked per model (`vision.py`), a few at a time in the background, so this answers at once with what is known
+    and the picker asks again while `pending` is not zero."""
     listed = models({})
     ids = [str(row.get("id") if isinstance(row, dict) else row)
            for row in [*(listed.get("local_models") or []), *(listed.get("cloud") or [])]]
@@ -214,7 +245,13 @@ def ollama_test(ctx: dict) -> Any:
 
 
 def _safe_mcp_servers(saved: Any) -> list[dict[str, Any]]:
-    """Registered MCP servers, with each server's env values hidden."""
+    """Registered MCP servers, with each server's env values hidden.
+
+    An MCP server config can hold an API key the way `deploy_env` already
+    does; the browser gets back which env names are set, never their values,
+    the same "_set"/hint discipline this file already applies to other
+    secrets.
+    """
     safe = []
     for server in saved or []:
         if not isinstance(server, dict):
@@ -227,8 +264,8 @@ def _safe_mcp_servers(saved: Any) -> list[dict[str, Any]]:
 
 @route("GET", r"/settings")
 def read_settings(_ctx: dict) -> Any:
-    saved = config.settings()
     catalog = models({})
+    saved = config.settings()  # account refresh may migrate an older free-plan model choice
     deploy = {key: saved.get(key, "") for key in ("aws_profile", "aws_region", "aws_start_url", "aws_sso_region",
                                                   "github_client_id", "github_login", "azure_account",
                                                   "supabase_client_id", "supabase_org")}
@@ -258,7 +295,11 @@ def read_settings(_ctx: dict) -> Any:
 
 
 def _merge_mcp_servers(incoming: Any, previous: Any) -> list[dict[str, Any]]:
-    """Restore `env` values the browser never saw (see `_safe_mcp_servers`) for."""
+    """Restore `env` values the browser never saw (see `_safe_mcp_servers`) for
+    a server sent back unchanged; a server that supplies its own `env` (new,
+    or deliberately edited) keeps exactly that instead, so a settings save
+    triggered by adding or removing one server can never silently wipe
+    another server's secrets."""
     by_id = {s.get("id"): s for s in (previous or []) if isinstance(s, dict)}
     merged = []
     for server in incoming or []:
@@ -282,13 +323,18 @@ def write_settings(ctx: dict) -> Any:
     if patch.get("ollama_api_key") == "****":
         patch.pop("ollama_api_key")
     if "deploy_mongodb_uri" in patch:
-        # The same address rule a value question enforces (deploy_vars.accept).
+        # The same address rule a value question enforces (deploy_vars.accept): saved directly here or
+        # typed into the question's private box, a loopback address is refused either way, not just
+        # whichever path happens to run the check.
         patch["deploy_mongodb_uri"] = deploy_vars.check_database_uri(patch["deploy_mongodb_uri"])
     if "mcp_servers" in patch:
         patch["mcp_servers"] = _merge_mcp_servers(patch["mcp_servers"], config.setting("mcp_servers"))
     for alias in ("agent_model", "planner_model", "builder_model", "design_model"):
         if patch.get(alias):
             patch["model"] = patch[alias]
+    if (patch.get("model") and config.engine({**config.settings(), **patch}) == "built-in"
+            and accounts.free_plan() and accounts.restricted_model(patch["model"])):
+        raise ValueError("GLM 5.3 models are unavailable on the free plan. Choose another model.")
     if "engine" in patch and str(patch["engine"] or "").lower() not in ("", "built-in", "cloud", "local"):
         raise ValueError("engine is built-in, cloud, local, or empty to choose itself")
     # `cloud` is never saved: config.settings() derives it from the key and `engine` every time it is read.
@@ -300,7 +346,8 @@ def write_settings(ctx: dict) -> Any:
     return read_settings({})
 
 
-# The settings that make a service connected (a token, a profile, a connection string).
+# The settings that make a service connected (a token, a profile, a connection string): saving one changes who the command
+# line tools are signed in as, so what was remembered of it is dropped (`cli_signin.CliSignins.forget`).
 _ACCOUNT_SETTING = re.compile(r"^(github|vercel|netlify|azure|aws|mongodb|atlas|supabase)_|^deploy_mongodb_uri$")
 
 
@@ -449,7 +496,11 @@ def cli_signin_cancel(ctx: dict) -> Any:
 
 @route("POST", r"/supabase/connect/status")
 def supabase_connect_status(ctx: dict) -> Any:
-    """Whether this project already has its own Supabase project, without exposing its keys."""
+    """Whether this project already has its own Supabase project, without exposing its keys.
+
+    Signing in to the Supabase *account* is `/supabase/oauth/*` below, studio-wide - this is only
+    the per-project Supabase *project*, created once the build actually starts
+    (`builder_agent.build`, via `supabase_connect.ensure_project`)."""
     project = str(ctx.get("project") or "")
     store.require(project)
     return supabase_connect.status(project)
@@ -490,7 +541,10 @@ def supabase_oauth_remove(ctx: dict) -> Any:
 
 @route("GET", r"/supabase-oauth/callback")
 def supabase_oauth_callback(ctx: dict) -> Any:
-    """Where the browser lands after approving the sign-in on supabase.com: sent here by the engine's."""
+    """Where the browser lands after approving the sign-in on supabase.com: sent here by the engine's
+    sign-in broker, or - for a person's own OAuth app - registered as that app's callback URL directly
+    (`supabase_connect.REDIRECT_URI`, this studio's own API server). Only records what arrived; `poll()`
+    does the real exchange."""
     query = ctx.get("_query") or {}
     code, state = str(query.get("code") or ""), str(query.get("state") or "")
     error = str(query.get("error_description") or query.get("error") or "")
@@ -649,7 +703,9 @@ def decide(ctx: dict) -> Any:
     return {"ok": True}
 
 
-# ========================================================================= projects =========================================================================.
+# =========================================================================
+# projects
+# =========================================================================
 
 @route("POST", r"/workspace/pick")
 def pick_workspace(_ctx: dict) -> Any:
@@ -668,13 +724,17 @@ def delete_project(ctx: dict) -> Any:
 
     project = str(ctx.get("project") or "")
     store.require(project)
-    # Make the project disappear from the studio first.
+    # Make the project disappear from the studio first.  Deleting a generated
+    # application's node_modules tree can take seconds on Windows; moving the
+    # workspace aside is normally atomic, and physical cleanup can continue
+    # after the response without keeping the Delete button spinning.
     preview_runtime.stop(project)
     drop(project)
     workspace = config.workspace_for(project)
     external_workspace = config.has_custom_workspace(project)
     store.delete(project)
-    # A folder the customer explicitly selected belongs to them.
+    # A folder the customer explicitly selected belongs to them. Forget the
+    # Studio project, but never move or recursively delete that local folder.
     if external_workspace:
         return {"ok": True, "cleanup": "kept"}
     cleanup = workspace
@@ -687,7 +747,9 @@ def delete_project(ctx: dict) -> Any:
             workspace.replace(target)
             cleanup, moved = target, True
         except OSError:
-            # An antivirus scanner or an already-ending child process can hold a Windows file lock.
+            # An antivirus scanner or an already-ending child process can hold
+            # a Windows file lock.  The project is still deleted immediately;
+            # let cleanup retry independently rather than making the UI wait.
             cleanup = workspace
     threading.Thread(target=shutil.rmtree, args=(cleanup,),
                      kwargs={"ignore_errors": True}, name=f"delete:{project}",
@@ -696,7 +758,12 @@ def delete_project(ctx: dict) -> Any:
 
 
 def _runtime_state(project: str) -> dict[str, Any]:
-    """The shape the studio's `setRuntime` reducer reads."""
+    """The shape the studio's `setRuntime` reducer reads.
+
+    `serverId` and `revision` are not optional: the reducer compares them before
+    it compares anything else, and an object without them makes two different
+    projects look like the same stopped server.
+    """
     return preview_runtime.status(project)
 
 
@@ -754,7 +821,10 @@ def save_stream(_ctx: dict) -> Any:
 def workflow(ctx: dict) -> Any:
     project = _project(ctx)
     record = store.require(project)
-    # Reading workflow state must stay read-only and fast.
+    # Reading workflow state must stay read-only and fast. Constructing the
+    # tool agent here restored the full historical conversation merely because
+    # a browser opened a project, producing repeated "Picked the conversation
+    # back up" messages before focused prototype generation could begin.
     return {
         "project": project,
         "updated_at": record.get("updated_at", 0),
@@ -781,7 +851,10 @@ def _last_sync(project: str) -> dict:
 
 @route("POST", r"/projects/(?P<project>[^/]+)/plan-mode")
 def set_plan_mode(ctx: dict) -> Any:
-    """Turn plan mode on or off for one project: on (the default, and every."""
+    """Turn plan mode on or off for one project: on (the default, and every
+    project's behavior before this existed) proposes a plan for a typed
+    change and waits for approval; off applies it at once, the way a project
+    with no specification yet already does."""
     project = _project(ctx)
     record = store.update(project, plan_mode=bool(ctx.get("enabled", True)))
     return {"project": project, "plan_mode": record.get("plan_mode", True)}
@@ -935,7 +1008,9 @@ def spec_change(ctx: dict) -> Any:
     return runs.agent_update({"project": project, "prompt": str(ctx.get("prompt") or "")})
 
 
-# ========================================================================= the specification...
+# =========================================================================
+# the specification
+# =========================================================================
 
 @route("POST", r"/discard-srs")
 def discard_srs(ctx: dict) -> Any:
@@ -980,13 +1055,17 @@ def srs_pdf(ctx: dict) -> Any:
                "application/pdf", "SRS.pdf")
 
 
-# The rest of `/srs/...` is the SRS router, read directly on GET.
+# The rest of `/srs/...` is the SRS router, read directly on GET. `jobs` is
+# excluded because the job endpoints below own that prefix; without it, the
+# catch-all answers every poll with "no SRS route for /jobs/...".
 @route("GET", r"/srs/(?!jobs(?:/|$))(?P<rest>.+)")
 def srs_get(ctx: dict) -> Any:
     return routes_srs.dispatch("GET", "/" + ctx["_match"].group("rest"), {})
 
 
-# ========================================================================= the prototype...
+# =========================================================================
+# the prototype
+# =========================================================================
 
 @route("GET", r"/web/(?P<project>[^/]+)/(?P<kind>wireframe|prototype)/status")
 def web_app_status(ctx: dict) -> Any:
@@ -999,7 +1078,8 @@ def web_app_status(ctx: dict) -> Any:
 
 @route("GET", r"/web/(?P<project>[^/]+)/(?P<kind>wireframe|prototype)")
 def web_app_page(ctx: dict) -> Any:
-    """The wireframes or the prototype: one page, the bundled React app. The studio frames it and picks the screen with the."""
+    """The wireframes or the prototype: one page, the bundled React app. The studio frames it and picks the screen with the
+    address hash (`#/orders`); `?as=<role or email>` opens a prototype signed in."""
     project = _project(ctx)
     app = web_app.app_dir(session_for(project).workspace, ctx["_match"].group("kind"))
     try:
@@ -1035,7 +1115,9 @@ def theme_preview(ctx: dict) -> Any:
         raise HttpError(404, str(exc)) from exc
 
 
-# ========================================================================= testing =========================================================================.
+# =========================================================================
+# testing
+# =========================================================================
 
 @route("GET", r"/qa/(?P<project>[^/]+)")
 def qa_report(ctx: dict) -> Any:
@@ -1060,7 +1142,9 @@ def qa_pdf(ctx: dict) -> Any:
                "application/pdf", f"{project}-test-report.pdf")
 
 
-# ========================================================================= deployment =========================================================================.
+# =========================================================================
+# deployment
+# =========================================================================
 
 @route("GET", r"/deploy-results/(?P<project>[^/]+)")
 def deploy_results(ctx: dict) -> Any:
@@ -1082,7 +1166,9 @@ def deploy_get(ctx: dict) -> Any:
                                    {"_query": ctx.get("_query", {})})
 
 
-# ========================================================================= the socket's HTTP fallbacks...
+# =========================================================================
+# the socket's HTTP fallbacks
+# =========================================================================
 
 @route("POST", r"/agent-build")
 def http_agent_build(ctx: dict) -> Any:
@@ -1123,11 +1209,14 @@ def http_connection_retry(ctx: dict) -> Any:
 
 @route("POST", r"/review-screens")
 def http_review_screens(ctx: dict) -> Any:
-    """Look at the project's screens (the prototype's pages, the end-to-end tests' screenshots, or both) with a model that."""
+    """Look at the project's screens (the prototype's pages, the end-to-end tests' screenshots, or both) with a model that
+    can look at pictures, and fix what it finds; `fix: false` only reports."""
     return runs.review_screens(ctx)
 
 
-# ========================================================================= attachments and uploads...
+# =========================================================================
+# attachments and uploads
+# =========================================================================
 
 @route("POST", r"/build-attach")
 def attach(ctx: dict) -> Any:
@@ -1338,7 +1427,9 @@ def image_work(_ctx: dict) -> Any:
     raise HttpError(501, "no image engine is configured on this machine")
 
 
-# ========================================================================= jobs =========================================================================.
+# =========================================================================
+# jobs
+# =========================================================================
 
 def _queue(router, ctx: dict, label: str) -> Any:
     path = str(ctx.get("path") or "")
@@ -1350,7 +1441,9 @@ def _queue(router, ctx: dict, label: str) -> Any:
              else bus.DEVELOPER)
     on_cancel = None
     if project:
-        # Register the cancellation token before the queued worker exists.
+        # Register the cancellation token before the queued worker exists. A
+        # Stop received immediately after this response can therefore never be
+        # erased later by ProjectSession.begin().
         session = session_for(project)
         session.prepare_run()
         if path.rstrip("/").endswith("/wireframes/approve"):
@@ -1409,7 +1502,9 @@ def local_job_poll(ctx: dict) -> Any:
     return jobs.poll(ctx["_match"].group("job"))
 
 
-# ========================================================================= the server =========================================================================.
+# =========================================================================
+# the server
+# =========================================================================
 
 def dispatch(method: str, path: str, body: dict[str, Any] | None = None,
              query: dict[str, str] | None = None) -> Any:
@@ -1425,7 +1520,11 @@ def dispatch(method: str, path: str, body: dict[str, Any] | None = None,
 
 def respond(method: str, path: str, body: dict[str, Any] | None = None,
             query: dict[str, str] | None = None) -> tuple[int, Any, str, str]:
-    """One request, answered: `(status, payload, content type, download name)`."""
+    """One request, answered: `(status, payload, content type, download name)`.
+
+    The same answer whichever way the request came: over HTTP (`Studio`) or over the desktop app's stdin
+    (`stdio_bridge`). A `bytes` payload is a file; anything else is JSON.
+    """
     try:
         result = dispatch(method, path, body, query)
     except HttpError as exc:
@@ -1437,7 +1536,9 @@ def respond(method: str, path: str, body: dict[str, Any] | None = None,
     except (ValueError, TypeError) as exc:
         return 400, {"error": str(exc)}, "application/json", ""
     except Exception as exc:  # noqa: BLE001 - the browser needs the reason
-        # Printed as well as returned.
+        # Printed as well as returned. A 500 whose message is empty shows in
+        # the studio as a bare "HTTP 500", which says nothing about what
+        # actually broke; the traceback here is the only record of it.
         traceback.print_exc()
         return 500, {"error": str(exc) or exc.__class__.__name__, "where": f"{method} {path}",
                      "detail": traceback.format_exc()[-1500:]}, "application/json", ""

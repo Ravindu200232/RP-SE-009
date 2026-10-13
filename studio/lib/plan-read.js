@@ -1,4 +1,15 @@
-/** A plan, as something a person reads rather than a file they scan. */
+/**
+ * A plan, as something a person reads rather than a file they scan.
+ *
+ * The planner writes Markdown for the build pass: headings, bullets, inline
+ * backticks, the occasional table. Shown raw in a monospace block it reads as
+ * output rather than as a proposal — and this is the one moment someone is
+ * being asked to approve it, so it has to be legible at a glance.
+ *
+ * Deliberately small: headings, list items, paragraphs and code. A full
+ * Markdown parser would bring more than this needs, and the planner's own
+ * prompt fixes the shape of what it writes.
+ */
 
 const HEADING = /^(#{1,6})\s+(.*)$/
 const BULLET = /^\s*[-*+]\s+(.+)$/
@@ -38,7 +49,8 @@ export function readPlan(markdown) {
     if (!raw.trim()) { flush(); continue }
     if (DIVIDER.test(raw)) { flush(); continue }
 
-    // A table is rare in a plan and never the interesting part; keep its rows as plain lines rather than pretending to render a table badly.
+    // A table is rare in a plan and never the interesting part; keep its rows
+    // as plain lines rather than pretending to render a table badly.
     if (TABLE_ROW.test(raw)) {
       const cells = raw.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim())
       if (cells.every(cell => /^:?-{2,}:?$/.test(cell))) continue
@@ -79,7 +91,10 @@ export function readPlan(markdown) {
   return blocks
 }
 
-/** Inline markup as parts, so `**bold**` and `` `code` `` render rather than showing their own punctuation. */
+/**
+ * Inline markup as parts, so `**bold**` and `` `code` `` render rather than
+ * showing their own punctuation.
+ */
 export function readInline(text) {
   const parts = []
   const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*|_[^_]+_)/g

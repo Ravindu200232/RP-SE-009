@@ -1,4 +1,16 @@
-"""A model that can look at pictures reviews every prototype page, and what it finds is fixed."""
+"""A model that can look at pictures reviews every prototype page, and what it finds is fixed.
+
+After the prototype is bundled, every page is photographed in a browser that is already on the computer (`screens.py`, silent:
+no window, nothing the person is signed in to touched) at desktop and mobile width, and the pictures go to the model. It says
+what is visibly wrong with each page (cut-off text, broken layout, a missing image, unreadable contrast, a signed-out header
+on a signed-in page); the problems that matter are given to the agent to fix in the prototype's files; the app is bundled again, the pages that
+changed are photographed and looked at once more, and what is still wrong is reported as it is. All of it is in the chat stream, with
+the pictures.
+
+A model that cannot look at pictures (Ollama says so: `server_modules/vision.py`, and the model picker marks the ones that
+can) skips all of this, with one line saying why. So does a computer with no browser to take the pictures with. Neither is an
+error, and nothing here ever fails the prototype: it is a review, not a gate.
+"""
 from __future__ import annotations
 
 import hashlib
@@ -16,7 +28,6 @@ REPORT = "report.json"
 SYSTEM = screen_review.SYSTEM
 MAX_DEFECTS = screen_review.MAX_DEFECTS
 FIX_SEVERITIES = screen_review.FIX_SEVERITIES
-_ORDER = screen_review.ORDER
 _clean = screen_review.clean
 
 
@@ -93,7 +104,10 @@ def _fix_request(findings: list[dict[str, Any]], accounts: list[dict[str, Any]])
 
 def run(project: str, session: Any, rows: list[dict[str, Any]], accounts: list[dict[str, Any]],
         fix: bool = True, model: str = "", force: bool = False, rebuild: Any = None) -> dict[str, Any]:
-    """Review the prototype's pages with a vision model and fix what it finds (`fix`: false only looks and reports)."""
+    """Review the prototype's pages with a vision model and fix what it finds (`fix`: false only looks and reports).
+    `model` is the one this run chose, else the project's; `force` runs it even when the setting turns it off, because it
+    was asked for; `rebuild` bundles the app again after the fix, so that the pages are photographed as they are now.
+    Always returns a result, never raises."""
     if not enabled() and not force:
         return {"status": "off"}
     try:
@@ -159,7 +173,7 @@ def _review(project: str, session: Any, model: str, rows: list[dict[str, Any]], 
     fixed_pages: list[str] = []
     fix_stopped = ""
     rounds: list[dict[str, Any]] = []
-    # Round by round: fix what is still wrong, look again.
+    # Round by round: fix what is still wrong, look again. The first round runs by itself; each one after it is asked for.
     while fix:
         request, count = _fix_request(list(final.values()), accounts)
         bad = {f["file"] for f in final.values() if any(d["severity"] in FIX_SEVERITIES for d in f["defects"])}
@@ -178,7 +192,8 @@ def _review(project: str, session: Any, model: str, rows: list[dict[str, Any]], 
         after = _fingerprint(root, rows)
         shared = before.get(SHARED) != after.get(SHARED)
         own = [r for r in rows if before.get(str(r["file"])) != after.get(str(r["file"]))]
-        # The first round looks again at every page a changed shared file (the stylesheet, a component) can change.
+        # The first round looks again at every page a changed shared file (the stylesheet, a component) can change; a later
+        # round only at the pages it was fixing and the pages whose own file it changed.
         again = [r for r in rows if (shared and number == 1) or r in own or (str(r["file"]) in bad and (shared or own))]
         fixed_pages += [str(r["file"]) for r in again if str(r["file"]) not in fixed_pages]
         if again and rebuild:

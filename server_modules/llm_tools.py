@@ -1,4 +1,22 @@
-"""A minimal, genuinely read-only tool loop for `llm.py`'s focused calls."""
+"""A minimal, genuinely read-only tool loop for `llm.py`'s focused calls.
+
+`complete()`/`complete_json()` are one call, one answer, no
+history and no tools — deliberately, so a stage writing many artifacts never
+spends its whole output budget on the first one. But the context those calls
+need was, until now, read off disk by Python and pasted into the prompt
+string, which never shows up in the studio's chat stream the way a real tool
+call does. This gives those calls an opt-in, read-only escape hatch: the same
+Ollama SDK tool-calling mechanism the main agent already uses
+(`src/ollama_terminal/agent.py`), restricted to `list_files`/`read_file`/
+`search_text`/`web_search`/`web_fetch`/`browser_inspect` — nothing that changes
+application source or runs a command (browser inspection saves QA evidence) — with every call reported the same way
+`StudioTools` already reports the main agent's own.
+
+Kept out of `llm.py` itself so its common no-tools path carries no extra
+import cost, and so this dispatcher is testable on its own. Never imports
+`llm.py` (the caller injects its own bound `chat` function and client), so
+there is no import cycle.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -17,7 +35,10 @@ MAX_TOOL_ROUNDS = 6
 
 _SENSITIVE_NAMES = {".env", ".env.local", ".env.production"}
 
-# Models that rejected a tools= call this process, so later calls for the same model skip straight to the tools-less path instead of failing again first.
+# Models that rejected a tools= call this process, so later calls for the same
+# model skip straight to the tools-less path instead of failing again first.
+# These calls worked with zero tools before this existed, so the model just
+# gets that behavior back rather than losing the whole generation stage.
 _UNSUPPORTED_MODELS: set[str] = set()
 
 
@@ -27,7 +48,9 @@ def _sensitive(relative: str) -> bool:
 
 
 def tag_effort(tools: "ReadOnlyTools | None", think: bool, label: str) -> None:
-    """Log this call's effort level — only possible when it was made with a."""
+    """Log this call's effort level — only possible when it was made with a
+    project to log against (`tools` is `None` for the many tool-less callers
+    that never opted into the read-only tool in the first place)."""
     if tools is None or not tools.project:
         return
     bus.log(tools.project, "INFO",
@@ -35,14 +58,29 @@ def tag_effort(tools: "ReadOnlyTools | None", think: bool, label: str) -> None:
 
 
 def effort_level(think: bool, tool_rounds: int) -> str:
-    """A rough, informational four-level read on one call's weight."""
+    """A rough, informational four-level read on one call's weight.
+
+    Ollama has no native "effort" concept — only `think` (reasoning on/off).
+    This combines it with how many tool round trips the call needed before
+    answering: low (a plain completion), medium (looked something up first),
+    high (reasoned, at most one lookup), ultra (reasoned and looked up more
+    than once — the heaviest calls, e.g. a full SRS document or build plan).
+    """
     if think:
         return "ultra" if tool_rounds >= 2 else "high"
     return "medium" if tool_rounds >= 1 else "low"
 
 
 class ReadOnlyTools:
-    """Workspace-rooted, read-only dispatcher."""
+    """Workspace-rooted, read-only dispatcher.
+
+    `call()` only ever invokes `tool_list_files`/`tool_read_file`/
+    `tool_search_text`/`tool_web_search`/`tool_web_fetch`/`tool_browser_inspect`
+    directly — it never
+    goes through `WorkspaceTools.execute()`'s generic name-based dispatch, so
+    there is no code path to `write_file`/`replace_text`/`run_command` at
+    all, even if a model hallucinates one of those names.
+    """
 
     def __init__(self, workspace: Path, project: str = "", role: str = "", client: Any = None,
                  use_local_web: bool = True, web_host: str = "http://localhost:11434"):
@@ -51,7 +89,8 @@ class ReadOnlyTools:
         self.project = project
         self.role = role or bus.DEVELOPER
         self.rounds = 0
-        # Focused LLM calls use WorkspaceTools rather than StudioTools, so provide the same managed-preview lookup explicitly.
+        # Focused LLM calls use WorkspaceTools rather than StudioTools, so
+        # provide the same managed-preview lookup explicitly.
         self._tools.browser_url = self._browser_url
 
     def _browser_url(self) -> str:
@@ -106,7 +145,15 @@ class ReadOnlyTools:
 def _stream_chat(chat: Callable[..., Any], kwargs: dict[str, Any],
                  on_token: Callable[[str], None],
                  on_usage: Callable[[Any], None] | None = None) -> Any:
-    """One `chat(**kwargs, stream=True)` call, forwarding each content delta."""
+    """One `chat(**kwargs, stream=True)` call, forwarding each content delta
+    to `on_token` as it arrives, returning the same shape a non-streamed call
+    returns (one assembled message) so every caller downstream — the tool-call
+    loop above, `llm.py`'s own repair loops — reads it identically either way.
+
+    Ollama's streaming chunks carry a delta in `.message.content`, not a
+    running total, and `.message.tool_calls` on whichever chunk actually
+    carries them (not necessarily the last one) — both are accumulated here.
+    """
     content: list[str] = []
     thinking: list[str] = []
     calls: list[Any] = []
@@ -121,6 +168,8 @@ def _stream_chat(chat: Callable[..., Any], kwargs: dict[str, Any],
             thinking.append(delta.thinking)
         if delta.tool_calls:
             calls.extend(delta.tool_calls)
+    if final is None or getattr(final, "done", None) is False:
+        raise ConnectionError("The model stream ended before its final response.")
     if final is not None and on_usage is not None:
         on_usage(final)
     return ollama.Message(role="assistant", content="".join(content),
@@ -132,9 +181,26 @@ def run_chat(chat: Callable[..., Any], kwargs: dict[str, Any],
              on_stream_start: Callable[[], None] | None = None,
              on_stream_token: Callable[[str], None] | None = None,
              on_usage: Callable[[Any], None] | None = None) -> Any:
-    """Drive one `chat(**kwargs)` call through read-only tool round trips."""
+    """Drive one `chat(**kwargs)` call through read-only tool round trips.
+
+    Returns the final message. `chat` is the caller's own bound `client().chat`,
+    injected so this module never has to import `llm.py`. With `tools=None`,
+    or a model already known this process not to support tool calling at all,
+    this is exactly `chat(**kwargs).message` — today's behavior, unchanged.
+
+    `on_stream_token`, when given, streams every round through it live rather
+    than waiting for each call to finish — including a tool round's own
+    narration before its tool call, which is real model output but not "the
+    file". `on_stream_start` fires before each round's first token, which a
+    caller uses to reset what it's showing: a round that turns out to want a
+    tool is superseded by the next round's reset the moment it starts, so
+    what is left on screen once the loop returns is always the true final
+    content, never a stale tool-round narration.
+    """
     def once(round_kwargs: dict[str, Any]) -> Any:
         # Cloud's terminal stream is where it reliably provides token counts.
+        # A caller may also ask to stream visible text. In both cases preserve
+        # the same assembled Message contract for the read-only tool loop.
         if on_stream_token is None and not round_kwargs.get("stream"):
             response = chat(**round_kwargs)
             if on_usage is not None:
@@ -145,7 +211,13 @@ def run_chat(chat: Callable[..., Any], kwargs: dict[str, Any],
         return _stream_chat(chat, round_kwargs, on_stream_token or (lambda _token: None), on_usage)
 
     def call(round_kwargs: dict[str, Any]) -> Any:
-        """One round, asked for again whole when its reply is cut off part-way."""
+        """One round, asked for again whole when its reply is cut off part-way.
+
+        The retrying client asks again when a request fails before its first word; once words have been handed on it cannot
+        repeat them. Here the words are only being collected into one message, so a connection that closes in the middle of
+        the reply ("peer closed connection without sending complete message body") loses nothing but that attempt: the round
+        is asked for again, as the client would have done, and a caller that shows the words starts them over
+        (`on_stream_start`)."""
         attempt = 0
         owner = getattr(chat, "__self__", None)
         while True:

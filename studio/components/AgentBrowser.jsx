@@ -1,6 +1,12 @@
 'use client'
 
-/** A live screencast of a browser the app is being driven in, shown in the preview. */
+/**
+ * A live screencast of a browser the app is being driven in, shown in the preview.
+ *
+ *  - a TEST run (`shot.kind === 'test'`) fills the pane like the website itself: no window chrome,
+ *    the page's own background around it, the pointer and the element being used drawn over it;
+ *  - the agent's own browser keeps its small window frame, so it is not mistaken for the app.
+ */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { MousePointer2 } from 'lucide-react'
@@ -19,7 +25,9 @@ function previewImageBox(stage, image) {
   const naturalHeight = image.naturalHeight
   if (!parent.width || !parent.height || !naturalWidth || !naturalHeight) return null
 
-  // `object-contain` letterboxes a frame inside the img element.
+  // `object-contain` letterboxes a frame inside the img element. Its DOM box
+  // is the full stage, so calculate the actual painted image box before
+  // mapping CDP's viewport coordinates into it. `object-top` keeps y at zero.
   const scale = Math.min(parent.width / naturalWidth, parent.height / naturalHeight)
   const width = naturalWidth * scale
   const height = naturalHeight * scale

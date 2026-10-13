@@ -1,10 +1,13 @@
-/** Fast LCS unified line diff algorithm for comparing text revisions. */
+/**
+ * Fast LCS unified line diff algorithm for comparing text revisions.
+ * Produces GitHub-style diff lines with additions, deletions, and unchanged lines.
+ */
 
 export function computeLineDiff(oldText = '', newText = '') {
   const oldLines = String(oldText || '').split(/\r?\n/)
   const newLines = String(newText || '').split(/\r?\n/)
 
-  // If old text is empty, everything is an addition.
+  // If old text is empty, everything is an addition
   if (!oldText && newText) {
     return {
       lines: newLines.map((text, i) => ({ type: 'add', text, newNo: i + 1 })),
@@ -13,7 +16,7 @@ export function computeLineDiff(oldText = '', newText = '') {
     }
   }
 
-  // If new text is empty, everything is a deletion.
+  // If new text is empty, everything is a deletion
   if (oldText && !newText) {
     return {
       lines: oldLines.map((text, i) => ({ type: 'del', text, oldNo: i + 1 })),
@@ -22,7 +25,7 @@ export function computeLineDiff(oldText = '', newText = '') {
     }
   }
 
-  // Optimize common prefix.
+  // Optimize common prefix
   let prefixCount = 0
   while (
     prefixCount < oldLines.length &&
@@ -32,7 +35,7 @@ export function computeLineDiff(oldText = '', newText = '') {
     prefixCount++
   }
 
-  // Optimize common suffix.
+  // Optimize common suffix
   let suffixCount = 0
   while (
     suffixCount < oldLines.length - prefixCount &&
@@ -45,7 +48,7 @@ export function computeLineDiff(oldText = '', newText = '') {
   const midOld = oldLines.slice(prefixCount, oldLines.length - suffixCount)
   const midNew = newLines.slice(prefixCount, newLines.length - suffixCount)
 
-  // Compute LCS matrix on middle section.
+  // Compute LCS matrix on middle section
   const m = midOld.length
   const n = midNew.length
   const dp = Array.from({ length: m + 1 }, () => new Int32Array(n + 1))
@@ -60,7 +63,7 @@ export function computeLineDiff(oldText = '', newText = '') {
     }
   }
 
-  // Backtrack LCS.
+  // Backtrack LCS
   let i = m
   let j = n
   const midDiff = []
@@ -81,19 +84,19 @@ export function computeLineDiff(oldText = '', newText = '') {
 
   midDiff.reverse()
 
-  // Assemble full diff with line numbers.
+  // Assemble full diff with line numbers
   const result = []
   let curOld = 1
   let curNew = 1
   let additions = 0
   let deletions = 0
 
-  // 1.
+  // 1. Common prefix
   for (let k = 0; k < prefixCount; k++) {
     result.push({ type: 'same', text: oldLines[k], oldNo: curOld++, newNo: curNew++ })
   }
 
-  // 2.
+  // 2. Middle changes
   for (const item of midDiff) {
     if (item.type === 'same') {
       result.push({ type: 'same', text: item.text, oldNo: curOld++, newNo: curNew++ })
@@ -106,7 +109,7 @@ export function computeLineDiff(oldText = '', newText = '') {
     }
   }
 
-  // 3.
+  // 3. Common suffix
   const oldSuffixStart = oldLines.length - suffixCount
   for (let k = 0; k < suffixCount; k++) {
     result.push({ type: 'same', text: oldLines[oldSuffixStart + k], oldNo: curOld++, newNo: curNew++ })

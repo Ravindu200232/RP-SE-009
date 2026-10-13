@@ -19,7 +19,12 @@ if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
 
 
 def choose_folder() -> str:
-    """Open Explorer's folder chooser and return a safe empty folder or ``""``."""
+    """Open Explorer's folder chooser and return a safe empty folder or ``""``.
+
+    A cancellation is normal and intentionally returns an empty value. The
+    fixed PowerShell program has no customer-supplied shell content; its sole
+    job is presenting Windows' own folder browser on this local machine.
+    """
     if os.name != "nt":
         raise ValueError("choosing a local folder is available in the Windows desktop app")
     try:

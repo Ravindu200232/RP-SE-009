@@ -78,7 +78,8 @@ export default function PreviewPane({ hidden, onBuild }) {
   useEffect(() => { setPreviewStopped(false); setAgentStarting(false) }, [project])
   useEffect(() => { if (!busy) setAgentStarting(false) }, [busy])
 
-  // The app's own address as seen from this browser: its local one here, the published one from a phone or another computer (lib/preview.js).
+  // The app's own address as seen from this browser: its local one here, the
+  // published one from a phone or another computer (lib/preview.js).
   const previewUrl = previewHref(runtime)
   const [publishing, setPublishing] = useState('')
   const asked = useRef('')
@@ -114,7 +115,8 @@ export default function PreviewPane({ hidden, onBuild }) {
     api.previewLink(project)
       .then(state => { useStore.getState().setRuntime(state); setPublishing('') })
       .catch(error => {
-        // This build publishes no address for an app (there is no tunnel).
+        // This build publishes no address for an app (there is no tunnel): not a failure of the app or of the run,
+        // so it is said once, where the address would be, and not as a warning in the log.
         if (/no public preview tunnel/i.test(error.message || '')) {
           setPublishing('this app can only be previewed on the computer AgentForge runs on')
           return
@@ -124,7 +126,7 @@ export default function PreviewPane({ hidden, onBuild }) {
       })
   }, [project, runtime?.previewUrl, runtime?.publicUrl, addLog])
 
-  // Reset loading state and auto-start project if stopped.
+  // Reset loading state and auto-start project if stopped
   useEffect(() => {
     setIframeLoading(true)
     if (hidden || !project || busy || drawing || !hasBuiltApp || previewStopped) return
@@ -135,7 +137,7 @@ export default function PreviewPane({ hidden, onBuild }) {
     }
   }, [project, hidden, hasBuiltApp, previewStopped])
 
-  // Safety fallback for iframe loading state once status is running.
+  // Safety fallback for iframe loading state once status is running
   useEffect(() => {
     if (runtime?.status === 'running' && iframeLoading) {
       const timer = setTimeout(() => setIframeLoading(false), 3500)
@@ -143,7 +145,8 @@ export default function PreviewPane({ hidden, onBuild }) {
     }
   }, [runtime?.status, iframeLoading])
 
-  // Observing status never keeps an idle app alive.
+  // Observing status never keeps an idle app alive. This also recovers missed
+  // socket events after a Studio reload or a backend reconnect.
   useEffect(() => {
     if (!project) return
     let active = true
@@ -345,7 +348,8 @@ export default function PreviewPane({ hidden, onBuild }) {
       const ctx = c.getContext('2d')
       ctx.lineTo(pt.cx, pt.cy); ctx.stroke()
     }
-    // Lifting the pen finishes one annotation: it is photographed as it stands and attached, and the canvas is wiped so the next ring is its own note.
+    // Lifting the pen finishes one annotation: it is photographed as it stands
+    // and attached, and the canvas is wiped so the next ring is its own note.
     const up = () => {
       if (!drawingRef.current) return
       drawingRef.current = false
@@ -413,7 +417,8 @@ export default function PreviewPane({ hidden, onBuild }) {
     if (!f) return
     setPreviewStopped(false)
     setIframeLoading(true)
-    // An iframe mounted before startup may still be about:blank or a browser error document.
+    // An iframe mounted before startup may still be about:blank or a browser
+    // error document. Reloading that document never reaches the ready app.
     if (drawing) { f.src = currentPath(f); return }
     try {
       const result = await api.open(project)
@@ -425,7 +430,8 @@ export default function PreviewPane({ hidden, onBuild }) {
     }
   }
 
-  /** Hand a preview that will not start to the agent: no chat message and no plan. */
+  /** Hand a preview that will not start to the agent: no chat message and no plan. It starts the
+   *  app the way the preview does, fixes what stops it, and the preview opens once it answers. */
   function startWithAgent() {
     const st = useStore.getState()
     if (!project || busy) return
@@ -480,14 +486,18 @@ export default function PreviewPane({ hidden, onBuild }) {
   const hasReadyPreview = useRef(!busy)
   useEffect(() => {
     if (wasBusy.current && !busy) {
-      // The shared public origin may still display the previous project's route while this one starts.
+      // The shared public origin may still display the previous project's
+      // route while this one starts. Its first ready navigation begins at /.
       reloadPreview(!hasReadyPreview.current)
       hasReadyPreview.current = true
     }
     wasBusy.current = busy
   }, [busy])
 
-  // The desktop/tablet/mobile toggle sizes the interactive dev preview.
+  // The desktop/tablet/mobile toggle sizes the interactive dev preview. A live test
+  // streams its own browser at its own real viewport, so boxing it into whatever
+  // width the toggle last picked only shrinks the picture into a partial-looking
+  // strip instead of filling the pane it actually has.
   const width = isE2EActive ? null : VIEWPORTS.find(x => x.id === vp)?.w
   const shownPath = tests.running && e2eLive?.route ? e2eLive.route : path
 
@@ -690,7 +700,8 @@ export default function PreviewPane({ hidden, onBuild }) {
                 </div>
               </div>
             ) : canResume && runtime?.status !== 'running' ? (
-              /* An app that is answering stays on screen: a run that failed after it was built (a deployment that could not be verified, say) leaves "Resume" in the header... */
+              /* An app that is answering stays on screen: a run that failed after it was built (a deployment that could not be
+                 verified, say) leaves "Resume" in the header, but does not cover a working preview. */
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-panel p-8 text-center" role="status">
                 <div className="grid size-14 place-items-center rounded-2xl border border-accent/20 bg-accent text-ink">
                   <Play className="size-7" />

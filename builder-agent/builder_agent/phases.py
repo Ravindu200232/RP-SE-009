@@ -1,4 +1,15 @@
-"""The build as numbered phases, so the whole application gets built however big it is."""
+"""The build as numbered phases, so the whole application gets built however big it is.
+
+One conversation asked to build thirty pages, five services, the seed, the tests and the end-to-end journeys cuts the application down
+once it sees how long it already is ("I must be honest about capacity"), and the run ends with a coherent subset. Here the Studio holds
+the list of what the application consists of - the foundation, then the prototype's approved pages a few at a time, then the wiring and
+the seed, the unit tests and the final checks - and gives the model one phase at a time, each small enough to be done in full.
+
+What a phase delivers is checked, not taken on trust: a page is built when it has an entry in `.agentforge/build/progress.json` naming
+files that exist. A phase that is not finished is asked for again; a page that is still not built when everything has run fails the
+build with its name (`gate`), never a subset reported as the application. The state is kept on disk, so a build that was stopped carries
+on from the phase it reached, with the plan it already made.
+"""
 from __future__ import annotations
 
 import hashlib

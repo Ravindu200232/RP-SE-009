@@ -1,4 +1,10 @@
-/** Replace this page. */
+/**
+ * Replace this page.
+ *
+ * It exists so the scaffold builds and renders before a single feature is
+ * written: an empty bundle and a broken one look identical from the outside,
+ * and finding out which one you have is worth the ten seconds it costs.
+ */
 export default function HomePage() {
   return (
     <main>

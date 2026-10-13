@@ -1,4 +1,12 @@
-"""The wireframes: a low-fidelity React app the project's agent builds with Anthropic's web-artifacts-builder skill."""
+"""The wireframes: a low-fidelity React app the project's agent builds with Anthropic's web-artifacts-builder skill.
+
+The agent reads the skill and `app.md` (what the customer asked for, and the site map) and writes one page per screen with its own file
+tools, so every file it writes appears in the chat as it happens. Code here is only what it cannot do for itself: create the app
+(the skill's first step), say which screens the specification names, and bundle the finished app into the one page the studio shows
+(the skill's last step). What the pages look like, and how they hang together, is the agent's.
+
+    <workspace>/.agentforge/wireframe/app/     the app: `src/pages/<page>.tsx` for every screen, and `bundle.html`
+"""
 from __future__ import annotations
 
 import html
@@ -12,7 +20,7 @@ from . import document
 
 KIND = "wireframe"
 MAX_REQUEST = 4000
-# What starting the wireframes asks for: the first line of `prompts/wireframe/generate.md`.
+# What starting the wireframes asks for: the first line of `prompts/wireframe/generate.md`. The studio sends the same words.
 APPROVAL_PROMPT = "Generate low-fidelity wireframes."
 
 
@@ -49,7 +57,9 @@ def _remember(session, **state: Any) -> None:
 
 
 def generate(project: str, request: str = "", fresh: bool = True) -> dict[str, Any]:
-    """Make the wireframe app from the approved specification and leave its bundle ready to show."""
+    """Make the wireframe app from the approved specification and leave its bundle ready to show.
+
+    `fresh` starts the app again; without it, an app a stopped run left behind is carried on."""
     session = session_for(project)
     pages = document.screens(project)
     if not pages:
