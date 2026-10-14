@@ -1,0 +1,17 @@
+name: Mirror current AgentForge desktop package
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download and verify the current package
+        run: |
+          curl --fail --location --retry 5 --output AgentForge-1.0.0-20261014-credit-model-fix-win-x64.zip https://github.com/Ravindu200232/agentforge-releases/releases/download/v1/AgentForge-1.0.0-20261014-credit-model-fix-win-x64.zip
+          echo '6f5b65f5de813098d683d7e666d5d6c7f971439639cb9566ffe3e174a2c8d5aa  AgentForge-1.0.0-20261014-credit-model-fix-win-x64.zip' | sha256sum --check
+      - name: Add package to RP-SE-009 release draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v2.0.2-20261014 AgentForge-1.0.0-20261014-credit-model-fix-win-x64.zip --repo Ravindu200232/RP-SE-009
